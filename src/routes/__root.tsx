@@ -95,6 +95,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:site_name", content: "Hyderabad Founders Network" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:title", content: "Hyderabad Founders Network — Monthly Startup Meetup" },
+      { name: "twitter:title", content: "Hyderabad Founders Network — Monthly Startup Meetup" },
+      { name: "description", content: "Hyderabad Founder Connect is a community-owned website for monthly Hyderabad startup founder meetups." },
+      { property: "og:description", content: "Hyderabad Founder Connect is a community-owned website for monthly Hyderabad startup founder meetups." },
+      { name: "twitter:description", content: "Hyderabad Founder Connect is a community-owned website for monthly Hyderabad startup founder meetups." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8b22cec7-5784-4e21-bcf9-8e78b6381586/id-preview-9bb6069f--7bbd9719-b085-465f-ad3c-413c0a23f918.lovable.app-1782141749945.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8b22cec7-5784-4e21-bcf9-8e78b6381586/id-preview-9bb6069f--7bbd9719-b085-465f-ad3c-413c0a23f918.lovable.app-1782141749945.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
