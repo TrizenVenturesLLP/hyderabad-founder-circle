@@ -43,9 +43,13 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-border/60">
-        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-2 px-5 py-5 text-xs text-muted-foreground md:flex-row md:items-center">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-3 px-5 py-5 text-xs text-muted-foreground md:flex-row md:items-center">
           <p>© {new Date().getFullYear()} Hyderabad Founders Network. Community-owned.</p>
-          <p>Made in Hyderabad · चाय & code</p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
+            <Link to="/terms" className="hover:text-foreground">Terms</Link>
+            <span>Made in Hyderabad · चाय & code</span>
+          </div>
         </div>
       </div>
     </footer>

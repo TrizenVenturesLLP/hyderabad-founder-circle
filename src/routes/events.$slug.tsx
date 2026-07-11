@@ -2,6 +2,8 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import eventImg from "@/assets/event-room.jpg";
 import { meetups } from "@/lib/events";
 import { links } from "@/lib/links";
+import { EventShareBar } from "@/components/EventShareBar";
+
 
 export const Route = createFileRoute("/events/$slug")({
   loader: ({ params }) => {
@@ -158,6 +160,7 @@ function EventDetail() {
                 Free · Limited seats · No pitching
               </span>
             </div>
+            <EventShareBar meetup={meetup} />
           </div>
           <div className="md:col-span-5">
             <img
