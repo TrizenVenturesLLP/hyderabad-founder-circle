@@ -1,51 +1,77 @@
+# Pending work to reach industry-standard quality
 
-## Hyderabad Founders Network — community site
+Grouped by priority. Current site is a static multi-page build with placeholder links and no backend/analytics.
 
-A community-owned site for a monthly founders meetup in Hyderabad. Sponsored quietly by **Trizen Ventures** (shown as supporter, never as the hero). Static build; RSVPs link out to an external tool (Luma / Google Form — you can swap the URL anytime).
+## 1. Content & links (blockers before launch)
+- Replace placeholder URLs in `src/lib/links.ts`: RSVP (Luma/Google Form), WhatsApp/Telegram invite, sponsor URL, real contact email.
+- Real partner logos (T-Hub, WE Hub, eChai, Trizen) instead of text placeholders.
+- Real founder stories, member profiles, event photos (swap generated images gradually).
+- Proofread copy; add a proper `/privacy` and `/terms` page (required for forms + analytics + ads).
 
-## Pages & routes
+## 2. SEO & discoverability
+- Per-route `head()` audit: unique title (<60 chars), description (<160), canonical, og:title/description/type, twitter:card.
+- Add og:image on leaf routes (hero image per page); dynamic og:image on `/events/$slug` from event data.
+- `public/robots.txt` and `public/sitemap.xml` with all public routes.
+- Event JSON-LD verification in Google Rich Results test; add Organization + BreadcrumbList JSON-LD.
+- Semantic HTML pass: single H1 per page, proper heading order, `<nav>`, `<main>`, `<article>`, alt text on every image.
 
-```text
-/                     Home — community overview + next meetup peek
-/events               All meetups (next 3 dates + recurring event detail block)
-/events/founders-open-house   Detailed event landing (date, who/what, agenda, FAQ, RSVP)
-/community            Who's in it + how to join (WhatsApp/Telegram link)
-/stories              Founder stories + event photos + ecosystem resources
-/about                Mission, community-first framing, partners, sponsor credit
-/contact              Contact form (mailto for now) + Community Guidelines
-```
+## 3. Analytics & measurement
+- Plausible or GA4 via a `<script>` in `__root.tsx` head.
+- Event tracking: RSVP click, Join Community click, contact submit, outbound partner clicks.
+- Basic conversion funnel dashboard.
 
-Shared header nav + footer. One primary CTA per page (Home → "Join the Community"; Event → "RSVP").
+## 4. Forms & backend (currently mailto only)
+- Real contact form submission (either Formspree/Getform, or enable Lovable Cloud with a `contacts` table + rate limiting).
+- Newsletter signup (Buttondown/Mailchimp) if desired.
+- Spam protection (honeypot + Cloudflare Turnstile).
 
-## Visual direction
+## 5. Accessibility (WCAG 2.1 AA)
+- Color contrast audit on terracotta/paper palette.
+- Keyboard navigation + visible focus rings on all interactive elements.
+- `aria-label` on icon-only buttons, mobile nav trigger, external links.
+- `prefers-reduced-motion` respected for any animations.
+- Skip-to-content link; correct landmark roles.
 
-Warm, candid, peer-to-peer — like a sunlit Hyderabad rooftop roundtable, not an accelerator brochure. Warm accent (terracotta / saffron) on a paper-neutral base. Editorial type pairing. Real-people event photos (generated) over stock. "Every 3rd Saturday" used as a recurring visual drumbeat. Sponsor line: a single small "Venue & resources supported by Trizen Ventures" in the footer.
+## 6. Performance
+- Convert JPG hero/event images to responsive `<img srcset>` + AVIF/WebP; explicit width/height to prevent CLS.
+- `loading="lazy"` and `decoding="async"` on below-fold images.
+- Preload hero image and primary font; `font-display: swap`.
+- Lighthouse target: 95+ on all four categories mobile.
 
-## Content blocks (per page)
+## 7. Error handling & resilience
+- `errorComponent` + `notFoundComponent` on every route with a loader (currently minimal).
+- Custom 404 page with helpful links.
+- Loading states / skeletons where relevant.
 
-- **Home**: hero (name + one-line value prop + "Join the Community"), who it's for, outcomes (trust networks / mentors / peer learning / collaboration), next meetup card, partner logo strip, 2–3 founder story teasers, footer.
-- **Events**: "Next 3 meetups" list (3rd Sat each month), then the recurring event detail (basics above fold, who/what, agenda, hosts, social proof, FAQ, RSVP).
-- **Community**: community-led vs company-supported explainer, sample member profiles (name, role, startup, open-to tags), "Request to join" → WhatsApp link.
-- **Stories**: 3–4 short founder takeaways, event photo grid, resource links (T-Hub, WE Hub, eChai, coworking).
-- **About**: mission, community-first clarification, partner logos, small sponsor credit.
-- **Contact**: name/email/message (mailto submit), Community Guidelines accordion.
+## 8. Legal & trust
+- Cookie consent banner (only if analytics uses cookies — Plausible avoids this).
+- Privacy Policy, Terms, Community Guidelines as standalone pages linked from footer.
+- Contact email + physical/venue info in footer for legitimacy.
 
-## Technical notes
+## 9. Social & sharing
+- Open Graph preview images per page (1200×630).
+- "Share this event" buttons on event detail (WhatsApp, LinkedIn, X, copy link).
+- Add-to-calendar (.ics download) on event pages.
 
-- TanStack Start route files per page; head() metadata per route (unique title/description/og); Event JSON-LD on the event page; relative canonical/og:url.
-- Tailwind v4 tokens in `src/styles.css` (warm accent + neutrals, editorial type pair via `<link>` in `__root.tsx`).
-- All images generated (real-people event scenes, member portraits) — lazy-loaded, sized.
-- RSVP + WhatsApp + sponsor URLs centralized in `src/lib/links.ts` so you swap them in one place.
-- No backend; no Lovable Cloud. Fully responsive, mobile-first.
+## 10. Progressive enhancements (nice-to-have)
+- Past events archive with recap + photos.
+- Email capture for "notify me about next meetup".
+- Member directory search/filter by role, stage, "open to".
+- Testimonials carousel with attribution.
+- Dark mode toggle.
+- PWA manifest + favicon set (multiple sizes, apple-touch-icon, theme-color).
 
-## Out of scope (per your choice)
+## 11. Ops
+- Custom domain + HTTPS.
+- Uptime monitoring (UptimeRobot).
+- Backup of content files in git (already the case).
+- Publish workflow doc for organizers (how to add a new meetup, story, member).
 
-- No DB-stored registrations/members; RSVPs go to your external form.
-- No CMS — content lives in typed TS files (easy to edit, no infra).
-- No analytics wiring yet (can add GA later).
+## Suggested build order
+1. Content/links + logos + privacy/terms → real launch
+2. SEO + analytics + sitemap → discoverability
+3. A11y + performance pass → quality bar
+4. Contact form backend + share/calendar → engagement
+5. Past events + directory + PWA → depth over time
 
-## What I need from you to proceed
-
-- RSVP URL (Luma/Google Form) — placeholder `#` until you share it.
-- WhatsApp/Telegram/Slack invite link — placeholder until shared.
-- Partner logos — I'll use neutral placeholder marks for T-Hub / WE Hub / eChai until you provide real assets.
+Tell me which sections to tackle first and I'll turn them into concrete implementation steps.
