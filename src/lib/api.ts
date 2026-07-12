@@ -1,0 +1,45 @@
+import type { Meetup } from "@/lib/events";
+
+const API_BASE =
+  (import.meta as ImportMeta & { env: Record<string, string> }).env
+    .VITE_API_URL || "http://localhost:4000";
+
+export type RsvpPayload = {
+  name: string;
+  email: string;
+  phone: string;
+  countryCode: string;
+  profileType: string;
+  qualification: string;
+  graduationYear: string;
+  college: string;
+  fieldOfStudy?: string;
+  jobTitle?: string;
+  company?: string;
+  linkedin?: string;
+  startupStage?: string;
+  exploring?: string;
+  event: Pick<
+    Meetup,
+    "slug" | "title" | "dateISO" | "dateLabel" | "time" | "venue" | "city" | "format"
+  >;
+};
+
+export async function submitRsvp(payload: RsvpPayload) {
+  const res = await fetch(`${API_BASE}/api/rsvp`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    message?: string;
+  };
+
+  if (!res.ok) {
+    throw new Error(data.error || "Could not submit RSVP.");
+  }
+
+  return data;
+}

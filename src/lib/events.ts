@@ -17,7 +17,7 @@ export const meetups: Meetup[] = [
     title: "Founders Open House — July",
     dateISO: "2026-07-18",
     dateLabel: "Saturday, 18 July 2026",
-    time: "5:00 – 8:00 PM IST",
+    time: "10:00 AM – 1:00 PM IST",
     venue: "T-Hub, Phase 2, Madhapur",
     city: "Hyderabad",
     format: "Offline",

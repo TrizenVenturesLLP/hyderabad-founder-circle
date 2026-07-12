@@ -1,8 +1,8 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import eventImg from "@/assets/event-room.jpg";
 import { meetups } from "@/lib/events";
-import { links } from "@/lib/links";
 import { EventShareBar } from "@/components/EventShareBar";
+import { RsvpButton } from "@/components/rsvp/RsvpButton";
 
 
 export const Route = createFileRoute("/events/$slug")({
@@ -56,7 +56,7 @@ export const Route = createFileRoute("/events/$slug")({
                   price: "0",
                   priceCurrency: "INR",
                   availability: "https://schema.org/InStock",
-                  url: links.rsvp,
+                  url: `https://hyderabadfounders.in/events/${m.slug}`,
                 },
               }),
             },
@@ -67,12 +67,20 @@ export const Route = createFileRoute("/events/$slug")({
   component: EventDetail,
 });
 
-const agenda = [
+const agendaEvening = [
   "5:00 — Chai & open floor intros",
   "5:30 — Two founder stories (15 min each, real numbers)",
   "6:00 — Roundtables: pricing, hiring, first customers, fundraising",
   "7:00 — Small-group conversations",
   "7:45 — Wrap & next steps",
+];
+
+const agendaMorning = [
+  "10:00 — Chai & open floor intros",
+  "10:30 — Two founder stories (15 min each, real numbers)",
+  "11:00 — Roundtables: pricing, hiring, first customers, fundraising",
+  "12:00 — Small-group conversations",
+  "12:45 — Wrap & next steps",
 ];
 
 const youGet = [
@@ -111,6 +119,8 @@ const faqs = [
 
 function EventDetail() {
   const { meetup } = Route.useLoaderData();
+  const agenda =
+    meetup.slug === "founders-open-house" ? agendaMorning : agendaEvening;
   return (
     <article>
       {/* Above-the-fold basics */}
@@ -150,12 +160,12 @@ function EventDetail() {
               </div>
             </dl>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <a
-                href={links.rsvp}
+              <RsvpButton
+                event={meetup}
                 className="rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
                 Register / RSVP
-              </a>
+              </RsvpButton>
               <span className="text-xs text-muted-foreground">
                 Free · Limited seats · No pitching
               </span>
@@ -262,12 +272,12 @@ function EventDetail() {
             <p className="mt-2 font-display text-2xl text-foreground">{meetup.dateLabel}</p>
             <p className="text-muted-foreground">{meetup.time}</p>
             <p className="mt-1 text-muted-foreground">{meetup.venue}</p>
-            <a
-              href={links.rsvp}
-              className="mt-5 block rounded-full bg-primary px-5 py-3 text-center text-sm font-medium text-primary-foreground hover:opacity-90"
+            <RsvpButton
+              event={meetup}
+              className="mt-5 block w-full rounded-full bg-primary px-5 py-3 text-center text-sm font-medium text-primary-foreground hover:opacity-90"
             >
               Register / RSVP
-            </a>
+            </RsvpButton>
             <Link
               to="/events"
               className="mt-3 block text-center text-sm text-muted-foreground hover:text-foreground"

@@ -98,3 +98,180 @@
   height: 1px;
   background: color-mix(in oklab, var(--ink) 18%, transparent);
 }
+
+@keyframes home-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes home-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+}
+
+@layer utilities {
+  .home-fade-up {
+    animation: home-fade-up 0.7s ease-out both;
+  }
+  .home-fade-up-delay {
+    animation-delay: 0.12s;
+  }
+  .home-pulse {
+    animation: home-pulse 2.2s ease-in-out infinite;
+  }
+
+  .timeline-step {
+    opacity: 0;
+    transition:
+      opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .timeline-step.from-left {
+    transform: translate3d(-28px, 18px, 0);
+  }
+  .timeline-step.from-right {
+    transform: translate3d(28px, 18px, 0);
+  }
+  .timeline-step.is-visible {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+
+  .meetup-card {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0) scale(0.985);
+    transition:
+      opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.7s ease;
+  }
+  .meetup-card.is-visible {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  .meetup-media {
+    opacity: 0;
+    transform: translate3d(-24px, 0, 0) scale(1.04);
+    transition:
+      opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.05s,
+      transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.05s;
+  }
+  .meetup-media.is-visible {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  .meetup-media.is-visible img {
+    transform: scale(1);
+  }
+
+  .meetup-copy {
+    opacity: 0;
+    transform: translate3d(28px, 12px, 0);
+    transition:
+      opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.12s,
+      transform 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.12s;
+  }
+  .meetup-copy.is-visible {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+
+  .meetup-item {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+    transition:
+      opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .meetup-copy.is-visible .meetup-item {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  .meetup-copy.is-visible .meetup-item:nth-child(1) {
+    transition-delay: 0.18s;
+  }
+  .meetup-copy.is-visible .meetup-item:nth-child(2) {
+    transition-delay: 0.26s;
+  }
+  .meetup-copy.is-visible .meetup-item:nth-child(3) {
+    transition-delay: 0.34s;
+  }
+  .meetup-copy.is-visible .meetup-item:nth-child(4) {
+    transition-delay: 0.42s;
+  }
+  .meetup-copy.is-visible .meetup-item:nth-child(5) {
+    transition-delay: 0.5s;
+  }
+
+  .audience-copy {
+    opacity: 0;
+    transform: translate3d(-18px, 10px, 0);
+    transition:
+      opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .audience-copy.is-visible {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+
+  .audience-card {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+    transition:
+      opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+  .audience-card.is-visible {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  .audience-card.is-visible:hover {
+    transform: translate3d(0, -3px, 0);
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-fade-up,
+  .home-fade-up-delay,
+  .home-pulse {
+    animation: none;
+  }
+  .timeline-step,
+  .meetup-card,
+  .meetup-media,
+  .meetup-copy,
+  .meetup-item,
+  .audience-copy,
+  .audience-card {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

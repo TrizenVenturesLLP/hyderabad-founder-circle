@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 const nav = [
   { to: "/events", label: "Events" },
@@ -11,68 +12,129 @@ const nav = [
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-        <Link to="/" className="group flex items-center gap-2.5" onClick={() => setOpen(false)}>
-          <span className="inline-block h-2.5 w-2.5 rounded-full bg-primary" aria-hidden />
-          <span className="font-display text-[17px] tracking-tight text-foreground">
+    <header
+      className={cn(
+        "sticky top-0 z-40 border-b transition-[background-color,border-color,backdrop-filter] duration-300",
+        scrolled || open
+          ? "border-border/70 bg-background/88 backdrop-blur-xl"
+          : "border-border/40 bg-background/72 backdrop-blur-md",
+      )}
+    >
+      <div className="mx-auto flex h-[68px] max-w-[1200px] items-center justify-between px-4 sm:px-6 md:h-[72px] md:px-8">
+        <Link
+          to="/"
+          className="group flex items-center gap-2.5"
+          onClick={() => setOpen(false)}
+        >
+          <span
+            className="inline-block h-2.5 w-2.5 rounded-full bg-primary transition-transform duration-300 group-hover:scale-125"
+            aria-hidden
+          />
+          <span className="font-display text-[18px] tracking-tight text-foreground transition-colors duration-200 group-hover:text-primary">
             Hyderabad Founders Network
           </span>
         </Link>
-        <nav className="hidden items-center gap-7 md:flex">
+
+        <nav className="hidden items-center gap-0.5 md:flex lg:gap-1">
           {nav.map((n) => (
             <Link
               key={n.to}
               to={n.to}
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-              activeProps={{ className: "text-foreground" }}
+              className="relative px-3.5 py-2 text-sm text-muted-foreground transition-colors duration-200 after:absolute after:inset-x-3.5 after:bottom-1 after:h-px after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-300 after:ease-out hover:text-foreground hover:after:scale-x-100 lg:px-4"
+              activeProps={{
+                className:
+                  "relative px-3.5 py-2 text-sm font-medium text-foreground transition-colors duration-200 after:absolute after:inset-x-3.5 after:bottom-1 after:h-px after:origin-left after:scale-x-100 after:bg-primary after:transition-transform after:duration-300 after:ease-out lg:px-4",
+              }}
             >
               {n.label}
             </Link>
           ))}
           <Link
             to="/community"
-            className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            className="ml-3 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-[opacity,transform] duration-200 hover:opacity-95 active:scale-[0.98] lg:ml-4"
           >
             Join the Community
           </Link>
         </nav>
+
         <button
-          aria-label="Menu"
-          className="md:hidden"
+          type="button"
+          aria-label={open ? "Close menu" : "Open menu"}
+          aria-expanded={open}
+          className="relative flex h-11 w-11 items-center justify-center rounded-full transition-colors duration-200 hover:bg-muted md:hidden"
           onClick={() => setOpen((v) => !v)}
         >
-          <div className="space-y-1.5">
-            <span className="block h-px w-6 bg-foreground" />
-            <span className="block h-px w-6 bg-foreground" />
-            <span className="block h-px w-6 bg-foreground" />
-          </div>
+          <span className="sr-only">{open ? "Close" : "Menu"}</span>
+          <span className="relative block h-3.5 w-5">
+            <span
+              className={cn(
+                "absolute left-0 block h-px w-5 bg-foreground transition-all duration-300 ease-out",
+                open ? "top-1.5 rotate-45" : "top-0",
+              )}
+            />
+            <span
+              className={cn(
+                "absolute left-0 top-1.5 block h-px w-5 bg-foreground transition-all duration-300 ease-out",
+                open ? "opacity-0" : "opacity-100",
+              )}
+            />
+            <span
+              className={cn(
+                "absolute left-0 block h-px w-5 bg-foreground transition-all duration-300 ease-out",
+                open ? "top-1.5 -rotate-45" : "top-3",
+              )}
+            />
+          </span>
         </button>
       </div>
-      {open && (
-        <div className="border-t border-border/60 md:hidden">
-          <div className="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-4">
-            {nav.map((n) => (
-              <Link
-                key={n.to}
-                to={n.to}
-                className="rounded-md px-2 py-2 text-foreground hover:bg-muted"
-                onClick={() => setOpen(false)}
-              >
-                {n.label}
-              </Link>
-            ))}
+
+      <div
+        className={cn(
+          "overflow-hidden border-t border-border/60 transition-[max-height,opacity] duration-300 ease-out md:hidden",
+          open ? "max-h-96 opacity-100" : "max-h-0 border-transparent opacity-0",
+        )}
+      >
+        <div className="mx-auto flex max-w-[1200px] flex-col gap-0.5 px-4 py-3 sm:px-6">
+          {nav.map((n) => (
             <Link
-              to="/community"
-              className="mt-2 rounded-full bg-primary px-4 py-2.5 text-center text-sm font-medium text-primary-foreground"
+              key={n.to}
+              to={n.to}
+              className="rounded-lg px-3 py-3 text-sm text-muted-foreground transition-colors duration-200 hover:bg-muted hover:text-foreground"
+              activeProps={{
+                className:
+                  "rounded-lg bg-secondary/60 px-3 py-3 text-sm font-medium text-foreground transition-colors duration-200",
+              }}
               onClick={() => setOpen(false)}
             >
-              Join the Community
+              {n.label}
             </Link>
-          </div>
+          ))}
+          <Link
+            to="/community"
+            className="mt-2 rounded-full bg-primary px-4 py-3 text-center text-sm font-medium text-primary-foreground transition-opacity duration-200 hover:opacity-90"
+            onClick={() => setOpen(false)}
+          >
+            Join the Community
+          </Link>
         </div>
-      )}
+      </div>
     </header>
   );
 }
