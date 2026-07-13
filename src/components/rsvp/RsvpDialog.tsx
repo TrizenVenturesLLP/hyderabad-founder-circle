@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   CalendarDays,
   Check,
@@ -21,19 +21,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 
 type Step = 1 | 2 | "success";
@@ -290,6 +277,7 @@ export function RsvpDialog() {
     if (!validateStep2()) return;
 
     setSubmitting(true);
+    toast.dismiss();
     try {
       await submitRsvp({
         name: form.name,
@@ -313,7 +301,13 @@ export function RsvpDialog() {
       });
       setStep("success");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not submit RSVP.");
+      const message =
+        err instanceof TypeError && /fetch/i.test(err.message)
+          ? "Could not reach the server. Please try again."
+          : err instanceof Error
+            ? err.message
+            : "Could not submit RSVP.";
+      toast.error(message, { duration: 3500, closeButton: true });
     } finally {
       setSubmitting(false);
     }
@@ -350,7 +344,10 @@ export function RsvpDialog() {
             ? "max-h-[min(92vh,760px)] w-[calc(100%-1.5rem)] max-w-[560px] sm:max-w-[560px]"
             : [
                 "max-h-[min(92vh,880px)] w-[calc(100%-1rem)] max-w-[1080px] sm:max-w-[1080px]",
-                "max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:max-h-[94vh] max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none max-sm:rounded-t-[20px]",
+                // Full-bleed bottom sheet on mobile — override dialog centering
+                "max-sm:!inset-x-0 max-sm:!bottom-0 max-sm:!left-0 max-sm:!right-0 max-sm:!top-auto",
+                "max-sm:!translate-x-0 max-sm:!translate-y-0",
+                "max-sm:!w-full max-sm:!max-w-none max-sm:rounded-b-none max-sm:rounded-t-[20px] max-sm:!max-h-[94dvh]",
               ],
         )}
       >
@@ -364,7 +361,7 @@ export function RsvpDialog() {
         ) : (
           <div className="grid min-h-0 flex-1 md:grid-cols-12">
             <div className="flex min-h-0 min-w-0 flex-col md:col-span-8 md:border-r md:border-border/70">
-              <header className="shrink-0 border-b border-border/70 px-5 pb-4 pt-6 sm:px-6 sm:pt-7">
+                <header className="shrink-0 border-b border-border/70 px-4 pb-4 pt-6 pr-16 sm:px-6 sm:pt-7 sm:pr-20">
                 <div className="flex items-center gap-2.5 pr-8">
                   <span className="h-px w-6 bg-primary" aria-hidden />
                   <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
@@ -381,7 +378,7 @@ export function RsvpDialog() {
               </header>
 
               <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
-                <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+                <div className="scrollbar-none min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-5 pb-6 sm:px-6">
                   <MobileEventSummary
                     event={event}
                     monthShort={monthShort}
@@ -540,13 +537,14 @@ export function RsvpDialog() {
                         label="Which go-to-market challenges are most relevant to your startup today? Select 3 options."
                         required
                         error={errors.gtmChallenges}
+                        hint={`${form.gtmChallenges.length}/3 selected`}
                       >
-                        <MultiSelectSearch
+                        <MultiSelectDropdown
                           options={gtmChallengeOptions}
                           selected={form.gtmChallenges}
                           onToggle={toggleGtmChallenge}
-                          placeholder="Select 3 options"
                           max={3}
+                          placeholder="Select 3 challenges"
                         />
                       </Field>
 
@@ -555,7 +553,7 @@ export function RsvpDialog() {
                         required
                         error={errors.leaveWith}
                       >
-                        <MultiSelectSearch
+                        <MultiSelectDropdown
                           options={leaveWithOptions}
                           selected={form.leaveWith}
                           onToggle={toggleLeaveWith}
@@ -730,7 +728,7 @@ export function RsvpDialog() {
                   )}
                 </div>
 
-                <footer className="shrink-0 border-t border-border/70 bg-background px-5 py-4 sm:px-6">
+                <footer className="shrink-0 border-t border-border/70 bg-background px-4 py-4 sm:px-6">
                   <div className="flex items-center justify-between gap-3">
                     {step === 2 ? (
                       <button
@@ -828,9 +826,6 @@ export function RsvpDialog() {
                     </span>
                   </li>
                 </ul>
-                <div className="mt-6 rounded-xl border border-border/80 bg-card/80 px-4 py-3.5">
-                  <p className="text-sm leading-relaxed text-muted-foreground">{event.blurb}</p>
-                </div>
                 <p className="mt-auto pt-10 text-xs text-muted-foreground">
                   Free to attend · {typeof event.seats === "number" ? `${event.seats} seats` : "Limited seats"} · No pitching
                 </p>
@@ -908,9 +903,9 @@ function MobileEventSummary({
 
 function Stepper({ step }: { step: 1 | 2 }) {
   return (
-    <ol className="mt-5 flex items-center gap-3 text-sm">
+    <ol className="mt-5 flex min-w-0 items-center gap-2 text-sm sm:gap-3">
       <StepItem n={1} label="Your details" active={step === 1} done={step === 2} />
-      <span className="h-px max-w-10 flex-1 bg-border" aria-hidden />
+      <span className="h-px min-w-4 flex-1 bg-border sm:max-w-10" aria-hidden />
       <StepItem n={2} label="Your goals" active={step === 2} done={false} />
     </ol>
   );
@@ -1098,84 +1093,115 @@ function SuccessMeta({
   );
 }
 
-function MultiSelectSearch({
+function MultiSelectDropdown({
   options,
   selected,
   onToggle,
-  placeholder,
   max,
+  placeholder,
 }: {
   options: readonly string[];
   selected: string[];
   onToggle: (option: string) => void;
-  placeholder: string;
   max?: number;
+  placeholder: string;
 }) {
   const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const atMax = typeof max === "number" && selected.length >= max;
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(e: MouseEvent | TouchEvent) {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("touchstart", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("touchstart", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   const summary =
     selected.length === 0
       ? placeholder
-      : selected.length === 1
-        ? selected[0]
+      : selected.length <= 2
+        ? selected.join(", ")
         : `${selected.length} selected`;
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            fieldClass,
-            "flex items-center justify-between gap-2 text-left",
-            selected.length === 0 && "text-muted-foreground/65",
-          )}
-        >
-          <span className="min-w-0 truncate">{summary}</span>
-          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className="z-[80] w-[var(--radix-popover-trigger-width)] p-0"
-        onOpenAutoFocus={(e) => e.preventDefault()}
+    <div ref={rootRef} className="relative w-full min-w-0">
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          "flex h-[52px] w-full items-center justify-between gap-3 rounded-[11px] border border-border/90 bg-card px-3.5 text-left text-sm text-foreground shadow-none outline-none transition-[border-color,box-shadow] focus-visible:border-primary/35 focus-visible:ring-1 focus-visible:ring-primary/40",
+          selected.length === 0 && "text-muted-foreground/65",
+          open && "border-primary/35 ring-1 ring-primary/40",
+        )}
       >
-        <Command>
-          <CommandInput placeholder="Search" />
-          <CommandList className="max-h-56">
-            <CommandEmpty>No matches.</CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => {
-                const isSelected = selected.includes(option);
-                const disabled = atMax && !isSelected;
-                return (
-                  <CommandItem
-                    key={option}
-                    value={option}
-                    disabled={disabled}
-                    onSelect={() => onToggle(option)}
-                    className="cursor-pointer py-2.5"
-                  >
-                    <span
-                      className={cn(
-                        "mr-2 flex h-4 w-4 items-center justify-center rounded border",
-                        isSelected
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border",
-                      )}
-                      aria-hidden
-                    >
-                      {isSelected ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
-                    </span>
-                    <span className="leading-snug">{option}</span>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+        <span className="min-w-0 flex-1 truncate pr-2">{summary}</span>
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
+            open && "rotate-180",
+          )}
+          strokeWidth={1.75}
+          aria-hidden
+        />
+      </button>
+
+      {open ? (
+        <div
+          role="listbox"
+          aria-multiselectable="true"
+          className="absolute left-0 right-0 z-30 mt-1.5 max-h-56 overflow-y-auto rounded-[12px] border border-border/90 bg-card py-1.5 shadow-[0_16px_40px_-24px_rgba(0,0,0,0.45)]"
+        >
+          {options.map((option) => {
+            const isSelected = selected.includes(option);
+            const disabled = atMax && !isSelected;
+            return (
+              <button
+                key={option}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                disabled={disabled}
+                onClick={() => onToggle(option)}
+                className={cn(
+                  "flex w-full items-start gap-3 px-3.5 py-2.5 text-left text-sm transition-colors",
+                  isSelected
+                    ? "bg-primary/10 text-foreground"
+                    : "text-foreground/85 hover:bg-muted/70",
+                  disabled && "cursor-not-allowed opacity-40 hover:bg-transparent",
+                )}
+              >
+                <span
+                  className={cn(
+                    "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border",
+                    isSelected
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background",
+                  )}
+                  aria-hidden
+                >
+                  {isSelected ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
+                </span>
+                <span className="min-w-0 flex-1 leading-snug">{option}</span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -1200,15 +1226,15 @@ function Field({
 }) {
   return (
     <div className={cn("space-y-1.5", className)}>
-      <div className="flex items-baseline justify-between gap-3">
-        <Label className="text-[13px] font-medium text-foreground/90">
+      <div className="flex items-start justify-between gap-3">
+        <Label className="min-w-0 flex-1 text-[13px] font-medium leading-snug text-foreground/90">
           {label}
           {required ? <span className="text-primary"> *</span> : null}
         </Label>
         {typeof count === "number" && typeof max === "number" ? (
           <span
             className={cn(
-              "shrink-0 text-[11px] tabular-nums text-muted-foreground",
+              "shrink-0 pt-0.5 text-[11px] tabular-nums text-muted-foreground",
               count >= max && "text-primary",
             )}
           >

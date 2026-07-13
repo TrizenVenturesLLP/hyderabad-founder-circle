@@ -46,3 +46,29 @@ export async function submitRsvp(payload: RsvpPayload) {
 
   return data;
 }
+
+export type ContactPayload = {
+  name: string;
+  email: string;
+  message: string;
+};
+
+export async function submitContact(payload: ContactPayload) {
+  const res = await fetch(`${API_BASE}/api/contact`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    message?: string;
+    id?: string;
+  };
+
+  if (!res.ok) {
+    throw new Error(data.error || "Could not send message.");
+  }
+
+  return data;
+}

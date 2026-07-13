@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Meetup } from "@/lib/events";
-import { nextMeetup } from "@/lib/events";
+import { isRsvpOpen, nextMeetup } from "@/lib/events";
 
 type RsvpContextValue = {
   open: boolean;
@@ -23,7 +23,9 @@ export function RsvpProvider({ children }: { children: ReactNode }) {
   const [event, setEvent] = useState<Meetup>(nextMeetup);
 
   const openRsvp = useCallback((meetup?: Meetup) => {
-    setEvent(meetup ?? nextMeetup);
+    const target = meetup ?? nextMeetup;
+    if (!isRsvpOpen(target)) return;
+    setEvent(target);
     setOpen(true);
   }, []);
 

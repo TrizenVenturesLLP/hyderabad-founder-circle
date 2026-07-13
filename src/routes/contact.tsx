@@ -1,4 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState, type KeyboardEvent } from "react";
+import { toast } from "sonner";
+import { submitContact } from "@/lib/api";
 import { links } from "@/lib/links";
 import { cn } from "@/lib/utils";
 
@@ -42,9 +45,57 @@ const fieldClass =
   "mt-2 w-full rounded-none border border-border/80 bg-background px-3.5 py-3 text-[0.975rem] text-foreground outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-muted-foreground/50 focus:border-primary focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--terracotta)_18%,transparent)]";
 
 function ContactPage() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function sendMessage() {
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    const trimmedMessage = message.trim();
+    if (!trimmedName || !trimmedEmail || !trimmedMessage || submitting) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await submitContact({
+        name: trimmedName,
+        email: trimmedEmail,
+        message: trimmedMessage,
+      });
+      setName("");
+      setEmail("");
+      setMessage("");
+      toast.success("Message sent. We'll get back to you soon.");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Could not send message. Try again.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key !== "Enter") return;
+    const target = e.target as HTMLElement;
+    if (target.tagName === "TEXTAREA") return;
+    e.preventDefault();
+    void sendMessage();
+  }
+
+  const canSend =
+    !submitting &&
+    name.trim().length > 0 &&
+    email.trim().length > 0 &&
+    message.trim().length > 0;
+
   return (
     <div>
-      {/* HERO */}
       <header className="relative overflow-hidden">
         <div
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_12%_0%,color-mix(in_oklab,var(--saffron)_12%,transparent),transparent_50%),radial-gradient(ellipse_at_100%_10%,color-mix(in_oklab,var(--terracotta)_7%,transparent),transparent_45%)]"
@@ -89,10 +140,8 @@ function ContactPage() {
         </div>
       </header>
 
-      {/* FORM + GUIDELINES */}
       <section className="border-t border-border/60">
         <div className="mx-auto grid max-w-[1160px] gap-12 px-5 py-12 sm:px-6 md:grid-cols-12 md:gap-12 md:px-8 md:py-14 lg:gap-16">
-          {/* Form */}
           <div className="md:col-span-7">
             <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
               Send a message
@@ -101,45 +150,58 @@ function ContactPage() {
               Write to the organisers
             </h2>
 
-            <form
+            {/*
+              Not a <form>: posts via fetch to the API.
+              Avoids Chrome's "This form is not secure" warning on HTTP (e.g. localhost).
+            */}
+            <div
               className="mt-7"
-              action={`mailto:${links.email}`}
-              method="post"
-              encType="text/plain"
+              role="group"
+              aria-label="Write to the organisers"
+              onKeyDown={onKeyDown}
             >
               <div className="grid gap-5 sm:grid-cols-2 sm:gap-x-5">
                 <div>
                   <label
                     className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground"
-                    htmlFor="name"
+                    htmlFor="contact-name"
                   >
                     Your name
                   </label>
                   <input
-                    id="name"
-                    name="name"
+                    id="contact-name"
+                    name="contact-name"
+                    type="text"
                     required
                     maxLength={100}
                     autoComplete="name"
                     placeholder="Full name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     className={fieldClass}
                   />
                 </div>
                 <div>
                   <label
                     className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground"
-                    htmlFor="email"
+                    htmlFor="contact-email"
                   >
                     Email
                   </label>
                   <input
-                    id="email"
-                    name="email"
-                    type="email"
+                    id="contact-email"
+                    name="contact-email"
+                    type="text"
+                    inputMode="email"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     required
                     maxLength={255}
                     autoComplete="email"
                     placeholder="you@company.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className={fieldClass}
                   />
                 </div>
@@ -148,33 +210,37 @@ function ContactPage() {
               <div className="mt-5">
                 <label
                   className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground"
-                  htmlFor="message"
+                  htmlFor="contact-message"
                 >
                   Message
                 </label>
                 <textarea
-                  id="message"
-                  name="message"
+                  id="contact-message"
+                  name="contact-message"
                   required
                   rows={6}
                   maxLength={2000}
+                  autoComplete="off"
                   placeholder="What would you like to talk about?"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
                   className={cn(fieldClass, "min-h-[9rem] resize-y leading-relaxed")}
                 />
               </div>
 
               <div className="mt-7">
                 <button
-                  type="submit"
-                  className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-7 text-sm font-medium text-primary-foreground transition-[opacity,transform] duration-200 hover:opacity-95 active:scale-[0.98]"
+                  type="button"
+                  disabled={!canSend}
+                  onClick={() => void sendMessage()}
+                  className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-7 text-sm font-medium text-primary-foreground transition-[opacity,transform] duration-200 hover:opacity-95 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45"
                 >
-                  Send message
+                  {submitting ? "Sending…" : "Send message"}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
 
-          {/* Guidelines */}
           <aside className="md:col-span-5">
             <div className="md:sticky md:top-24">
               <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">

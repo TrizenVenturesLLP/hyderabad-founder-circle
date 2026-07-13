@@ -3,6 +3,7 @@
 @source "../src/components";
 @source not "../src/components/ui";
 @source "../src/components/ui/dialog.tsx";
+@source "../src/components/ui/sheet.tsx";
 @source "../src/components/ui/input.tsx";
 @source "../src/components/ui/label.tsx";
 @source "../src/components/ui/sonner.tsx";
@@ -84,11 +85,13 @@
   }
   html {
     -webkit-text-size-adjust: 100%;
+    overflow-x: clip;
   }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    overflow-x: clip;
   }
   h1, h2, h3, h4 {
     font-family: var(--font-display);

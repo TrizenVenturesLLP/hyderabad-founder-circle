@@ -102,15 +102,18 @@ export function SiteFooter() {
       <div className="border-t border-[oklch(1_0_0/0.1)]">
         <div className="mx-auto flex max-w-[1240px] flex-col gap-2.5 px-5 py-4 text-[12px] text-[oklch(0.66_0.02_70)] sm:px-6 md:flex-row md:items-center md:justify-between md:px-8 md:py-5 md:text-[13px]">
           <p>© {new Date().getFullYear()} Hyderabad Founders Network. Community-owned.</p>
-          <nav className="flex flex-wrap items-center gap-x-3.5 gap-y-2">
+          <nav
+            aria-label="Legal"
+            className="flex flex-wrap items-center text-[12px] md:text-[13px]"
+          >
             <Link
               to="/privacy"
               className="transition-colors duration-200 hover:text-[oklch(0.93_0.01_80)]"
             >
               Privacy
             </Link>
-            <span aria-hidden className="text-[oklch(1_0_0/0.22)]">
-              ·
+            <span className="whitespace-pre text-[oklch(1_0_0/0.22)]">
+              {" · "}
             </span>
             <Link
               to="/terms"
@@ -118,10 +121,14 @@ export function SiteFooter() {
             >
               Terms
             </Link>
-            <span aria-hidden className="text-[oklch(1_0_0/0.22)]">
-              ·
+            <span className="whitespace-pre text-[oklch(1_0_0/0.22)]">
+              {" · "}
             </span>
-            <span>Made in Hyderabad · चाय & code</span>
+            <span>Made in Hyderabad</span>
+            <span className="whitespace-pre text-[oklch(1_0_0/0.22)]">
+              {" · "}
+            </span>
+            <span>चाय & code</span>
           </nav>
         </div>
       </div>

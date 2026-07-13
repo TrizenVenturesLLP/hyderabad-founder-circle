@@ -6,7 +6,12 @@ import {
   MapPin,
 } from "lucide-react";
 import eventImg from "@/assets/event-room.jpg";
-import { meetups, type Meetup, meetupLocationLabel } from "@/lib/events";
+import {
+  meetups,
+  type Meetup,
+  isRsvpOpen,
+  meetupLocationLabel,
+} from "@/lib/events";
 import { RsvpButton } from "@/components/rsvp/RsvpButton";
 import { cn } from "@/lib/utils";
 
@@ -93,7 +98,7 @@ function EventsIndex() {
                 { label: "Rhythm", value: "3rd Saturday" },
                 { label: "Time", value: "11 AM – 1 PM" },
                 { label: "Venue", value: "DraperU India" },
-                { label: "Seats", value: "46" },
+                { label: "Seats", value: "40" },
               ].map((item) => (
                 <div key={item.label} className="min-w-0">
                   <dt className="text-[10px] font-medium uppercase tracking-[0.14em] text-white/50">
@@ -193,8 +198,15 @@ function FeaturedEventCard({ meetup }: { meetup: Meetup }) {
     <article className="overflow-hidden rounded-[1.25rem] border border-primary/25 bg-card shadow-[0_18px_40px_-32px_rgba(0,0,0,0.35)] ring-1 ring-primary/10">
       <div className="grid md:grid-cols-12">
         <div className="flex flex-col justify-between border-b border-primary/15 bg-secondary/40 px-6 py-6 md:col-span-3 md:border-b-0 md:border-r md:px-7 md:py-8">
-          <span className="inline-flex w-fit rounded-full bg-primary px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-primary-foreground">
-            Next event
+          <span
+            className={cn(
+              "inline-flex w-fit rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em]",
+              isRsvpOpen(meetup)
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground",
+            )}
+          >
+            {isRsvpOpen(meetup) ? "Next event" : "Coming soon"}
           </span>
           <div className="mt-6 md:mt-10">
             <p className="font-display text-5xl leading-none tracking-tight text-foreground md:text-6xl">
@@ -261,7 +273,16 @@ function EventCard({ meetup }: { meetup: Meetup }) {
         </div>
 
         <div className="md:col-span-6">
-          <h3 className="font-display text-xl tracking-tight text-foreground">{meetup.title}</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-display text-xl tracking-tight text-foreground">
+              {meetup.title}
+            </h3>
+            {!isRsvpOpen(meetup) ? (
+              <span className="rounded-full bg-secondary px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                Coming soon
+              </span>
+            ) : null}
+          </div>
           <div className="mt-2 flex flex-col gap-1 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-x-4">
             <span className="inline-flex items-center gap-1.5">
               <Clock className="h-3.5 w-3.5 text-primary/80" strokeWidth={1.75} />

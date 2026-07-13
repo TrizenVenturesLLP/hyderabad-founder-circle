@@ -1,6 +1,12 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import eventImg from "@/assets/event-room.jpg";
-import { meetups, meetupLocationLabel, meetupMapsUrl, meetupSeatsLabel } from "@/lib/events";
+import {
+  meetups,
+  isRsvpOpen,
+  meetupLocationLabel,
+  meetupMapsUrl,
+  meetupSeatsLabel,
+} from "@/lib/events";
 import { EventShareBar } from "@/components/EventShareBar";
 import { RsvpButton } from "@/components/rsvp/RsvpButton";
 
@@ -129,8 +135,7 @@ const quotes = [
 
 function EventDetail() {
   const { meetup } = Route.useLoaderData();
-  const agenda =
-    meetup.slug === "founders-open-house" ? agendaMorning : agendaEvening;
+  const agenda = /AM/i.test(meetup.time) ? agendaMorning : agendaEvening;
   const mapsUrl = meetupMapsUrl(meetup);
 
   return (
@@ -395,7 +400,9 @@ function EventDetail() {
               </dl>
 
               <p className="mt-4 text-[12px] leading-relaxed text-muted-foreground">
-                Free · {meetupSeatsLabel(meetup)} seats · No pitching
+                {isRsvpOpen(meetup)
+                  ? `Free · ${meetupSeatsLabel(meetup)} seats · No pitching`
+                  : "Registration opens closer to the event date."}
               </p>
 
               <RsvpButton
