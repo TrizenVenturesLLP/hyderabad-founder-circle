@@ -14,7 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SiteHeader } from "../components/SiteHeader";
 import { SiteFooter } from "../components/SiteFooter";
 import { RsvpProvider } from "../components/rsvp/rsvp-context";
-import { RsvpDialog } from "../components/rsvp/RsvpDialog";
+import { LazyRsvpDialog } from "../components/rsvp/LazyRsvpDialog";
 import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
@@ -108,9 +108,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Poppins:wght@400;500;600&display=swap",
       },
     ],
   }),
@@ -152,7 +154,7 @@ function RootComponent() {
           </main>
           <SiteFooter />
         </div>
-        <RsvpDialog />
+        <LazyRsvpDialog />
         <Toaster />
       </RsvpProvider>
     </QueryClientProvider>

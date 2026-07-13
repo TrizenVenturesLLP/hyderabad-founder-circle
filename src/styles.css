@@ -1,5 +1,13 @@
 @import "tailwindcss" source(none);
-@source "../src";
+@source "../src/routes";
+@source "../src/components";
+@source not "../src/components/ui";
+@source "../src/components/ui/dialog.tsx";
+@source "../src/components/ui/input.tsx";
+@source "../src/components/ui/label.tsx";
+@source "../src/components/ui/sonner.tsx";
+@source "../src/hooks";
+@source "../src/lib";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
@@ -36,7 +44,7 @@
   --color-terracotta: var(--terracotta);
   --color-moss: var(--moss);
   --font-display: "Fraunces", ui-serif, Georgia, serif;
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
 }
 
 :root {
@@ -81,12 +89,28 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
-    font-feature-settings: "ss01", "cv11";
   }
   h1, h2, h3, h4 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
     font-weight: 500;
+  }
+  a,
+  button,
+  [role="button"],
+  input[type="submit"],
+  input[type="button"],
+  input[type="reset"],
+  label[for],
+  summary,
+  select {
+    cursor: pointer;
+  }
+  button:disabled,
+  [role="button"][aria-disabled="true"],
+  input:disabled,
+  select:disabled {
+    cursor: not-allowed;
   }
   ::selection {
     background: var(--saffron);
@@ -99,18 +123,27 @@
   background: color-mix(in oklab, var(--ink) 18%, transparent);
 }
 
-@keyframes home-fade-up {
+@keyframes hero-media-in {
   from {
-    opacity: 0;
-    transform: translateY(14px);
+    transform: scale(1.06);
   }
   to {
-    opacity: 1;
-    transform: translateY(0);
+    transform: scale(1);
   }
 }
 
-@keyframes home-pulse {
+@keyframes hero-reveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes hero-pulse {
   0%,
   100% {
     opacity: 1;
@@ -123,14 +156,17 @@
 }
 
 @layer utilities {
-  .home-fade-up {
-    animation: home-fade-up 0.7s ease-out both;
+  .hero-media {
+    animation: hero-media-in 1.4s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
-  .home-fade-up-delay {
-    animation-delay: 0.12s;
+  .hero-reveal {
+    animation: hero-reveal 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
-  .home-pulse {
-    animation: home-pulse 2.2s ease-in-out infinite;
+  .hero-reveal-delay-1 {
+    animation-delay: 0.14s;
+  }
+  .hero-pulse {
+    animation: hero-pulse 2.2s ease-in-out infinite;
   }
 
   .timeline-step {
@@ -258,10 +294,18 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-fade-up,
-  .home-fade-up-delay,
-  .home-pulse {
+  .hero-media,
+  .hero-reveal,
+  .hero-reveal-delay-1,
+  .hero-pulse {
     animation: none;
+  }
+  .hero-media {
+    transform: none;
+  }
+  .hero-reveal {
+    opacity: 1;
+    transform: none;
   }
   .timeline-step,
   .meetup-card,

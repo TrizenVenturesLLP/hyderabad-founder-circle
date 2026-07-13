@@ -9,16 +9,19 @@ export type RsvpPayload = {
   email: string;
   phone: string;
   countryCode: string;
-  profileType: string;
-  qualification: string;
-  graduationYear: string;
-  college: string;
-  fieldOfStudy?: string;
-  jobTitle?: string;
-  company?: string;
-  linkedin?: string;
-  startupStage?: string;
-  exploring?: string;
+  linkedin: string;
+  role: string;
+  company: string;
+  startupStage: string;
+  gtmChallenges: string[];
+  leaveWith: string[];
+  industry: string;
+  lookingFor: string[];
+  canHelpWith?: string;
+  biggestChallenge?: string;
+  joinWhatsapp?: boolean;
+  subscribeUpdates?: boolean;
+  questions?: string;
   event: Pick<
     Meetup,
     "slug" | "title" | "dateISO" | "dateLabel" | "time" | "venue" | "city" | "format"

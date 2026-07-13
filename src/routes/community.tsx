@@ -141,19 +141,21 @@ function CommunityPage() {
       </section>
 
       {/* MEMBERS */}
-      <section className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 md:px-8 md:py-20">
-        <div className="flex flex-col gap-5 border-b border-border/70 pb-8 sm:flex-row sm:items-end sm:justify-between">
+      <section className="mx-auto max-w-[1200px] px-4 py-14 sm:px-6 md:px-8 md:py-16">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="font-display text-[1.85rem] tracking-tight text-foreground md:text-[2.2rem]">
+            <h2 className="font-display text-[1.75rem] tracking-tight text-foreground md:text-[2rem]">
               A few members
             </h2>
-            <p className="mt-2 text-[0.975rem] text-muted-foreground">
+            <p className="mt-1.5 text-[0.975rem] text-muted-foreground">
               A small sample of the regulars.
             </p>
           </div>
           <a
             href={links.community}
-            className="group inline-flex h-11 items-center justify-center gap-1.5 self-start rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition-[opacity,transform] duration-200 hover:opacity-95 active:scale-[0.98] sm:self-auto"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group inline-flex h-10 items-center justify-center gap-1.5 self-start rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition-[opacity,transform] duration-200 hover:opacity-95 active:scale-[0.98] sm:self-auto"
           >
             Request to join
             <span
@@ -166,7 +168,7 @@ function CommunityPage() {
         </div>
 
         <div
-          className="-mx-4 mt-6 flex gap-1 overflow-x-auto px-4 scrollbar-none sm:mx-0 sm:px-0"
+          className="-mx-4 mt-8 flex gap-0.5 overflow-x-auto border-b border-border/70 px-4 scrollbar-none sm:mx-0 sm:px-0"
           role="tablist"
           aria-label="Filter members"
         >
@@ -199,48 +201,44 @@ function CommunityPage() {
           })}
         </div>
 
-        <ul className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+        <ul className="mt-2 divide-y divide-border/60">
           {visibleMembers.map((m) => {
             const tintIndex = members.findIndex((x) => x.name === m.name);
             return (
               <li key={m.name}>
-                <article className="group flex h-full flex-col rounded-[18px] border border-border/75 bg-[color-mix(in_oklab,white_55%,var(--paper))] p-6 transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_16px_36px_-28px_rgba(40,28,18,0.4)] md:p-7">
-                  <div className="flex items-start gap-3.5">
-                    <span
-                      className={cn(
-                        "grid h-12 w-12 shrink-0 place-items-center rounded-full font-display text-lg ring-1 ring-border/60",
-                        avatarTints[tintIndex % avatarTints.length],
-                      )}
-                    >
-                      {m.name[0]}
-                    </span>
-                    <div className="min-w-0 pt-0.5">
-                      <p className="font-display text-[1.2rem] leading-tight tracking-tight text-foreground">
+                <article className="flex gap-4 py-5 transition-colors duration-200 sm:items-center sm:gap-5 sm:py-6">
+                  <span
+                    className={cn(
+                      "grid h-11 w-11 shrink-0 place-items-center rounded-full font-display text-base sm:h-12 sm:w-12 sm:text-lg",
+                      avatarTints[tintIndex % avatarTints.length],
+                    )}
+                    aria-hidden
+                  >
+                    {m.name[0]}
+                  </span>
+
+                  <div className="min-w-0 flex-1 sm:grid sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1.2fr)_minmax(0,1fr)] sm:items-center sm:gap-6">
+                    <div className="min-w-0">
+                      <p className="font-display text-[1.15rem] leading-tight tracking-tight text-foreground md:text-[1.2rem]">
                         {m.name}
                       </p>
-                      <p className="mt-1 text-[13px] text-muted-foreground">
-                        {m.role}
-                      </p>
+                      <p className="mt-0.5 text-[13px] text-muted-foreground">{m.role}</p>
                     </div>
-                  </div>
 
-                  <p className="mt-5 text-[0.9375rem] leading-snug text-foreground/85">
-                    {m.startup}
-                  </p>
-
-                  <div className="mt-auto border-t border-border/60 pt-4">
-                    <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground/90">
-                      Open to
+                    <p className="mt-2 text-[0.9375rem] leading-snug text-foreground/80 sm:mt-0">
+                      {m.startup}
                     </p>
-                    <div className="mt-2.5 flex flex-wrap gap-2">
-                      {m.openTo.map((t) => (
-                        <span
-                          key={t}
-                          className="inline-flex h-7 items-center rounded-full border border-border/70 bg-background/80 px-3 text-[12px] text-foreground/70 transition-colors duration-200 group-hover:border-primary/20"
-                        >
-                          {t}
+
+                    <div className="mt-2.5 sm:mt-0 sm:text-right">
+                      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/85 sm:sr-only">
+                        Open to
+                      </p>
+                      <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground sm:mt-0 sm:text-[14px]">
+                        <span className="hidden text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/70 sm:mr-2 sm:inline">
+                          Open to
                         </span>
-                      ))}
+                        {m.openTo.join(" · ")}
+                      </p>
                     </div>
                   </div>
                 </article>
@@ -248,6 +246,12 @@ function CommunityPage() {
             );
           })}
         </ul>
+
+        {visibleMembers.length === 0 && (
+          <p className="py-10 text-center text-sm text-muted-foreground">
+            No members in this filter yet.
+          </p>
+        )}
       </section>
 
       {/* WHATSAPP CTA */}
@@ -265,6 +269,8 @@ function CommunityPage() {
             </div>
             <a
               href={links.community}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-primary px-6 text-sm font-medium text-primary-foreground transition-[opacity,transform] duration-200 hover:opacity-95 active:scale-[0.98]"
             >
               Join the Community

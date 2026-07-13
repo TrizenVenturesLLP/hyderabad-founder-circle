@@ -19,8 +19,11 @@ function toIcsDate(iso: string, hour: number, minute: number) {
 }
 
 function buildIcs(m: Meetup, url: string) {
-  const start = toIcsDate(m.dateISO, 17, 0);
-  const end = toIcsDate(m.dateISO, 20, 0);
+  const morning = /AM/i.test(m.time);
+  const startHour = /11\s*:\s*00/i.test(m.time) ? 11 : morning ? 10 : 17;
+  const endHour = morning ? 13 : 20;
+  const start = toIcsDate(m.dateISO, startHour, 0);
+  const end = toIcsDate(m.dateISO, endHour, 0);
   const now = new Date()
     .toISOString()
     .replace(/[-:]/g, "")
@@ -36,7 +39,7 @@ function buildIcs(m: Meetup, url: string) {
     `DTEND:${end}`,
     `SUMMARY:${m.title}`,
     `DESCRIPTION:${m.blurb}`,
-    `LOCATION:${m.venue}, ${m.city}`,
+    `LOCATION:${m.address ?? `${m.venue}, ${m.city}`}`,
     `URL:${url}`,
     "END:VEVENT",
     "END:VCALENDAR",
@@ -89,10 +92,11 @@ export function EventShareBar({ meetup }: { meetup: Meetup }) {
   };
 
   return (
-    <div className="mt-6 flex flex-wrap items-center gap-2">
+    <div className="mt-5 flex flex-wrap items-center gap-2">
       <button
+        type="button"
         onClick={downloadIcs}
-        className="rounded-full border border-border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-muted"
+        className="rounded-full border border-border/80 bg-transparent px-3.5 py-2 text-xs font-medium text-foreground transition-colors duration-200 hover:border-foreground/25 hover:bg-muted"
       >
         Add to calendar
       </button>
@@ -103,14 +107,15 @@ export function EventShareBar({ meetup }: { meetup: Meetup }) {
           target="_blank"
           rel="noreferrer"
           aria-label={`Share on ${s.label}`}
-          className="rounded-full border border-border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-muted"
+          className="rounded-full border border-border/80 bg-transparent px-3.5 py-2 text-xs font-medium text-foreground transition-colors duration-200 hover:border-foreground/25 hover:bg-muted"
         >
           {s.label}
         </a>
       ))}
       <button
+        type="button"
         onClick={copy}
-        className="rounded-full border border-border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-muted"
+        className="rounded-full border border-border/80 bg-transparent px-3.5 py-2 text-xs font-medium text-foreground transition-colors duration-200 hover:border-foreground/25 hover:bg-muted"
       >
         {copied ? "Link copied" : "Copy link"}
       </button>

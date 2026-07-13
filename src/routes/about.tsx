@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowUpRight } from "lucide-react";
 import { links } from "@/lib/links";
 
 export const Route = createFileRoute("/about")({
@@ -19,74 +20,123 @@ export const Route = createFileRoute("/about")({
 });
 
 const partners = [
-  "T-Hub",
-  "WE Hub",
-  "eChai",
-  "91springboard",
-  "AIC at IIIT-H",
-  "iTIC",
+  {
+    name: "T-Hub",
+    desc: "India's largest incubator, Madhapur.",
+    mapsUrl:
+      "https://www.google.com/maps/search/?api=1&query=T-Hub+Madhapur+Hyderabad",
+  },
+  {
+    name: "WE Hub",
+    desc: "State-led incubator for women founders.",
+    mapsUrl:
+      "https://www.google.com/maps/search/?api=1&query=WE+Hub+Hyderabad",
+  },
+  {
+    name: "eChai",
+    desc: "Pan-India founder community with strong Hyderabad chapter.",
+    mapsUrl:
+      "https://www.google.com/maps/search/?api=1&query=eChai+Hyderabad",
+  },
+  {
+    name: "91springboard",
+    desc: "Coworking spaces across the city.",
+    mapsUrl:
+      "https://www.google.com/maps/search/?api=1&query=91springboard+Hyderabad",
+  },
+  {
+    name: "AIC at IIIT-H",
+    desc: "Deep-tech incubator.",
+    mapsUrl:
+      "https://www.google.com/maps/search/?api=1&query=AIC+IIIT+Hyderabad",
+  },
+  {
+    name: "iTIC",
+    desc: "IIT-H's incubator for tech startups.",
+    mapsUrl:
+      "https://www.google.com/maps/search/?api=1&query=iTIC+IIT+Hyderabad",
+  },
 ];
 
 const howItWorks = [
-  "Community-led: members host, members shape the agenda.",
-  <>
-    Company-supported:{" "}
-    <strong className="font-semibold text-foreground">{links.sponsor.name}</strong>{" "}
-    provides venue and resources as a sponsor — not as the host.
-  </>,
-  "No pitching, no selling to the room, no gatekeepers.",
-  "Free to attend. Open to anyone serious about building.",
+  {
+    title: "Community-led",
+    body: "Members host, members shape the agenda.",
+  },
+  {
+    title: "Company-supported",
+    body: (
+      <>
+        <strong className="font-semibold text-foreground">{links.sponsor.name}</strong>{" "}
+        provides venue and resources as a sponsor — not as the host.
+      </>
+    ),
+  },
+  {
+    title: "No selling",
+    body: "No pitching, no selling to the room, no gatekeepers.",
+  },
+  {
+    title: "Open room",
+    body: "Free to attend. Open to anyone serious about building.",
+  },
 ];
 
 function AboutPage() {
   return (
     <div>
-      <header className="mx-auto max-w-[1160px] px-4 pt-12 pb-10 sm:px-6 md:px-8 md:pt-14 md:pb-12">
-        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-primary">
-          About
-        </p>
-        <h1 className="mt-3 font-display text-[2.5rem] leading-[1.08] tracking-tight text-foreground sm:text-[3rem] md:text-[3.4rem]">
-          We started this because Hyderabad deserves its own founder room.
-        </h1>
-        <div className="mt-6 space-y-5 text-[1.0625rem] leading-[1.65] text-muted-foreground md:text-[1.125rem]">
-          <p>
-            The Hyderabad Founders Network exists for one simple reason: trust and
-            long-term relationships only show up when the same people meet, on
-            purpose, again and again.
+      {/* HERO */}
+      <header className="relative overflow-hidden">
+        <div
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_12%_0%,color-mix(in_oklab,var(--saffron)_12%,transparent),transparent_50%),radial-gradient(ellipse_at_100%_10%,color-mix(in_oklab,var(--terracotta)_7%,transparent),transparent_45%)]"
+          aria-hidden
+        />
+        <div className="relative mx-auto max-w-[1160px] px-5 pt-12 pb-10 sm:px-6 md:px-8 md:pt-14 md:pb-12">
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-primary">
+            About
           </p>
-          <p>
-            We're not an accelerator. We're not a paid programme. We're a peer
-            community — founders, operators and aspiring entrepreneurs — who decided
-            to meet on the 3rd Saturday of every month and keep showing up.
-          </p>
+          <h1 className="mt-3 max-w-[34ch] font-display text-[2.35rem] leading-[1.08] tracking-tight text-foreground sm:text-[2.85rem] md:mt-4 md:text-[3.15rem]">
+            We started this because Hyderabad deserves its own founder room.
+          </h1>
+          <div className="mt-5 max-w-[38rem] space-y-3.5 text-[1.0625rem] leading-[1.65] text-muted-foreground md:mt-6 md:text-[1.125rem]">
+            <p>
+              The Hyderabad Founders Network exists for one simple reason: trust
+              and long-term relationships only show up when the same people meet,
+              on purpose, again and again.
+            </p>
+            <p>
+              We're not an accelerator. We're not a paid programme. We're a peer
+              community — founders, operators and aspiring entrepreneurs — who
+              decided to meet on the 3rd Saturday of every month and keep showing
+              up.
+            </p>
+          </div>
         </div>
       </header>
 
-      <div
-        className="mx-auto max-w-[1160px] border-b border-border/70 px-4 sm:px-6 md:px-8"
-        aria-hidden
-      />
-
-      <section className="border-b border-border/60 bg-[color-mix(in_oklab,var(--secondary)_35%,var(--paper))]">
-        <div className="mx-auto max-w-[1160px] px-4 py-12 sm:px-6 md:px-8 md:py-14">
-          <div className="flex items-end gap-4">
-            <h2 className="shrink-0 font-display text-[1.55rem] tracking-tight text-foreground md:text-[1.85rem]">
-              How it works
-            </h2>
-            <span className="mb-2 hidden h-px flex-1 bg-border/80 sm:block" aria-hidden />
-          </div>
-          <ul className="mt-7 grid gap-3 sm:grid-cols-2 sm:gap-4">
+      {/* HOW IT WORKS */}
+      <section className="border-y border-border/60 bg-[color-mix(in_oklab,var(--secondary)_28%,var(--paper))]">
+        <div className="mx-auto max-w-[1160px] px-5 py-12 sm:px-6 md:px-8 md:py-14">
+          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
+            How it works
+          </p>
+          <ul className="mt-8 divide-y divide-border/70">
             {howItWorks.map((item, i) => (
               <li
-                key={i}
-                className="flex gap-3.5 rounded-[16px] border border-border/70 bg-card px-5 py-5"
+                key={item.title}
+                className="grid gap-2 py-6 sm:grid-cols-[4.5rem_minmax(0,12rem)_minmax(0,1fr)] sm:items-baseline sm:gap-8 sm:py-7"
               >
                 <span
-                  className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
+                  className="font-display text-[1.25rem] tabular-nums tracking-tight text-primary/55 md:text-[1.35rem]"
                   aria-hidden
-                />
-                <p className="text-[0.975rem] leading-[1.6] text-muted-foreground">
-                  {item}
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <h2 className="font-display text-[1.2rem] tracking-tight text-foreground md:text-[1.3rem]">
+                  {item.title}
+                </h2>
+                <p className="text-[0.975rem] leading-[1.65] text-muted-foreground">
+                  {item.body}
                 </p>
               </li>
             ))}
@@ -94,59 +144,154 @@ function AboutPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1160px] px-4 py-12 sm:px-6 md:px-8 md:py-14">
-        <div className="flex items-end gap-4">
-          <h2 className="shrink-0 font-display text-[1.55rem] tracking-tight text-foreground md:text-[1.85rem]">
-            Ecosystem partners
-          </h2>
-          <span className="mb-2 hidden h-px flex-1 bg-border/80 sm:block" aria-hidden />
-        </div>
-        <p className="mt-3 max-w-xl text-[0.975rem] text-muted-foreground">
+      {/* PARTNERS */}
+      <section className="mx-auto max-w-[1160px] px-5 py-12 sm:px-6 md:px-8 md:py-14">
+        <h2 className="font-display text-[1.55rem] tracking-tight text-foreground md:text-[1.75rem]">
+          Ecosystem partners
+        </h2>
+        <p className="mt-2 max-w-xl text-[0.975rem] leading-relaxed text-muted-foreground">
           Communities and spaces we collaborate with across Hyderabad.
         </p>
-        <ul className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+
+        <ul className="mt-8 grid gap-x-8 sm:grid-cols-2 sm:gap-x-10">
           {partners.map((p) => (
-            <li
-              key={p}
-              className="flex min-h-[4.5rem] items-center justify-center rounded-[14px] border border-border/70 bg-[color-mix(in_oklab,white_55%,var(--paper))] px-3 py-4 text-center transition-colors duration-200 hover:border-primary/30"
-            >
-              <span className="font-display text-[1.05rem] tracking-tight text-foreground sm:text-[1.15rem]">
-                {p}
-              </span>
+            <li key={p.name} className="border-b border-border/65">
+              <a
+                href={p.mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group -mx-3 flex items-start justify-between gap-4 px-3 py-4 transition-[background-color,color] duration-200 hover:bg-primary hover:text-primary-foreground sm:-mx-4 sm:px-4 sm:py-5"
+              >
+                <div className="min-w-0">
+                  <p className="text-[1rem] font-semibold tracking-tight text-foreground transition-colors duration-200 group-hover:text-primary-foreground">
+                    {p.name}
+                  </p>
+                  <p className="mt-1 text-sm leading-snug text-muted-foreground transition-colors duration-200 group-hover:text-primary-foreground/85">
+                    {p.desc}
+                  </p>
+                </div>
+                <ArrowUpRight
+                  className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/45 transition-[color,transform] duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary-foreground"
+                  strokeWidth={1.75}
+                  aria-hidden
+                />
+                <span className="sr-only">Open {p.name} location in Google Maps</span>
+              </a>
             </li>
           ))}
         </ul>
       </section>
 
-      <section className="mx-auto max-w-[1160px] px-4 pb-6 sm:px-6 md:px-8">
-        <div className="rounded-[20px] border border-[color-mix(in_oklab,var(--terracotta)_20%,var(--border))] bg-[color-mix(in_oklab,var(--terracotta)_7%,var(--paper))] px-6 py-8 md:px-10 md:py-10">
-          <h2 className="font-display text-[1.55rem] tracking-tight text-foreground md:text-[1.75rem]">
-            Sponsor
-          </h2>
-          <p className="mt-3 max-w-2xl text-[0.975rem] leading-[1.65] text-muted-foreground md:text-[1.05rem]">
-            Venue, chai and operations are supported by{" "}
-            <a
-              href={links.sponsor.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
-            >
-              {links.sponsor.name}
-            </a>
-            . They don't get a sales slot. They don't get the floor. They believe
-            Hyderabad's founder ecosystem grows faster when founders meet each other
-            freely.
-          </p>
+      {/* SPONSOR */}
+      <section className="border-t border-border/60 bg-[color-mix(in_oklab,var(--terracotta)_6%,var(--paper))]">
+        <div className="mx-auto grid max-w-[1160px] gap-10 px-5 py-12 sm:px-6 md:grid-cols-12 md:gap-12 md:px-8 md:py-14 lg:gap-16">
+          <div className="md:col-span-6 lg:col-span-7">
+            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
+              Sponsor
+            </p>
+            <h2 className="mt-3 font-display text-[1.55rem] tracking-tight text-foreground md:text-[1.75rem]">
+              <a
+                href={links.sponsor.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors duration-200 hover:text-primary"
+              >
+                {links.sponsor.name}
+              </a>
+            </h2>
+            <p className="mt-3 max-w-xl text-[0.975rem] leading-[1.65] text-muted-foreground md:text-[1.05rem]">
+              Venue, chai and operations are supported by{" "}
+              <a
+                href={links.sponsor.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-foreground underline-offset-4 transition-colors duration-200 hover:text-primary hover:underline"
+              >
+                {links.sponsor.name}
+              </a>
+              . They don't get a sales slot. They don't get the floor. They
+              believe Hyderabad's founder ecosystem grows faster when founders
+              meet each other freely.
+            </p>
+          </div>
+
+          <div className="md:col-span-6 lg:col-span-5">
+            <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-primary">
+              Sponsor contact
+            </p>
+            <dl className="mt-4 divide-y divide-border/65 border-t border-border/65">
+              <div className="py-3.5">
+                <dt className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                  Operational address
+                </dt>
+                <dd className="mt-1.5 text-sm leading-relaxed text-foreground">
+                  <a
+                    href={links.address.mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="transition-colors duration-200 hover:text-primary"
+                  >
+                    {links.address.line}
+                  </a>
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-4 py-3.5">
+                <dt className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                  Phone
+                </dt>
+                <dd className="text-sm font-medium text-foreground">
+                  <a
+                    href={links.phoneHref}
+                    className="transition-colors duration-200 hover:text-primary"
+                  >
+                    {links.phone}
+                  </a>
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-4 py-3.5">
+                <dt className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                  Email
+                </dt>
+                <dd className="min-w-0 text-right text-sm font-medium text-foreground">
+                  <a
+                    href={`mailto:${links.email}`}
+                    className="break-all transition-colors duration-200 hover:text-primary"
+                  >
+                    {links.email}
+                  </a>
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-4 py-3.5">
+                <dt className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                  Website
+                </dt>
+                <dd className="text-sm font-medium text-foreground">
+                  <a
+                    href={links.sponsor.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 transition-colors duration-200 hover:text-primary"
+                  >
+                    trizenventures.com
+                    <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
+                  </a>
+                </dd>
+              </div>
+            </dl>
+          </div>
         </div>
       </section>
 
-      <div className="mx-auto flex max-w-[1160px] flex-wrap gap-3 px-4 pb-16 pt-8 sm:px-6 md:px-8 md:pb-20">
-        <Link
-          to="/community"
+      {/* CTAs */}
+      <div className="mx-auto flex max-w-[1160px] flex-wrap gap-3 px-5 py-10 sm:px-6 md:px-8 md:py-12">
+        <a
+          href={links.community}
+          target="_blank"
+          rel="noopener noreferrer"
           className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-sm font-medium text-primary-foreground transition-[opacity,transform] duration-200 hover:opacity-95 active:scale-[0.98]"
         >
           Join the Community
-        </Link>
+        </a>
         <Link
           to="/contact"
           className="inline-flex h-11 items-center justify-center rounded-full border border-border bg-transparent px-6 text-sm font-medium text-foreground transition-colors duration-200 hover:bg-muted"

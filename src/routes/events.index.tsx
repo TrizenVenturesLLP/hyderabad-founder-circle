@@ -2,13 +2,11 @@ import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowRight,
-  CalendarDays,
   Clock,
   MapPin,
-  Users,
 } from "lucide-react";
 import eventImg from "@/assets/event-room.jpg";
-import { meetups, type Meetup } from "@/lib/events";
+import { meetups, type Meetup, meetupLocationLabel } from "@/lib/events";
 import { RsvpButton } from "@/components/rsvp/RsvpButton";
 import { cn } from "@/lib/utils";
 
@@ -58,51 +56,53 @@ function EventsIndex() {
   return (
     <div className="pb-16 md:pb-20">
       {/* Hero */}
-      <section className="border-b border-border/70">
-        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 md:grid-cols-12 md:items-center md:gap-12 md:py-20">
-          <div className="md:col-span-6 lg:col-span-6">
-            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
+      <section className="relative isolate min-h-[min(68dvh,560px)] overflow-hidden md:min-h-[min(62dvh,600px)]">
+        <img
+          src={eventImg}
+          alt=""
+          width={1400}
+          height={900}
+          fetchPriority="high"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover object-center"
+          aria-hidden
+        />
+        <div
+          className="absolute inset-0 bg-[linear-gradient(105deg,oklch(0.15_0.02_55_/_0.88)_0%,oklch(0.17_0.025_50_/_0.72)_48%,oklch(0.2_0.03_45_/_0.32)_75%,oklch(0.22_0.03_40_/_0.14)_100%),linear-gradient(to_top,oklch(0.12_0.02_55_/_0.45)_0%,transparent_40%)]"
+          aria-hidden
+        />
+
+        <div className="relative mx-auto flex min-h-[min(68dvh,560px)] max-w-6xl items-end px-5 pb-10 pt-16 md:min-h-[min(62dvh,600px)] md:pb-14 md:pt-20">
+          <div className="w-full max-w-2xl">
+            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[color-mix(in_oklab,var(--saffron)_88%,white)]">
               Events
             </p>
-            <h1 className="mt-3 font-display text-4xl leading-[1.08] tracking-tight text-foreground md:text-5xl">
+            <h1 className="mt-3 font-display text-[2.35rem] leading-[1.08] tracking-tight text-white md:mt-4 md:text-[3.25rem]">
               The 3rd Saturday, every month.
             </h1>
-            <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              Our flagship is the <em className="text-foreground">Founders Open House</em> — a
-              roundtable for founders and operators in Hyderabad. Same room, same energy, new
-              conversations. Occasionally we host demo days and themed sessions.
+            <p className="mt-4 max-w-xl text-base leading-relaxed text-white/75 md:mt-5 md:text-lg">
+              Our flagship is the{" "}
+              <em className="not-italic font-medium text-white">Founders Open House</em>{" "}
+              — a roundtable for founders and operators in Hyderabad. Same room,
+              same energy, new conversations. Occasionally we host demo days and
+              themed sessions.
             </p>
 
-            <dl className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-5">
+            <dl className="mt-7 flex flex-wrap gap-x-6 gap-y-3 border-t border-white/20 pt-6 sm:gap-x-8">
               {[
-                { label: "Rhythm", value: "3rd Saturday", Icon: CalendarDays },
-                { label: "Time", value: "5–8 PM", Icon: Clock },
-                { label: "Venue", value: "T-Hub, Hyderabad", Icon: MapPin },
-                { label: "Room", value: "~80 founders", Icon: Users },
+                { label: "Rhythm", value: "3rd Saturday" },
+                { label: "Time", value: "11 AM – 1 PM" },
+                { label: "Venue", value: "DraperU India" },
+                { label: "Seats", value: "46" },
               ].map((item) => (
-                <div key={item.label} className="space-y-1.5">
-                  <dt className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
-                    <item.Icon className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
+                <div key={item.label} className="min-w-0">
+                  <dt className="text-[10px] font-medium uppercase tracking-[0.14em] text-white/50">
                     {item.label}
                   </dt>
-                  <dd className="text-sm font-medium text-foreground">{item.value}</dd>
+                  <dd className="mt-1 text-sm font-medium text-white">{item.value}</dd>
                 </div>
               ))}
             </dl>
-          </div>
-
-          <div className="relative md:col-span-6">
-            <div
-              className="absolute -inset-3 -z-10 rounded-[1.75rem] bg-gradient-to-br from-primary/15 via-transparent to-accent/20 blur-2xl"
-              aria-hidden
-            />
-            <img
-              src={eventImg}
-              alt="Founders gathered in a Hyderabad meetup room"
-              width={1400}
-              height={900}
-              className="aspect-[5/4] w-full rounded-2xl object-cover shadow-[0_28px_56px_-32px_rgba(0,0,0,0.4)] ring-1 ring-black/5"
-            />
           </div>
         </div>
       </section>
@@ -219,7 +219,7 @@ function FeaturedEventCard({ meetup }: { meetup: Meetup }) {
             </span>
             <span className="inline-flex items-center gap-1.5">
               <MapPin className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
-              {meetup.venue}, {meetup.city}
+              {meetupLocationLabel(meetup)}, {meetup.city}
             </span>
           </div>
           <p className="mt-4 max-w-2xl leading-relaxed text-muted-foreground">{meetup.blurb}</p>
@@ -269,7 +269,7 @@ function EventCard({ meetup }: { meetup: Meetup }) {
             </span>
             <span className="inline-flex items-center gap-1.5">
               <MapPin className="h-3.5 w-3.5 text-primary/80" strokeWidth={1.75} />
-              {meetup.venue}, {meetup.city}
+              {meetupLocationLabel(meetup)}, {meetup.city}
             </span>
           </div>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{meetup.blurb}</p>

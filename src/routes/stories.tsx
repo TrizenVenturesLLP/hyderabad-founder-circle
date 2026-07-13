@@ -43,135 +43,184 @@ const stories = [
 ];
 
 const resources = [
-  { name: "T-Hub", desc: "India's largest incubator, Madhapur." },
-  { name: "WE Hub", desc: "State-led incubator for women founders." },
-  { name: "eChai", desc: "Pan-India founder community with strong Hyderabad chapter." },
-  { name: "91springboard", desc: "Coworking spaces across the city." },
-  { name: "AIC at IIIT-H", desc: "Deep-tech incubator." },
-  { name: "iTIC", desc: "IIT-H's incubator for tech startups." },
+  {
+    name: "T-Hub",
+    desc: "India's largest incubator, Madhapur.",
+    mapsUrl:
+      "https://www.google.com/maps/search/?api=1&query=T-Hub+Madhapur+Hyderabad",
+  },
+  {
+    name: "WE Hub",
+    desc: "State-led incubator for women founders.",
+    mapsUrl:
+      "https://www.google.com/maps/search/?api=1&query=WE+Hub+Hyderabad",
+  },
+  {
+    name: "eChai",
+    desc: "Pan-India founder community with strong Hyderabad chapter.",
+    mapsUrl:
+      "https://www.google.com/maps/search/?api=1&query=eChai+Hyderabad",
+  },
+  {
+    name: "91springboard",
+    desc: "Coworking spaces across the city.",
+    mapsUrl:
+      "https://www.google.com/maps/search/?api=1&query=91springboard+Hyderabad",
+  },
+  {
+    name: "AIC at IIIT-H",
+    desc: "Deep-tech incubator.",
+    mapsUrl:
+      "https://www.google.com/maps/search/?api=1&query=AIC+IIIT+Hyderabad",
+  },
+  {
+    name: "iTIC",
+    desc: "IIT-H's incubator for tech startups.",
+    mapsUrl:
+      "https://www.google.com/maps/search/?api=1&query=iTIC+IIT+Hyderabad",
+  },
 ];
 
-const gallery = [heroImg, eventImg, tableImg] as const;
+const gallery = [
+  { src: heroImg, alt: "Founders gathered on a Hyderabad rooftop at golden hour" },
+  { src: eventImg, alt: "Founders in conversation during an Open House session" },
+  { src: tableImg, alt: "Notes, laptops and chai on a meetup table" },
+] as const;
 
 function StoriesPage() {
   return (
     <div>
       {/* HERO */}
-      <header className="mx-auto max-w-[1160px] px-4 pt-12 pb-10 sm:px-6 md:px-8 md:pt-14 md:pb-12">
+      <header className="mx-auto max-w-[1160px] px-5 pt-12 pb-10 sm:px-6 md:px-8 md:pt-14 md:pb-12">
         <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-primary">
           Stories & resources
         </p>
         <h1 className="mt-3 max-w-[760px] font-display text-[2.5rem] leading-[1.08] tracking-tight text-foreground sm:text-[3rem] md:text-[3.4rem]">
           What actually happens in the room.
         </h1>
-        <p className="mt-4 max-w-[760px] text-[1.0625rem] leading-[1.65] text-muted-foreground md:text-[1.125rem]">
+        <p className="mt-4 max-w-[640px] text-[1.0625rem] leading-[1.65] text-muted-foreground md:text-[1.125rem]">
           Short takeaways from members, photos from past meetups, and a small list
           of Hyderabad resources we keep recommending.
         </p>
       </header>
 
-      <div
-        className="mx-auto max-w-[1160px] border-b border-border/70 px-4 sm:px-6 md:px-8"
-        aria-hidden
-      />
-
       {/* STORIES */}
-      <section className="mx-auto max-w-[1160px] px-4 py-12 sm:px-6 md:px-8 md:py-14">
-        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-          {stories.map((s) => (
-            <li key={s.title} className="h-full">
-              <article className="group relative flex h-full flex-col overflow-hidden rounded-[15px] border border-border/80 bg-[color-mix(in_oklab,white_55%,var(--paper))] p-6 transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_16px_36px_-28px_rgba(40,28,18,0.4)] md:p-7">
-                <span
-                  className="pointer-events-none absolute left-5 top-3 select-none font-display text-[3.25rem] leading-none text-primary/15 md:left-6 md:top-4 md:text-[3.5rem]"
-                  aria-hidden
-                >
-                  “
-                </span>
-                <h2 className="relative mt-6 font-display text-[1.25rem] leading-snug tracking-tight text-foreground md:text-[1.35rem]">
-                  {s.title}
-                </h2>
-                <p className="relative mt-3.5 flex-1 text-[0.9375rem] leading-[1.65] text-muted-foreground">
-                  {s.body}
-                </p>
-                <p className="relative mt-6 border-t border-border/60 pt-4 text-[11px] font-medium uppercase tracking-[0.14em] text-primary">
-                  {s.by}
-                </p>
-              </article>
-            </li>
-          ))}
-        </ul>
+      <section className="border-y border-border/60 bg-[color-mix(in_oklab,var(--secondary)_28%,var(--paper))]">
+        <div className="mx-auto max-w-[1160px] px-5 py-12 sm:px-6 md:px-8 md:py-16">
+          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
+            Member takeaways
+          </p>
+          <ul className="mt-8 space-y-0 divide-y divide-border/70 md:mt-10">
+            {stories.map((s, i) => (
+              <li key={s.title}>
+                <article className="grid gap-4 py-8 md:grid-cols-[4.5rem_minmax(0,1fr)_minmax(0,1.15fr)] md:gap-10 md:py-10">
+                  <span
+                    className="font-display text-[1.35rem] tabular-nums tracking-tight text-primary/55 md:pt-1 md:text-[1.5rem]"
+                    aria-hidden
+                  >
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div className="min-w-0">
+                    <h2 className="font-display text-[1.35rem] leading-snug tracking-tight text-foreground md:text-[1.5rem]">
+                      {s.title}
+                    </h2>
+                    <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-primary">
+                      {s.by}
+                    </p>
+                  </div>
+                  <p className="text-[0.975rem] leading-[1.7] text-muted-foreground md:pt-1">
+                    {s.body}
+                  </p>
+                </article>
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
 
       {/* GALLERY */}
-      <section className="border-y border-border/60 bg-[color-mix(in_oklab,var(--secondary)_35%,var(--paper))]">
-        <div className="mx-auto max-w-[1160px] px-4 py-12 sm:px-6 md:px-8 md:py-14">
-          <div className="flex items-end gap-4">
-            <h2 className="shrink-0 font-display text-[1.55rem] tracking-tight text-foreground md:text-[1.85rem]">
-              From past meetups
-            </h2>
-            <span className="mb-2 hidden h-px flex-1 bg-border/80 sm:block" aria-hidden />
-          </div>
+      <section className="mx-auto max-w-[1160px] px-5 py-8 sm:px-6 md:px-8 md:py-10">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <h2 className="font-display text-[1.45rem] tracking-tight text-foreground md:text-[1.6rem]">
+            From past meetups
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Same room. Same energy. New faces each month.
+          </p>
+        </div>
 
-          <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-3 md:gap-5">
-            {gallery.map((src, i) => (
-              <figure
-                key={i}
-                className="group relative overflow-hidden rounded-[16px] ring-1 ring-border/70"
-              >
-                <img
-                  src={src}
-                  alt={`Past meetup photo ${i + 1}`}
-                  loading="lazy"
-                  width={900}
-                  height={560}
-                  className="aspect-[16/10] w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
-                />
-                <div
-                  className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[color-mix(in_oklab,var(--ink)_30%,transparent)] via-transparent to-transparent opacity-45 transition-opacity duration-300 group-hover:opacity-75"
-                  aria-hidden
-                />
-              </figure>
-            ))}
-          </div>
+        <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-12 sm:gap-3">
+          <figure className="group overflow-hidden rounded-xl sm:col-span-7 sm:row-span-2">
+            <img
+              src={gallery[0].src}
+              alt={gallery[0].alt}
+              loading="lazy"
+              width={1600}
+              height={1100}
+              className="aspect-[16/10] h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02] sm:aspect-auto sm:min-h-[14rem] md:min-h-[16rem]"
+            />
+          </figure>
+          <figure className="group overflow-hidden rounded-xl sm:col-span-5">
+            <img
+              src={gallery[1].src}
+              alt={gallery[1].alt}
+              loading="lazy"
+              width={1400}
+              height={900}
+              className="aspect-[16/9] h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
+            />
+          </figure>
+          <figure className="group overflow-hidden rounded-xl sm:col-span-5">
+            <img
+              src={gallery[2].src}
+              alt={gallery[2].alt}
+              loading="lazy"
+              width={1400}
+              height={900}
+              className="aspect-[16/9] h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
+            />
+          </figure>
         </div>
       </section>
 
       {/* RESOURCES */}
-      <section className="mx-auto max-w-[1160px] px-4 py-12 sm:px-6 md:px-8 md:py-16">
-        <div className="flex items-end gap-4">
-          <h2 className="shrink-0 font-display text-[1.55rem] tracking-tight text-foreground md:text-[1.85rem]">
+      <section className="border-t border-border/60 bg-[color-mix(in_oklab,var(--secondary)_22%,var(--paper))]">
+        <div className="mx-auto max-w-[1160px] px-5 py-12 sm:px-6 md:px-8 md:py-16">
+          <h2 className="font-display text-[1.55rem] tracking-tight text-foreground md:text-[1.75rem]">
             Useful Hyderabad resources
           </h2>
-          <span className="mb-2 hidden h-px flex-1 bg-border/80 sm:block" aria-hidden />
-        </div>
+          <p className="mt-2 max-w-xl text-[0.975rem] leading-relaxed text-muted-foreground">
+            Places and communities we keep pointing founders to.
+          </p>
 
-        <ul className="mt-7 grid gap-3 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-3.5">
-          {resources.map((r) => (
-            <li key={r.name}>
-              <div className="group flex h-full min-h-[4.75rem] items-center gap-4 rounded-[16px] border border-border/70 bg-card px-4 py-4 shadow-[0_1px_0_color-mix(in_oklab,var(--ink)_3%,transparent)] transition-[transform,border-color,box-shadow,background-color] duration-200 hover:-translate-y-0.5 hover:border-primary/35 hover:bg-[color-mix(in_oklab,white_70%,var(--paper))] hover:shadow-[0_14px_32px_-24px_rgba(40,28,18,0.35)] md:px-5">
-                <span
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 transition-colors duration-200 group-hover:bg-primary/15"
-                  aria-hidden
+          <ul className="mt-8 grid gap-x-8 sm:grid-cols-2 sm:gap-x-10">
+            {resources.map((r) => (
+              <li key={r.name} className="border-b border-border/65">
+                <a
+                  href={r.mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group -mx-3 flex items-start justify-between gap-4 px-3 py-4 transition-[background-color,color] duration-200 hover:bg-primary hover:text-primary-foreground sm:-mx-4 sm:px-4 sm:py-5"
                 >
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[0.975rem] font-semibold tracking-tight text-foreground">
-                    {r.name}
-                  </p>
-                  <p className="mt-0.5 text-sm leading-snug text-muted-foreground">
-                    {r.desc}
-                  </p>
-                </div>
-                <ArrowUpRight
-                  className="h-4 w-4 shrink-0 text-muted-foreground/40 transition-[color,transform] duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary"
-                  strokeWidth={1.75}
-                  aria-hidden
-                />
-              </div>
-            </li>
-          ))}
-        </ul>
+                  <div className="min-w-0">
+                    <p className="text-[1rem] font-semibold tracking-tight text-foreground transition-colors duration-200 group-hover:text-primary-foreground">
+                      {r.name}
+                    </p>
+                    <p className="mt-1 text-sm leading-snug text-muted-foreground transition-colors duration-200 group-hover:text-primary-foreground/85">
+                      {r.desc}
+                    </p>
+                  </div>
+                  <ArrowUpRight
+                    className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/45 transition-[color,transform] duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary-foreground"
+                    strokeWidth={1.75}
+                    aria-hidden
+                  />
+                  <span className="sr-only">Open {r.name} location in Google Maps</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
     </div>
   );

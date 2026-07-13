@@ -1,11 +1,15 @@
 export type Meetup = {
   slug: string;
   title: string;
-  dateISO: string;       // e.g. 2026-07-18
-  dateLabel: string;     // "Saturday, 18 July 2026"
-  time: string;          // "5:00 – 8:00 PM IST"
+  dateISO: string; // e.g. 2026-07-18
+  dateLabel: string; // "Saturday, 18 July 2026"
+  time: string; // "11:00 AM – 1:00 PM IST"
   venue: string;
+  space?: string;
+  address?: string;
+  mapsUrl?: string;
   city: string;
+  seats?: number;
   format: "Offline" | "Online" | "Hybrid";
   blurb: string;
 };
@@ -17,9 +21,15 @@ export const meetups: Meetup[] = [
     title: "Founders Open House — July",
     dateISO: "2026-07-18",
     dateLabel: "Saturday, 18 July 2026",
-    time: "10:00 AM – 1:00 PM IST",
-    venue: "T-Hub, Phase 2, Madhapur",
+    time: "11:00 AM – 1:00 PM IST",
+    venue: "DraperU India",
+    space: "5th floor event space",
+    address:
+      "DraperU India (Formerly Draper Startup House Hyderabad), Rajiv Gandhi Nagar, Gachibowli, Hyderabad, Telangana 500032",
+    mapsUrl:
+      "https://maps.app.goo.gl/KTRvgep4y9ciSCjSA?g_st=com.microsoft.skype.teams.extshare",
     city: "Hyderabad",
+    seats: 40,
     format: "Offline",
     blurb:
       "The monthly roundtable. Show up, share what you're building, find your people.",
@@ -49,3 +59,20 @@ export const meetups: Meetup[] = [
 ];
 
 export const nextMeetup = meetups[0];
+
+export function meetupLocationLabel(meetup: Meetup) {
+  if (meetup.space) return `${meetup.venue} · ${meetup.space}`;
+  return meetup.venue;
+}
+
+export function meetupMapsUrl(meetup: Meetup) {
+  if (meetup.mapsUrl) return meetup.mapsUrl;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    `${meetup.address ?? meetup.venue} ${meetup.city}`,
+  )}`;
+}
+
+export function meetupSeatsLabel(meetup: Meetup) {
+  if (typeof meetup.seats === "number") return String(meetup.seats);
+  return "Limited";
+}

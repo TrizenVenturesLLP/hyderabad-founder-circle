@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { links } from "@/lib/links";
 
 const nav = [
   { to: "/events", label: "Events" },
@@ -15,8 +16,18 @@ export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    onScroll();
+    let ticking = false;
+    const update = () => {
+      const next = window.scrollY > 8;
+      setScrolled((prev) => (prev === next ? prev : next));
+      ticking = false;
+    };
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    };
+    update();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -66,12 +77,14 @@ export function SiteHeader() {
               {n.label}
             </Link>
           ))}
-          <Link
-            to="/community"
+          <a
+            href={links.community}
+            target="_blank"
+            rel="noopener noreferrer"
             className="ml-3 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-[opacity,transform] duration-200 hover:opacity-95 active:scale-[0.98] lg:ml-4"
           >
             Join the Community
-          </Link>
+          </a>
         </nav>
 
         <button
@@ -126,13 +139,15 @@ export function SiteHeader() {
               {n.label}
             </Link>
           ))}
-          <Link
-            to="/community"
+          <a
+            href={links.community}
+            target="_blank"
+            rel="noopener noreferrer"
             className="mt-2 rounded-full bg-primary px-4 py-3 text-center text-sm font-medium text-primary-foreground transition-opacity duration-200 hover:opacity-90"
             onClick={() => setOpen(false)}
           >
             Join the Community
-          </Link>
+          </a>
         </div>
       </div>
     </header>

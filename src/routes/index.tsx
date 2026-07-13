@@ -11,6 +11,7 @@ import tableImg from "@/assets/table-detail.jpg";
 import { useInView } from "@/hooks/use-in-view";
 import { cn } from "@/lib/utils";
 import { nextMeetup } from "@/lib/events";
+import { links } from "@/lib/links";
 import { RsvpButton } from "@/components/rsvp/RsvpButton";
 
 export const Route = createFileRoute("/")({
@@ -87,7 +88,7 @@ function RhythmStrip() {
           Same time, same room, same energy.
         </p>
         <p className="text-sm leading-relaxed text-muted-foreground md:text-right md:text-[0.9375rem]">
-          3rd Saturday · 5–8 PM · T-Hub, Madhapur · ~80 founders / room
+          18 July · 11 AM – 1 PM · DraperU India, Gachibowli · 46 seats
         </p>
       </div>
     </section>
@@ -106,7 +107,7 @@ function TimelineStep({
   isLast: boolean;
 }) {
   const { ref, inView } = useInView<HTMLLIElement>({
-    once: false,
+    once: true,
     threshold: 0.3,
     rootMargin: "0px 0px -8% 0px",
   });
@@ -163,7 +164,7 @@ function TimelineStep({
 
 function WhoShowsUpSection() {
   const { ref, inView } = useInView<HTMLElement>({
-    once: false,
+    once: true,
     threshold: 0.18,
     rootMargin: "0px 0px -6% 0px",
   });
@@ -255,7 +256,7 @@ function WhoShowsUpSection() {
 
 function NextMeetupSection() {
   const { ref, inView } = useInView<HTMLElement>({
-    once: false,
+    once: true,
     threshold: 0.22,
     rootMargin: "0px 0px -6% 0px",
   });
@@ -318,7 +319,11 @@ function NextMeetupSection() {
                 <dt className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
                   Where
                 </dt>
-                <dd className="mt-2 font-medium text-foreground">{nextMeetup.venue}</dd>
+                <dd className="mt-2 font-medium text-foreground">
+                  {nextMeetup.space
+                    ? `${nextMeetup.venue} · ${nextMeetup.space}`
+                    : nextMeetup.venue}
+                </dd>
                 <dd className="mt-0.5 text-muted-foreground">
                   {nextMeetup.city} · {nextMeetup.format}
                 </dd>
@@ -354,61 +359,76 @@ function NextMeetupSection() {
 function Home() {
   return (
     <div>
-      {/* HERO */}
-      <section className="relative overflow-hidden">
-        <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,color-mix(in_oklab,var(--saffron)_18%,transparent),transparent_55%),radial-gradient(ellipse_at_90%_30%,color-mix(in_oklab,var(--terracotta)_10%,transparent),transparent_50%)]"
+      {/* HERO — full-bleed image background */}
+      <section className="relative isolate min-h-[min(78dvh,640px)] overflow-hidden md:min-h-[min(72dvh,680px)]">
+        <img
+          src={heroImg}
+          alt=""
+          width={1600}
+          height={1100}
+          fetchPriority="high"
+          decoding="async"
+          className="hero-media absolute inset-0 h-full w-full object-cover object-[center_35%]"
           aria-hidden
         />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 pt-16 pb-20 md:grid-cols-12 md:gap-14 md:pt-24 md:pb-28">
-          <div className="home-fade-up md:col-span-7">
-            <p className="inline-flex items-center gap-2.5 rounded-full border border-border/80 bg-card/80 px-3.5 py-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground shadow-[0_1px_0_color-mix(in_oklab,var(--ink)_4%,transparent)] backdrop-blur-sm">
-              <span className="home-pulse h-1.5 w-1.5 rounded-full bg-primary" />
+        <div
+          className="absolute inset-0 bg-[linear-gradient(105deg,oklch(0.15_0.02_55_/_0.86)_0%,oklch(0.17_0.025_50_/_0.68)_45%,oklch(0.2_0.03_45_/_0.28)_72%,oklch(0.22_0.03_40_/_0.12)_100%),linear-gradient(to_top,oklch(0.12_0.02_55_/_0.5)_0%,transparent_42%)]"
+          aria-hidden
+        />
+
+        <div className="relative mx-auto flex min-h-[min(78dvh,640px)] max-w-6xl items-end px-5 pb-10 pt-16 md:min-h-[min(72dvh,680px)] md:pb-14 md:pt-20">
+          <div className="hero-reveal w-full max-w-2xl">
+            <p className="inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-white/80 backdrop-blur-sm">
+              <span className="hero-pulse h-1.5 w-1.5 rounded-full bg-primary" />
               Every 3rd Saturday · Hyderabad
             </p>
-            <h1 className="mt-7 font-display text-[2.65rem] leading-[1.02] tracking-tight text-foreground md:text-[3.75rem] md:leading-[1.02]">
-              A founder community that{" "}
-              <span className="italic text-primary">actually shows up.</span>
+            <h1 className="mt-5 font-display text-[2.35rem] leading-[1.05] tracking-tight text-white md:mt-6 md:text-[3.25rem] md:leading-[1.04]">
+              A founder community{" "}
+              <span className="italic text-[color-mix(in_oklab,var(--saffron)_90%,white)]">
+                that actually shows up.
+              </span>
             </h1>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground md:text-[1.125rem]">
+            <p className="mt-4 max-w-xl text-base leading-relaxed text-white/75 md:mt-5 md:text-lg">
               Monthly, community-led meetups for founders, operators and aspiring
               entrepreneurs in Hyderabad. We create space for real conversations,
               trust and long-term collaboration — beyond the pitch deck.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link
-                to="/community"
-                className="rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow-[0_10px_24px_-12px_color-mix(in_oklab,var(--terracotta)_70%,transparent)] transition-[opacity,transform] duration-200 hover:opacity-90 active:scale-[0.98]"
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <a
+                href={links.community}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow-[0_12px_28px_-10px_oklch(0.45_0.14_38_/_0.65)] transition-[opacity,transform] duration-200 hover:opacity-90 active:scale-[0.98]"
               >
                 Join the Community
-              </Link>
+              </a>
               <Link
                 to="/events"
-                className="rounded-full border border-border bg-card/60 px-6 py-3 text-sm font-medium text-foreground transition-colors duration-200 hover:border-foreground/20 hover:bg-muted"
+                className="rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-medium text-white backdrop-blur-sm transition-[background-color,border-color,transform] duration-200 hover:border-white/40 hover:bg-white/16 active:scale-[0.98]"
               >
                 See next meetup →
               </Link>
             </div>
-            <p className="mt-7 text-xs tracking-wide text-muted-foreground/90">
+            <p className="mt-5 text-xs tracking-wide text-white/65">
               Free to attend. Community-owned. No hard-selling.
             </p>
-          </div>
-          <div className="home-fade-up home-fade-up-delay relative md:col-span-5">
-            <div className="absolute -inset-3 -z-10 rounded-[1.75rem] bg-gradient-to-br from-primary/15 via-transparent to-accent/20 blur-2xl" aria-hidden />
-            <img
-              src={heroImg}
-              alt="Founders around a rooftop table in Hyderabad at golden hour"
-              width={1600}
-              height={1100}
-              className="aspect-[4/5] w-full rounded-2xl object-cover shadow-[0_36px_70px_-28px_rgba(0,0,0,0.38)] ring-1 ring-black/5"
-            />
-            <div className="absolute -bottom-5 -left-4 hidden min-w-[11.5rem] rounded-xl border border-border/80 bg-card/95 px-4 py-3.5 text-sm shadow-[0_12px_28px_-16px_rgba(0,0,0,0.35)] backdrop-blur-md md:block">
-              <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                Next up
-              </p>
-              <p className="mt-1 font-medium text-foreground">{nextMeetup.dateLabel}</p>
-              <p className="text-muted-foreground">{nextMeetup.venue}</p>
-            </div>
+
+            <Link
+              to="/events/$slug"
+              params={{ slug: nextMeetup.slug }}
+              className="hero-reveal hero-reveal-delay-1 group mt-7 flex max-w-md items-baseline gap-x-3 gap-y-1 border-t border-white/20 pt-5 transition-colors duration-200 hover:border-white/35"
+            >
+              <span className="shrink-0 text-[10px] font-medium uppercase tracking-[0.16em] text-white/55">
+                Next meetup
+              </span>
+              <span className="min-w-0 text-sm text-white/90">
+                <span className="font-medium text-white group-hover:text-[color-mix(in_oklab,var(--saffron)_85%,white)]">
+                  {nextMeetup.dateLabel}
+                </span>
+                <span className="text-white/40"> · </span>
+                <span className="text-white/70">{nextMeetup.venue}</span>
+              </span>
+            </Link>
           </div>
         </div>
       </section>
