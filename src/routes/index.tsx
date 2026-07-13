@@ -140,7 +140,7 @@ function TimelineStep({
     <li
       ref={ref}
       className={cn(
-        "timeline-step relative grid grid-cols-[auto_1fr] items-start gap-x-5 pb-12 md:grid-cols-[1fr_auto_1fr] md:gap-x-10 md:pb-16",
+        "timeline-step relative grid grid-cols-[0.875rem_1fr] items-start gap-x-5 pb-12 md:grid-cols-[1fr_auto_1fr] md:gap-x-10 md:pb-16",
         isLeft ? "from-left" : "from-right",
         inView && "is-visible",
         isLast && "pb-0 md:pb-0",
@@ -446,7 +446,7 @@ function Home() {
 
           <ol className="relative mx-auto mt-14 list-none md:mt-16">
             <span
-              className="absolute top-5 bottom-5 left-5 w-px -translate-x-1/2 bg-primary/30 md:left-1/2"
+              className="absolute top-5 bottom-5 left-[0.4375rem] w-px -translate-x-1/2 bg-primary/30 md:left-1/2"
               aria-hidden
             />
             {outcomes.map((o, i) => (
