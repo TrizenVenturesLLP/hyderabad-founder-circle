@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-router";
 import {
   ArrowUpRight,
   Calendar,
@@ -16,7 +16,7 @@ import eventImg from "@/assets/event-room.jpg";
 import tableImg from "@/assets/table-detail.jpg";
 import heroImg from "@/assets/hero-rooftop.jpg";
 import {
-  meetups,
+  findMeetupBySlug,
   isRsvpOpen,
   meetupMapsEmbedUrl,
   meetupMapsUrl,
@@ -30,11 +30,17 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/events/$slug")({
   loader: ({ params }) => {
-    const m = meetups.find((x) => x.slug === params.slug);
+    const m = findMeetupBySlug(params.slug);
     if (!m) throw notFound();
+    if (params.slug !== m.slug) {
+      throw redirect({
+        to: "/events/$slug",
+        params: { slug: m.slug },
+      });
+    }
     return { meetup: m };
   },
-  head: ({ params, loaderData }) => {
+  head: ({ loaderData }) => {
     const m = loaderData?.meetup;
     const title = m
       ? `${m.title} — Hyderabad Founders Network`
@@ -42,6 +48,7 @@ export const Route = createFileRoute("/events/$slug")({
     const desc = m
       ? `${m.dateLabel} · ${m.time} · ${meetupVenueLine(m)}. Community-led monthly meetup.`
       : "Community-led meetup in Hyderabad.";
+    const path = m ? `/events/${m.slug}` : "/events";
     return {
       meta: [
         { title },
@@ -49,9 +56,9 @@ export const Route = createFileRoute("/events/$slug")({
         { property: "og:title", content: title },
         { property: "og:description", content: desc },
         { property: "og:type", content: "event" },
-        { property: "og:url", content: `/events/${params.slug}` },
+        { property: "og:url", content: path },
       ],
-      links: [{ rel: "canonical", href: `/events/${params.slug}` }],
+      links: [{ rel: "canonical", href: path }],
       scripts: m
         ? [
             {

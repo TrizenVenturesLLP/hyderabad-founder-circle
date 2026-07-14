@@ -52,7 +52,7 @@ const venueDefaults = {
 // The recurring "3rd Saturday" rhythm. Easy to edit each month.
 export const meetups: Meetup[] = [
   {
-    slug: "founders-open-house",
+    slug: "hyderabad-founders-network-july",
     title: "Hyderabad Founders Network – July",
     dateISO: "2026-07-18",
     dateLabel: "Saturday, 18 July 2026",
@@ -62,7 +62,7 @@ export const meetups: Meetup[] = [
       "The monthly roundtable. Show up, share what you're building, find your people.",
   },
   {
-    slug: "founders-open-house-aug",
+    slug: "hyderabad-founders-network-august",
     title: "Hyderabad Founders Network – August Community Meetup",
     dateISO: "2026-08-18",
     dateLabel: "Saturday, 18 August 2026",
@@ -72,7 +72,7 @@ export const meetups: Meetup[] = [
       "Connect with founders, builders, startup operators, mentors and aspiring entrepreneurs for meaningful conversations and long-term relationships.",
   },
   {
-    slug: "founders-open-house-sep",
+    slug: "hyderabad-founders-network-september",
     title: "Hyderabad Founders Network – September Community Meetup",
     dateISO: "2026-09-19",
     dateLabel: "Saturday, 19 September 2026",
@@ -81,6 +81,18 @@ export const meetups: Meetup[] = [
     blurb: "Themed session: going from first 10 to first 100 customers.",
   },
 ];
+
+/** Old URLs → current slug (bookmark/link compatibility). */
+const meetupSlugAliases: Record<string, string> = {
+  "founders-open-house": "hyderabad-founders-network-july",
+  "founders-open-house-aug": "hyderabad-founders-network-august",
+  "founders-open-house-sep": "hyderabad-founders-network-september",
+};
+
+export function findMeetupBySlug(slug: string) {
+  const canonical = meetupSlugAliases[slug] ?? slug;
+  return meetups.find((m) => m.slug === canonical) ?? null;
+}
 
 export const nextMeetup = meetups[0];
 

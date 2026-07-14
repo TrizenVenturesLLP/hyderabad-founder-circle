@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CalendarPlus, Check, Link2, Linkedin } from "lucide-react";
 import type { Meetup } from "@/lib/events";
+import { links } from "@/lib/links";
 import { cn } from "@/lib/utils";
 
 function toIcsDate(iso: string, hour: number, minute: number) {
@@ -91,22 +92,21 @@ export function EventShareBar({
     typeof window !== "undefined"
       ? window.location.href
       : `https://hyderabad-founder-circle.lovable.app/events/${meetup.slug}`;
-  const text = `${meetup.title} — ${meetup.dateLabel}`;
 
   const share = [
     {
       label: "WhatsApp",
-      href: `https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`,
+      href: links.community,
       Icon: WhatsAppIcon,
     },
     {
       label: "LinkedIn",
-      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+      href: links.linkedin,
       Icon: Linkedin,
     },
     {
       label: "X",
-      href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
+      href: links.twitter,
       Icon: XIcon,
     },
   ];
@@ -160,7 +160,7 @@ export function EventShareBar({
           href={href}
           target="_blank"
           rel="noreferrer"
-          aria-label={`Share on ${label}`}
+          aria-label={label}
           title={label}
           className={iconBtnClass}
         >

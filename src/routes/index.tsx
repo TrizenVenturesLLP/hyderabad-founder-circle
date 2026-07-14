@@ -20,6 +20,8 @@ import eventImg from "@/assets/event-room.jpg";
 import tableImg from "@/assets/table-detail.jpg";
 import whyNetworkImg from "@/assets/why-network.jpg";
 import heroCityscape from "@/assets/hero-cityscape.png";
+import bestverseLogo from "@/assets/logo-Bestverse.jpeg";
+import draperLogo from "@/assets/draper_logo.svg";
 import { useInView } from "@/hooks/use-in-view";
 import { cn } from "@/lib/utils";
 import { meetupVenueLine, nextMeetup } from "@/lib/events";
@@ -130,14 +132,15 @@ const storyTeasers = [
   "How collaboration led to a new partnership",
 ];
 
-const partners = [
-  { name: "DraperU", href: "https://www.draperuniversity.com/" },
-  { name: "T-Hub", href: "https://t-hub.co/" },
-  { name: "WE Hub", href: "https://wehub.telangana.gov.in/" },
-  { name: "eChai", href: "https://www.echaiventures.com/" },
-  { name: "91springboard", href: "https://www.91springboard.com/" },
-  { name: "AIC", href: "https://aic.iiit.ac.in/" },
-];
+const communityPartner = {
+  name: "DraperU",
+  href: "https://www.draperuniversity.com/",
+};
+
+const marketingPartner = {
+  name: "Bestverse",
+  href: null as string | null,
+};
 
 const faqs = [
   {
@@ -699,39 +702,94 @@ function PartnersSection() {
   return (
     <section
       ref={ref}
-      className="border-b border-[var(--color-border)] py-12 md:py-14"
+      className="border-b border-[var(--color-border)] bg-[var(--color-background-alt)] py-9 md:py-11"
     >
-      <div className="page-container text-center">
-        <div className={cn("reveal-up", inView && "is-visible")}>
-          <SectionLabel>Community partners</SectionLabel>
-          <h2 className="mt-4 font-display text-[clamp(1.5rem,2.5vw,2rem)] tracking-tight text-foreground">
-            Growing Together
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
-            Ecosystem partners, coworking spaces, incubators and volunteers
-            supporting Hyderabad's startup community.
-          </p>
-        </div>
-        <ul className="mt-10 flex list-none flex-wrap items-center justify-center gap-x-10 gap-y-5 md:gap-x-12">
-          {partners.map((p, i) => (
-            <li
-              key={p.name}
-              className={cn("reveal-fade", inView && "is-visible")}
-              style={{
-                transitionDelay: inView ? `${80 + i * 50}ms` : undefined,
-              }}
-            >
+      <div className="page-container">
+        <div
+          className={cn(
+            "reveal-up flex flex-col gap-7 md:flex-row md:items-end md:justify-between md:gap-10",
+            inView && "is-visible",
+          )}
+        >
+          <div className="max-w-md">
+            <SectionLabel>Partners</SectionLabel>
+            <h2 className="mt-3 font-display text-[clamp(1.45rem,2.4vw,1.95rem)] tracking-tight text-foreground">
+              Growing Together
+            </h2>
+            <p className="mt-2.5 text-[13px] leading-relaxed text-[var(--color-text-secondary)] md:text-[14px]">
+              Ecosystem partners, coworking spaces, incubators and volunteers
+              supporting Hyderabad's startup community.
+            </p>
+          </div>
+
+          <div
+            className={cn(
+              "reveal-up grid w-full max-w-lg grid-cols-1 divide-y divide-[var(--color-border)] border border-[var(--color-border)] bg-[var(--color-surface)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 md:w-auto md:min-w-[26rem]",
+              inView && "is-visible",
+            )}
+            style={{ transitionDelay: inView ? "90ms" : undefined }}
+          >
+            <div className="flex flex-col justify-center px-5 py-4 text-left sm:px-6 sm:py-5">
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--brand-accent)]">
+                Community partner
+              </p>
               <a
-                href={p.href}
+                href={communityPartner.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-display text-lg tracking-tight text-foreground/55 transition-colors hover:text-foreground md:text-xl"
+                className="mt-2.5 inline-flex items-center gap-3 transition-opacity hover:opacity-85"
               >
-                {p.name}
+                <img
+                  src={draperLogo}
+                  alt=""
+                  width={192}
+                  height={209}
+                  className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10"
+                />
+                <span className="font-display text-[1.35rem] tracking-tight text-foreground">
+                  {communityPartner.name}
+                </span>
               </a>
-            </li>
-          ))}
-        </ul>
+            </div>
+            <div className="flex flex-col justify-center px-5 py-4 text-left sm:px-6 sm:py-5">
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--brand-accent)]">
+                Marketing partner
+              </p>
+              {marketingPartner.href ? (
+                <a
+                  href={marketingPartner.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2.5 inline-flex items-center gap-3 transition-opacity hover:opacity-85"
+                >
+                  <img
+                    src={bestverseLogo}
+                    alt=""
+                    width={200}
+                    height={200}
+                    className="h-9 w-9 shrink-0 rounded-full object-cover object-center sm:h-10 sm:w-10"
+                  />
+                  <span className="font-display text-[1.35rem] tracking-tight text-foreground">
+                    {marketingPartner.name}
+                  </span>
+                </a>
+              ) : (
+                <div className="mt-2.5 inline-flex items-center gap-3">
+                  <img
+                    src={bestverseLogo}
+                    alt=""
+                    width={200}
+                    height={200}
+                    className="h-9 w-9 shrink-0 rounded-full object-cover object-center sm:h-10 sm:w-10"
+                  />
+                  <span className="font-display text-[1.35rem] tracking-tight text-foreground">
+                    {marketingPartner.name}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
