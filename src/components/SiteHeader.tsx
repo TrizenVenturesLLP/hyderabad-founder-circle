@@ -3,6 +3,7 @@ import { Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { links } from "@/lib/links";
+import { BrandLogo } from "@/components/BrandLogo";
 import {
   Sheet,
   SheetContent,
@@ -43,36 +44,33 @@ export function SiteHeader() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 border-b transition-[background-color,border-color,backdrop-filter] duration-300",
+        "sticky top-0 z-40 border-b transition-[background-color,border-color,box-shadow] duration-300",
         scrolled
-          ? "border-border/70 bg-background/88 backdrop-blur-xl"
-          : "border-border/40 bg-background/72 backdrop-blur-md",
+          ? "border-[var(--color-border)] bg-[var(--color-background)]/95 shadow-[var(--shadow-small)] backdrop-blur-md"
+          : "border-[var(--color-border)] bg-[var(--color-background)]/90 backdrop-blur-sm",
       )}
     >
-      <div className="mx-auto flex h-[68px] max-w-[1200px] items-center justify-between px-4 sm:px-6 md:h-[72px] md:px-8">
+      <div className="page-container flex h-[64px] items-center justify-between md:h-[68px]">
         <Link
           to="/"
           className="group flex items-center gap-2.5"
           onClick={() => setOpen(false)}
         >
-          <span
-            className="inline-block h-2.5 w-2.5 rounded-full bg-primary transition-transform duration-300 group-hover:scale-125"
-            aria-hidden
-          />
-          <span className="max-w-[12rem] truncate font-display text-[17px] tracking-tight text-foreground transition-colors duration-200 group-hover:text-primary sm:max-w-none sm:text-[18px]">
-            Hyderabad Founders Network
+          <BrandLogo className="h-9 w-9 transition-transform duration-200 group-hover:scale-105" />
+          <span className="font-display text-[17px] tracking-tight text-foreground transition-colors duration-200 group-hover:text-[var(--brand-accent)] md:text-[18px]">
+            Trizen Community
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-0.5 md:flex lg:gap-1">
+        <nav className="hidden items-center gap-1 md:flex">
           {nav.map((n) => (
             <Link
               key={n.to}
               to={n.to}
-              className="relative px-3.5 py-2 text-sm text-muted-foreground transition-colors duration-200 after:absolute after:inset-x-3.5 after:bottom-1 after:h-px after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-300 after:ease-out hover:text-foreground hover:after:scale-x-100 lg:px-4"
+              className="rounded-full px-3.5 py-2 text-[14px] font-medium text-[var(--color-text-secondary)] transition-colors duration-200 hover:text-foreground lg:px-4 lg:text-[15px]"
               activeProps={{
                 className:
-                  "relative px-3.5 py-2 text-sm font-medium text-foreground transition-colors duration-200 after:absolute after:inset-x-3.5 after:bottom-1 after:h-px after:origin-left after:scale-x-100 after:bg-primary after:transition-transform after:duration-300 after:ease-out lg:px-4",
+                  "rounded-full px-3.5 py-2 text-[14px] font-semibold text-foreground transition-colors duration-200 lg:px-4 lg:text-[15px]",
               }}
             >
               {n.label}
@@ -82,7 +80,7 @@ export function SiteHeader() {
             href={links.community}
             target="_blank"
             rel="noopener noreferrer"
-            className="ml-3 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-[opacity,transform] duration-200 hover:opacity-95 active:scale-[0.98] lg:ml-4"
+            className="btn-primary ml-3"
           >
             Join the Community
           </a>
@@ -93,7 +91,7 @@ export function SiteHeader() {
           aria-label="Open menu"
           aria-expanded={open}
           aria-controls="mobile-nav"
-          className="relative flex h-11 w-11 items-center justify-center rounded-full transition-colors duration-200 hover:bg-muted md:hidden"
+          className="relative flex h-11 w-11 items-center justify-center rounded-full transition-colors duration-200 hover:bg-[var(--brand-primary-soft)] md:hidden"
           onClick={() => setOpen(true)}
         >
           <Menu className="h-5 w-5 text-foreground" strokeWidth={1.75} />
@@ -104,15 +102,12 @@ export function SiteHeader() {
         <SheetContent
           id="mobile-nav"
           side="right"
-          className="z-[60] inset-0 flex h-dvh w-full max-w-none flex-col gap-0 border-0 bg-background p-0 text-foreground shadow-none sm:max-w-none"
+          className="z-[60] inset-0 flex h-dvh w-full max-w-none flex-col gap-0 border-0 bg-[var(--color-background)] p-0 text-foreground shadow-none sm:max-w-none"
         >
-          <SheetHeader className="flex flex-row items-center gap-2.5 border-b border-border/70 px-6 py-5 pr-14 text-left">
-            <span
-              className="inline-block h-2 w-2 shrink-0 rounded-full bg-primary"
-              aria-hidden
-            />
+          <SheetHeader className="flex flex-row items-center gap-2.5 border-b border-[var(--color-border)] px-6 py-5 pr-14 text-left">
+            <BrandLogo className="h-8 w-8" />
             <SheetTitle className="truncate font-display text-[17px] font-normal tracking-tight text-foreground sm:text-[18px]">
-              Hyderabad Founders Network
+              Trizen Community
             </SheetTitle>
             <SheetDescription className="sr-only">
               Site navigation links
@@ -120,7 +115,7 @@ export function SiteHeader() {
           </SheetHeader>
 
           <nav className="flex flex-1 flex-col justify-center px-6 py-10">
-            <ul className="divide-y divide-border/70 border-y border-border/70">
+            <ul className="divide-y divide-[var(--color-border)] border-y border-[var(--color-border)]">
               {nav.map((n) => (
                 <li key={n.to}>
                   <Link
@@ -134,7 +129,7 @@ export function SiteHeader() {
                   >
                     {n.label}
                     <span
-                      className="text-sm text-muted-foreground/50"
+                      className="text-sm text-[var(--color-text-muted)]"
                       aria-hidden
                     >
                       →
@@ -145,12 +140,12 @@ export function SiteHeader() {
             </ul>
           </nav>
 
-          <div className="border-t border-border/70 px-6 pt-5 pb-[max(1.75rem,env(safe-area-inset-bottom))]">
+          <div className="border-t border-[var(--color-border)] px-6 pt-5 pb-[max(1.75rem,env(safe-area-inset-bottom))]">
             <a
               href={links.community}
               target="_blank"
               rel="noopener noreferrer"
-              className="block rounded-full bg-primary px-5 py-3.5 text-center text-sm font-medium text-primary-foreground transition-opacity duration-200 hover:opacity-90"
+              className="btn-primary w-full"
               onClick={() => setOpen(false)}
             >
               Join the Community

@@ -195,6 +195,13 @@ export function RsvpDialog() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [errors, setErrors] = useState<Partial<Record<FormErrorKey, string>>>({});
   const [submitting, setSubmitting] = useState(false);
+  const formScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = formScrollRef.current;
+    if (!el) return;
+    el.scrollTop = 0;
+  }, [step]);
 
   function resetAll() {
     setStep(1);
@@ -442,7 +449,10 @@ export function RsvpDialog() {
               </header>
 
               <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
-                <div className="scrollbar-none min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-5 pb-6 sm:px-6">
+                <div
+                  ref={formScrollRef}
+                  className="scrollbar-none min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-5 pb-6 sm:px-6"
+                >
                   <MobileEventSummary
                     event={event}
                     monthShort={monthShort}

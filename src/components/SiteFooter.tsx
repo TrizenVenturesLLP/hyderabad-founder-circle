@@ -1,53 +1,44 @@
 import { Link } from "@tanstack/react-router";
 import { links } from "@/lib/links";
+import { BrandLogo } from "@/components/BrandLogo";
 
-const communityLinks = [
-  { to: "/events", label: "Events" },
-  { to: "/community", label: "Members" },
+const navLinks = [
+  { to: "/community", label: "Community Guidelines" },
   { to: "/stories", label: "Stories" },
-] as const;
-
-const moreLinks = [
-  { to: "/about", label: "About & Partners" },
+  { to: "/events", label: "Upcoming Events" },
+  { to: "/about", label: "Partners" },
   { to: "/contact", label: "Contact" },
 ] as const;
 
 const linkClassName =
-  "inline-block text-[13px] text-[oklch(0.88_0.012_80)] transition-[color,transform] duration-200 ease-out hover:translate-x-0.5 hover:text-primary md:text-[14px]";
+  "inline-block whitespace-nowrap text-[14px] text-[var(--color-text-secondary)] transition-colors duration-200 hover:text-[var(--brand-accent)]";
 
 const labelClassName =
-  "text-[10px] font-medium uppercase tracking-[0.14em] text-[oklch(0.68_0.025_55)] md:text-[11px]";
+  "text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--brand-accent)]";
 
 export function SiteFooter() {
   return (
-    <footer className="bg-[oklch(0.19_0.02_55)] text-[oklch(0.93_0.01_80)]">
-      <div className="mx-auto max-w-[1240px] px-5 py-12 sm:px-6 md:px-8 md:py-14">
-        <div className="grid gap-9 sm:grid-cols-2 sm:gap-x-10 sm:gap-y-9 lg:grid-cols-12 lg:gap-x-12 xl:gap-x-14">
-          {/* Brand */}
-          <div className="sm:col-span-2 lg:col-span-5">
-            <Link
-              to="/"
-              className="group inline-flex items-center gap-2"
-            >
-              <span
-                className="mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full bg-primary transition-transform duration-200 group-hover:scale-110"
-                aria-hidden
-              />
-              <span className="font-display text-[18px] font-semibold leading-tight tracking-tight text-[oklch(0.97_0.01_80)] md:text-[20px]">
-                Hyderabad Founders Network
+    <footer className="border-t border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)]">
+      <div className="page-container py-8 md:py-10">
+        <div className="grid gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-12 lg:gap-x-8">
+          <div className="sm:col-span-2 lg:col-span-4">
+            <Link to="/" className="group inline-flex items-center gap-2.5">
+              <BrandLogo className="h-8 w-8 transition-transform duration-200 group-hover:scale-105" />
+              <span className="font-display text-[17px] font-semibold leading-tight tracking-tight text-[var(--color-text-primary)] md:text-[18px]">
+                Trizen Community
               </span>
             </Link>
-            <p className="mt-3 max-w-[36ch] text-[13px] leading-[1.6] text-[oklch(0.74_0.02_70)] md:text-[14px]">
-              A community of founders, operators and aspiring entrepreneurs in
-              Hyderabad. Meeting the 3rd Saturday of every month.
+            <p className="mt-2.5 max-w-[40ch] text-[13px] leading-[1.55] text-[var(--color-text-secondary)]">
+              Hyderabad Founders Network.
+              <br />
+              An initiative of Trizen Ventures.
             </p>
           </div>
 
-          {/* Community */}
-          <div className="lg:col-span-2">
-            <p className={labelClassName}>Community</p>
-            <ul className="mt-4 space-y-2.5 md:mt-5">
-              {communityLinks.map((item) => (
+          <div className="lg:col-span-3">
+            <p className={labelClassName}>Community Links</p>
+            <ul className="mt-3 space-y-2">
+              {navLinks.map((item) => (
                 <li key={item.to}>
                   <Link to={item.to} className={linkClassName}>
                     {item.label}
@@ -57,21 +48,13 @@ export function SiteFooter() {
             </ul>
           </div>
 
-          {/* More */}
-          <div className="lg:col-span-2">
-            <p className={labelClassName}>More</p>
-            <ul className="mt-4 space-y-2.5 md:mt-5">
-              {moreLinks.map((item) => (
-                <li key={item.to}>
-                  <Link to={item.to} className={linkClassName}>
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
+          <div className="min-w-0 lg:col-span-3">
+            <p className={labelClassName}>Email</p>
+            <ul className="mt-3 space-y-2">
               <li>
                 <a
                   href={`mailto:${links.email}`}
-                  className={`${linkClassName} break-all`}
+                  className="inline-block whitespace-nowrap text-[14px] text-[var(--color-text-secondary)] transition-colors duration-200 hover:text-[var(--brand-accent)]"
                 >
                   {links.email}
                 </a>
@@ -79,55 +62,88 @@ export function SiteFooter() {
             </ul>
           </div>
 
-          {/* Supported by */}
-          <div className="sm:col-span-2 lg:col-span-3">
-            <p className={labelClassName}>Supported by</p>
-            <p className="mt-4 max-w-[38ch] text-[13px] leading-[1.6] text-[oklch(0.74_0.02_70)] md:mt-5 md:text-[14px]">
-              Venue & resources supported by{" "}
-              <a
-                href={links.sponsor.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium text-[oklch(0.96_0.01_80)] transition-colors duration-200 hover:text-primary"
-              >
-                {links.sponsor.name}
-              </a>
-              . The community is owned and led by its members.
-            </p>
+          <div className="lg:col-span-2">
+            <p className={labelClassName}>Social Links</p>
+            <ul className="mt-3 space-y-2">
+              <li>
+                <a
+                  href={links.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={linkClassName}
+                >
+                  LinkedIn
+                </a>
+              </li>
+              <li>
+                <a
+                  href={links.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={linkClassName}
+                >
+                  Instagram
+                </a>
+              </li>
+              <li>
+                <a
+                  href={links.twitter}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={linkClassName}
+                >
+                  Twitter
+                </a>
+              </li>
+              <li>
+                <a
+                  href={links.community}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={linkClassName}
+                >
+                  WhatsApp
+                </a>
+              </li>
+            </ul>
           </div>
         </div>
       </div>
 
-      {/* Bottom bar */}
-      <div className="border-t border-[oklch(1_0_0/0.1)]">
-        <div className="mx-auto flex max-w-[1240px] flex-col gap-2.5 px-5 py-4 text-[12px] text-[oklch(0.66_0.02_70)] sm:px-6 md:flex-row md:items-center md:justify-between md:px-8 md:py-5 md:text-[13px]">
-          <p>© {new Date().getFullYear()} Hyderabad Founders Network. Community-owned.</p>
+      <div className="border-t border-white/10 bg-black">
+        <div className="page-container flex flex-col gap-2 py-3.5 text-[13px] text-white/65 md:flex-row md:items-center md:justify-between md:py-4">
+          <p className="text-white/70">
+            © {new Date().getFullYear()} Trizen Community. An initiative of{" "}
+            <a
+              href={links.sponsor.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-white transition-colors duration-200 hover:text-[var(--brand-accent)]"
+            >
+              Trizen Ventures
+            </a>
+            .
+          </p>
           <nav
             aria-label="Legal"
-            className="flex flex-wrap items-center text-[12px] md:text-[13px]"
+            className="flex flex-wrap items-center gap-y-1 text-[13px]"
           >
             <Link
               to="/privacy"
-              className="transition-colors duration-200 hover:text-[oklch(0.93_0.01_80)]"
+              className="transition-colors duration-200 hover:text-white"
             >
               Privacy
             </Link>
-            <span className="whitespace-pre text-[oklch(1_0_0/0.22)]">
-              {" · "}
-            </span>
+            <span className="whitespace-pre text-white/30">{" · "}</span>
             <Link
               to="/terms"
-              className="transition-colors duration-200 hover:text-[oklch(0.93_0.01_80)]"
+              className="transition-colors duration-200 hover:text-white"
             >
               Terms
             </Link>
-            <span className="whitespace-pre text-[oklch(1_0_0/0.22)]">
-              {" · "}
-            </span>
+            <span className="whitespace-pre text-white/30">{" · "}</span>
             <span>Made in Hyderabad</span>
-            <span className="whitespace-pre text-[oklch(1_0_0/0.22)]">
-              {" · "}
-            </span>
+            <span className="whitespace-pre text-white/30">{" · "}</span>
             <span>चाय & code</span>
           </nav>
         </div>

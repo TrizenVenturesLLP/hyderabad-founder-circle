@@ -7,6 +7,9 @@ export const links = {
   phone: "8639648822",
   phoneHref: "tel:+918639648822",
   maps: "https://maps.app.goo.gl/VNf2yVvdqQoBpbJX7",
+  linkedin: "https://www.linkedin.com/company/trizencommunity/",
+  instagram: "https://www.instagram.com/trizencommunity",
+  twitter: "https://x.com/TrizenVenture",
   address: {
     label: "Hyderabad — Operational address",
     line:
