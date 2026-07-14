@@ -17,6 +17,8 @@ export type RsvpPayload = {
   leaveWith: string[];
   industry: string;
   lookingFor: string[];
+  offerCommunity: string[];
+  wantToMeet: string[];
   canHelpWith?: string;
   biggestChallenge?: string;
   joinWhatsapp?: boolean;
@@ -25,7 +27,9 @@ export type RsvpPayload = {
   event: Pick<
     Meetup,
     "slug" | "title" | "dateISO" | "dateLabel" | "time" | "venue" | "city" | "format"
-  >;
+  > & {
+    mapsUrl?: string;
+  };
 };
 
 export async function submitRsvp(payload: RsvpPayload) {

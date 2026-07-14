@@ -9,7 +9,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { Meetup } from "@/lib/events";
+import { meetupMapsUrl, type Meetup } from "@/lib/events";
 import { submitRsvp } from "@/lib/api";
 import { links } from "@/lib/links";
 import { useRsvp } from "@/components/rsvp/rsvp-context";
@@ -37,6 +37,8 @@ type FormState = {
   leaveWith: string[];
   industry: string;
   lookingFor: string[];
+  offerCommunity: string[];
+  wantToMeet: string[];
   canHelpWith: string;
   biggestChallenge: string;
   joinWhatsapp: boolean;
@@ -56,6 +58,8 @@ const emptyForm: FormState = {
   leaveWith: [],
   industry: "",
   lookingFor: [],
+  offerCommunity: [],
+  wantToMeet: [],
   canHelpWith: "",
   biggestChallenge: "",
   joinWhatsapp: false,
@@ -133,6 +137,32 @@ const lookingForOptions = [
   "Learning",
 ] as const;
 
+const offerCommunityOptions = [
+  "Mentorship",
+  "Technical / engineering skills",
+  "AI / ML expertise",
+  "Product / design",
+  "GTM / growth",
+  "Hiring intros",
+  "Investor intros",
+  "Domain expertise",
+  "Feedback / sounding board",
+  "Other",
+] as const;
+
+const wantToMeetOptions = [
+  "Founders",
+  "AI builders",
+  "Investors",
+  "Designers",
+  "Operators / growth",
+  "Potential co-founders",
+  "Engineers",
+  "Product managers",
+  "Mentors",
+  "Other",
+] as const;
+
 /** Max lengths by field type */
 const FIELD_LIMITS = {
   name: 80,
@@ -189,6 +219,32 @@ export function RsvpDialog() {
       };
     });
     setErrors((prev) => ({ ...prev, lookingFor: undefined }));
+  }
+
+  function toggleOfferCommunity(option: string) {
+    setForm((prev) => {
+      const has = prev.offerCommunity.includes(option);
+      return {
+        ...prev,
+        offerCommunity: has
+          ? prev.offerCommunity.filter((x) => x !== option)
+          : [...prev.offerCommunity, option],
+      };
+    });
+    setErrors((prev) => ({ ...prev, offerCommunity: undefined }));
+  }
+
+  function toggleWantToMeet(option: string) {
+    setForm((prev) => {
+      const has = prev.wantToMeet.includes(option);
+      return {
+        ...prev,
+        wantToMeet: has
+          ? prev.wantToMeet.filter((x) => x !== option)
+          : [...prev.wantToMeet, option],
+      };
+    });
+    setErrors((prev) => ({ ...prev, wantToMeet: undefined }));
   }
 
   function toggleGtmChallenge(option: string) {
@@ -262,6 +318,12 @@ export function RsvpDialog() {
     if (form.lookingFor.length === 0) {
       next.lookingFor = "Please select at least one option.";
     }
+    if (form.offerCommunity.length === 0) {
+      next.offerCommunity = "Please select at least one option.";
+    }
+    if (form.wantToMeet.length === 0) {
+      next.wantToMeet = "Please select at least one option.";
+    }
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -292,6 +354,8 @@ export function RsvpDialog() {
         leaveWith: form.leaveWith,
         industry: form.industry,
         lookingFor: form.lookingFor,
+        offerCommunity: form.offerCommunity,
+        wantToMeet: form.wantToMeet,
         canHelpWith: form.canHelpWith,
         biggestChallenge: form.biggestChallenge,
         joinWhatsapp: form.joinWhatsapp,
@@ -628,15 +692,109 @@ export function RsvpDialog() {
                         ) : null}
                       </div>
 
+                      <div>
+                        <Label className="text-[13px] font-medium text-foreground/90">
+                          What can you offer the community?{" "}
+                          <span className="text-primary">*</span>
+                        </Label>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Skills, experience, mentoring — how you can help others.
+                        </p>
+                        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          {offerCommunityOptions.map((option) => {
+                            const selected = form.offerCommunity.includes(option);
+                            return (
+                              <button
+                                key={option}
+                                type="button"
+                                onClick={() => toggleOfferCommunity(option)}
+                                className={cn(
+                                  "flex items-center gap-3 rounded-[12px] border px-3.5 py-3 text-left text-sm transition-colors",
+                                  selected
+                                    ? "border-primary bg-primary/10 text-foreground"
+                                    : "border-border bg-card text-foreground/85 hover:border-primary/30",
+                                )}
+                              >
+                                <span
+                                  className={cn(
+                                    "flex h-4 w-4 items-center justify-center rounded border",
+                                    selected
+                                      ? "border-primary bg-primary text-primary-foreground"
+                                      : "border-border",
+                                  )}
+                                  aria-hidden
+                                >
+                                  {selected ? (
+                                    <Check className="h-3 w-3" strokeWidth={3} />
+                                  ) : null}
+                                </span>
+                                {option}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {errors.offerCommunity ? (
+                          <p className="mt-1.5 text-xs text-destructive">
+                            {errors.offerCommunity}
+                          </p>
+                        ) : null}
+                      </div>
+
+                      <div>
+                        <Label className="text-[13px] font-medium text-foreground/90">
+                          Who would you like to meet?{" "}
+                          <span className="text-primary">*</span>
+                        </Label>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Founders, builders, investors, operators — who should we connect you with?
+                        </p>
+                        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          {wantToMeetOptions.map((option) => {
+                            const selected = form.wantToMeet.includes(option);
+                            return (
+                              <button
+                                key={option}
+                                type="button"
+                                onClick={() => toggleWantToMeet(option)}
+                                className={cn(
+                                  "flex items-center gap-3 rounded-[12px] border px-3.5 py-3 text-left text-sm transition-colors",
+                                  selected
+                                    ? "border-primary bg-primary/10 text-foreground"
+                                    : "border-border bg-card text-foreground/85 hover:border-primary/30",
+                                )}
+                              >
+                                <span
+                                  className={cn(
+                                    "flex h-4 w-4 items-center justify-center rounded border",
+                                    selected
+                                      ? "border-primary bg-primary text-primary-foreground"
+                                      : "border-border",
+                                  )}
+                                  aria-hidden
+                                >
+                                  {selected ? (
+                                    <Check className="h-3 w-3" strokeWidth={3} />
+                                  ) : null}
+                                </span>
+                                {option}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {errors.wantToMeet ? (
+                          <p className="mt-1.5 text-xs text-destructive">{errors.wantToMeet}</p>
+                        ) : null}
+                      </div>
+
                       <Field
-                        label="What can you help others with?"
+                        label="Anything else about what you can offer? (optional)"
                         count={form.canHelpWith.length}
                         max={FIELD_LIMITS.canHelpWith}
                       >
                         <textarea
                           value={form.canHelpWith}
                           onChange={(e) => update("canHelpWith", e.target.value)}
-                          placeholder="Skills, intros, experience you can share…"
+                          placeholder="A short note on skills, intros, or experience…"
                           maxLength={FIELD_LIMITS.canHelpWith}
                           className={textareaClass}
                         />
@@ -662,11 +820,7 @@ export function RsvpDialog() {
                             <button
                               type="button"
                               onClick={() => {
-                                const next = !form.joinWhatsapp;
-                                update("joinWhatsapp", next);
-                                if (next) {
-                                  window.open(links.community, "_blank", "noopener,noreferrer");
-                                }
+                                update("joinWhatsapp", !form.joinWhatsapp);
                               }}
                               className={cn(
                                 "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border",
@@ -1259,5 +1413,6 @@ function eventPayload(event: Meetup) {
     venue: event.venue,
     city: event.city,
     format: event.format,
+    mapsUrl: meetupMapsUrl(event),
   };
 }
