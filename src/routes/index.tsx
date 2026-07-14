@@ -122,7 +122,7 @@ const meetupIncludes = [
   "Founder story",
   "Roundtable discussions",
   "Open networking",
-  "Lunch & conversations",
+  "Snacks & conversations",
 ];
 
 const storyTeasers = [

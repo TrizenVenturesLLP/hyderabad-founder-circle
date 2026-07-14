@@ -12,9 +12,6 @@ import {
   Users,
   Accessibility,
 } from "lucide-react";
-import eventImg from "@/assets/event-room.jpg";
-import tableImg from "@/assets/table-detail.jpg";
-import heroImg from "@/assets/hero-rooftop.jpg";
 import {
   findMeetupBySlug,
   isRsvpOpen,
@@ -162,7 +159,7 @@ const agenda = [
   },
   {
     time: "1:00 PM",
-    title: "Lunch & Community Conversations",
+    title: "Snacks & Community Conversations",
     desc: "",
   },
 ];
@@ -172,30 +169,6 @@ const venueAmenities = [
   { label: "Metro Nearby", icon: TrainFront },
   { label: "Wheelchair Accessible", icon: Accessibility },
   { label: "Coffee & Refreshments", icon: Coffee },
-];
-
-const gallery = [
-  {
-    src: eventImg,
-    alt: "Founder interactions at a previous meetup",
-    caption: "Founder interactions",
-  },
-  {
-    src: tableImg,
-    alt: "Roundtable discussion notes and conversation",
-    caption: "Roundtable discussions",
-  },
-  {
-    src: heroImg,
-    alt: "Community networking outdoors",
-    caption: "Networking",
-  },
-];
-
-const quotes = [
-  "I met two founders working on similar problems and we've stayed in touch ever since.",
-  "The conversations felt genuine—not like typical networking events.",
-  "One introduction at the meetup eventually became our first paying customer.",
 ];
 
 const faqs = [
@@ -221,7 +194,7 @@ const faqs = [
   },
   {
     q: "Will there be food?",
-    a: "Light refreshments (or lunch) will be provided.",
+    a: "Light refreshments (or snacks) will be provided.",
   },
 ];
 
@@ -298,7 +271,6 @@ function EventDetail() {
   const venueLine = meetupVenueLine(meetup);
   const whoReveal = useInView<HTMLElement>(scrollRevealOpts);
   const takeawaysReveal = useInView<HTMLElement>(scrollRevealOpts);
-  const galleryReveal = useInView<HTMLElement>(scrollRevealOpts);
   const faqReveal = useInView<HTMLElement>(scrollRevealOpts);
 
   return (
@@ -448,9 +420,9 @@ function EventDetail() {
       {/* 4 + 5. TAKEAWAYS + AGENDA */}
       <section
         ref={takeawaysReveal.ref}
-        className="border-b border-[var(--color-border)] py-10 md:py-12"
+        className="border-b border-[var(--color-border)] py-7 md:py-9"
       >
-        <div className="page-container grid gap-10 lg:grid-cols-2 lg:gap-14">
+        <div className="page-container grid gap-7 lg:grid-cols-2 lg:gap-8">
           <div
             className={cn(
               "reveal-left",
@@ -458,17 +430,17 @@ function EventDetail() {
             )}
           >
             <SectionLabel>What you'll get</SectionLabel>
-            <h2 className="mt-3 font-display text-[clamp(1.5rem,2.5vw,2.05rem)] tracking-tight text-foreground">
+            <h2 className="mt-2 font-display text-[clamp(1.35rem,2.2vw,1.75rem)] tracking-tight text-foreground">
               What you'll take away
             </h2>
-            <ul className="mt-6 space-y-3">
+            <ul className="mt-4 space-y-2">
               {takeaways.map((item) => (
                 <li
                   key={item}
-                  className="flex gap-3 text-[14px] leading-[1.55] text-foreground"
+                  className="flex gap-2.5 text-[13px] leading-snug text-foreground md:text-[14px]"
                 >
                   <span
-                    className="mt-2 size-1.5 shrink-0 rounded-full bg-[var(--brand-accent)]"
+                    className="mt-1.5 size-1.5 shrink-0 rounded-full bg-[var(--brand-accent)]"
                     aria-hidden
                   />
                   {item}
@@ -483,31 +455,33 @@ function EventDetail() {
               takeawaysReveal.inView && "is-visible",
             )}
             style={{
-              transitionDelay: takeawaysReveal.inView ? "100ms" : undefined,
+              transitionDelay: takeawaysReveal.inView ? "80ms" : undefined,
             }}
           >
             <SectionLabel>What happens during the meetup?</SectionLabel>
-            <h2 className="mt-3 font-display text-[clamp(1.5rem,2.5vw,2.05rem)] tracking-tight text-foreground">
+            <h2 className="mt-2 font-display text-[clamp(1.35rem,2.2vw,1.75rem)] tracking-tight text-foreground">
               Event Agenda
             </h2>
-            <ol className="relative mt-6 space-y-0 border-l border-[var(--color-border-strong)] pl-5">
+            <ol className="relative mt-4 border-l border-[var(--color-border-strong)] pl-4">
               {agenda.map((step) => (
                 <li
                   key={step.time + step.title}
-                  className="relative pb-5 last:pb-0"
+                  className="relative pb-3 last:pb-0"
                 >
                   <span
-                    className="absolute top-1.5 -left-[1.4rem] size-2 rounded-full bg-[var(--brand-accent)]"
+                    className="absolute top-1.5 -left-[1.15rem] size-1.5 rounded-full bg-[var(--brand-accent)]"
                     aria-hidden
                   />
-                  <p className="text-[12px] font-semibold tabular-nums text-[var(--brand-accent)]">
-                    {step.time}
-                  </p>
-                  <p className="mt-0.5 text-[14px] font-medium tracking-tight text-foreground">
-                    {step.title}
-                  </p>
+                  <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+                    <p className="text-[12px] font-semibold tabular-nums text-[var(--brand-accent)]">
+                      {step.time}
+                    </p>
+                    <p className="text-[13px] font-medium tracking-tight text-foreground md:text-[14px]">
+                      {step.title}
+                    </p>
+                  </div>
                   {step.desc ? (
-                    <p className="mt-1 text-[13px] leading-[1.55] text-[var(--color-text-secondary)]">
+                    <p className="mt-0.5 text-[12px] leading-snug text-[var(--color-text-secondary)]">
                       {step.desc}
                     </p>
                   ) : null}
@@ -685,88 +659,6 @@ function EventDetail() {
               </div>
             </div>
           </Reveal>
-        </div>
-      </section>
-
-      {/* 8. PREVIOUS */}
-      <section
-        ref={galleryReveal.ref}
-        className="border-b border-[var(--color-border)] py-10 md:py-12"
-      >
-        <div className="page-container">
-          <div
-            className={cn(
-              "reveal-up max-w-xl",
-              galleryReveal.inView && "is-visible",
-            )}
-          >
-            <SectionLabel>Previous meetups</SectionLabel>
-            <h2 className="mt-3 font-display text-[clamp(1.5rem,2.5vw,2.05rem)] tracking-tight text-foreground">
-              A glimpse into our community
-            </h2>
-          </div>
-
-          <div className="mt-7 grid gap-3 sm:grid-cols-3 sm:gap-4">
-            {gallery.map((shot, i) => (
-              <figure
-                key={shot.caption}
-                className={cn(
-                  "reveal-up relative overflow-hidden rounded-[16px]",
-                  i === 0 && "sm:col-span-2 sm:row-span-2",
-                  galleryReveal.inView && "is-visible",
-                )}
-                style={{
-                  transitionDelay: galleryReveal.inView
-                    ? `${80 + i * 70}ms`
-                    : undefined,
-                }}
-              >
-                <img
-                  src={shot.src}
-                  alt={shot.alt}
-                  width={1400}
-                  height={900}
-                  loading="lazy"
-                  decoding="async"
-                  className={
-                    i === 0
-                      ? "aspect-[4/3] w-full object-cover sm:aspect-auto sm:h-full sm:min-h-[18rem]"
-                      : "aspect-[4/3] w-full object-cover"
-                  }
-                />
-                <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-3 pb-3 pt-8 text-[12px] font-medium text-white">
-                  {shot.caption}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-
-          <div className="mt-10 grid gap-6 sm:grid-cols-3 sm:gap-8">
-            {quotes.map((q, i) => (
-              <figure
-                key={q}
-                className={cn(
-                  "reveal-up",
-                  galleryReveal.inView && "is-visible",
-                )}
-                style={{
-                  transitionDelay: galleryReveal.inView
-                    ? `${220 + i * 70}ms`
-                    : undefined,
-                }}
-              >
-                <span
-                  className="font-display text-[2rem] leading-none text-[var(--brand-accent)]/30"
-                  aria-hidden
-                >
-                  “
-                </span>
-                <blockquote className="mt-1 font-display text-[1.02rem] leading-snug tracking-tight text-foreground">
-                  {q}
-                </blockquote>
-              </figure>
-            ))}
-          </div>
         </div>
       </section>
 

@@ -143,21 +143,21 @@ function EventsIndex() {
         </div>
 
         {featured ? (
-          <div className="mt-5 space-y-3">
+          <div className="mt-6 space-y-3.5">
             <FeaturedEventCard meetup={featured} />
             {rest.map((m) => (
               <EventCard key={m.slug} meetup={m} />
             ))}
           </div>
         ) : (
-          <p className="mt-5 rounded-xl border border-border bg-card px-5 py-7 text-center text-sm text-muted-foreground">
+          <p className="mt-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-8 text-center text-sm text-[var(--color-text-secondary)]">
             No meetups in this view yet.
           </p>
         )}
 
         {/* Reassurance */}
-        <div className="mt-7 rounded-xl border border-border bg-secondary/30 px-4 py-4 md:flex md:items-center md:justify-between md:gap-6 md:px-5 md:py-4">
-          <p className="max-w-xl text-[13px] text-muted-foreground md:text-sm">
+        <div className="mt-8 flex flex-col gap-4 border-t border-[var(--color-border)] pt-6 md:flex-row md:items-center md:justify-between md:gap-6">
+          <p className="max-w-xl text-[13px] text-[var(--color-text-secondary)] md:text-sm">
             New here? Start with the{" "}
             <Link
               to="/events/$slug"
@@ -168,19 +168,16 @@ function EventsIndex() {
             </Link>
             .
           </p>
-          <div className="mt-3 flex flex-wrap gap-2 md:mt-0 md:shrink-0">
+          <div className="flex flex-wrap gap-2.5 md:shrink-0">
             <Link
               to="/events/$slug"
               params={{ slug: meetups[0].slug }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-[13px] font-medium text-foreground transition-colors hover:border-foreground/20 hover:bg-muted"
+              className="btn-secondary gap-1.5"
             >
               What to expect
               <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
             </Link>
-            <RsvpButton
-              event={meetups[0]}
-              className="rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground hover:opacity-90"
-            >
+            <RsvpButton event={meetups[0]} className="btn-primary">
               RSVP
             </RsvpButton>
           </div>
@@ -193,61 +190,75 @@ function EventsIndex() {
 function FeaturedEventCard({ meetup }: { meetup: Meetup }) {
   const day = new Date(meetup.dateISO + "T12:00:00");
   const dayNum = day.getDate();
-  const monthYear = day.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  const monthYear = day.toLocaleDateString("en-IN", {
+    month: "long",
+    year: "numeric",
+  });
   const weekday = day.toLocaleDateString("en-IN", { weekday: "long" });
 
   return (
-    <article className="overflow-hidden rounded-[14px] border border-primary/25 bg-card shadow-[0_14px_32px_-28px_rgba(0,0,0,0.3)] ring-1 ring-primary/10">
+    <article className="overflow-hidden rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-small)]">
       <div className="grid md:grid-cols-12">
-        <div className="flex flex-col justify-between border-b border-primary/15 bg-secondary/40 px-4 py-4 md:col-span-3 md:border-b-0 md:border-r md:px-5 md:py-5">
+        <div className="flex flex-col justify-between gap-6 border-b border-[var(--color-border)] bg-[var(--color-background-warm)] px-5 py-5 md:col-span-3 md:border-b-0 md:border-r md:px-6 md:py-6">
           <span
             className={cn(
-              "inline-flex w-fit rounded-full px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em]",
+              "inline-flex w-fit rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em]",
               isRsvpOpen(meetup)
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground",
+                ? "bg-[var(--brand-accent)] text-white"
+                : "bg-[var(--brand-primary-soft)] text-[var(--color-text-secondary)]",
             )}
           >
             {isRsvpOpen(meetup) ? "Next event" : "Coming soon"}
           </span>
-          <div className="mt-3 md:mt-5">
-            <p className="font-display text-4xl leading-none tracking-tight text-foreground md:text-5xl">
+          <div>
+            <p className="font-display text-[3.25rem] leading-none tracking-tight text-foreground md:text-[3.75rem]">
               {dayNum}
             </p>
-            <p className="mt-1.5 text-[13px] font-medium text-foreground">{monthYear}</p>
-            <p className="text-[13px] text-muted-foreground">{weekday}</p>
+            <p className="mt-2 text-[13px] font-semibold text-foreground">
+              {monthYear}
+            </p>
+            <p className="mt-0.5 text-[13px] text-[var(--color-text-secondary)]">
+              {weekday}
+            </p>
           </div>
         </div>
 
-        <div className="px-4 py-4 md:col-span-9 md:px-5 md:py-5">
-          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-primary">
-            {meetup.format}
-          </p>
-          <h3 className="mt-1.5 font-display text-xl tracking-tight text-foreground md:text-[1.45rem]">
-            {meetup.title}
-          </h3>
-          <div className="mt-2.5 flex flex-col gap-1.5 text-[13px] text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-x-4">
-            <span className="inline-flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
-              {meetup.time}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
-              {meetupLocationLabel(meetup)}, {meetup.city}
-            </span>
+        <div className="flex flex-col justify-between gap-5 px-5 py-5 md:col-span-9 md:px-7 md:py-6">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--brand-accent)]">
+              {meetup.format}
+            </p>
+            <h3 className="mt-2 max-w-[28ch] font-display text-[1.35rem] leading-[1.15] tracking-tight text-foreground md:text-[1.55rem]">
+              {meetup.title}
+            </h3>
+            <div className="mt-3.5 flex flex-col gap-2 text-[13px] text-[var(--color-text-secondary)] sm:flex-row sm:flex-wrap sm:gap-x-5">
+              <span className="inline-flex items-center gap-1.5">
+                <Clock
+                  className="size-3.5 text-[var(--brand-accent)]"
+                  strokeWidth={1.75}
+                />
+                {meetup.time}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <MapPin
+                  className="size-3.5 text-[var(--brand-accent)]"
+                  strokeWidth={1.75}
+                />
+                {meetupLocationLabel(meetup)}, {meetup.city}
+              </span>
+            </div>
+            <p className="mt-3 max-w-2xl text-[13px] leading-relaxed text-[var(--color-text-secondary)] md:text-[14px]">
+              {meetup.blurb}
+            </p>
           </div>
-          <p className="mt-2.5 max-w-2xl text-[13px] leading-relaxed text-muted-foreground md:text-sm">{meetup.blurb}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <RsvpButton
-              event={meetup}
-              className="rounded-full bg-primary px-5 py-2 text-[13px] font-medium text-primary-foreground shadow-[0_10px_24px_-14px_color-mix(in_oklab,var(--terracotta)_70%,transparent)] hover:opacity-90"
-            >
+          <div className="flex flex-wrap gap-2.5">
+            <RsvpButton event={meetup} className="btn-primary">
               RSVP
             </RsvpButton>
             <Link
               to="/events/$slug"
               params={{ slug: meetup.slug }}
-              className="group inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-[13px] font-medium text-foreground transition-colors hover:bg-muted"
+              className="btn-secondary group gap-1.5"
             >
               View Details
               <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
@@ -262,55 +273,65 @@ function FeaturedEventCard({ meetup }: { meetup: Meetup }) {
 function EventCard({ meetup }: { meetup: Meetup }) {
   const day = new Date(meetup.dateISO + "T12:00:00");
   const dayNum = day.getDate();
-  const monthYear = day.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  const monthShort = day
+    .toLocaleDateString("en-IN", { month: "short" })
+    .toUpperCase();
+  const year = day.getFullYear();
 
   return (
-    <article className="group rounded-[12px] border border-border bg-card transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-[0_12px_28px_-22px_rgba(0,0,0,0.28)]">
-      <div className="grid gap-4 px-5 py-6 md:grid-cols-12 md:items-center md:gap-5 md:px-6 md:py-7">
-        <div className="md:col-span-2">
-          <p className="font-display text-2xl leading-none tracking-tight text-foreground md:text-3xl">
+    <article className="group rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] transition-[border-color,box-shadow] duration-200 hover:border-[var(--color-border-strong)] hover:shadow-[var(--shadow-small)]">
+      <div className="grid gap-4 px-5 py-5 md:grid-cols-12 md:items-center md:gap-6 md:px-6 md:py-5">
+        <div className="flex items-baseline gap-2 md:col-span-2 md:block">
+          <p className="font-display text-[2rem] leading-none tracking-tight text-foreground md:text-[2.35rem]">
             {dayNum}
           </p>
-          <p className="mt-1.5 text-[13px] text-muted-foreground">{monthYear}</p>
+          <p className="text-[12px] font-medium uppercase tracking-[0.08em] text-[var(--color-text-secondary)] md:mt-1.5">
+            {monthShort} {year}
+          </p>
         </div>
 
         <div className="md:col-span-6">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-display text-lg tracking-tight text-foreground">
+            <h3 className="font-display text-[1.05rem] leading-snug tracking-tight text-foreground md:text-[1.15rem]">
               {meetup.title}
             </h3>
             {!isRsvpOpen(meetup) ? (
-              <span className="rounded-full bg-secondary px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              <span className="rounded-full bg-[var(--color-background-warm)] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
                 Coming soon
               </span>
             ) : null}
           </div>
-          <div className="mt-2.5 flex flex-col gap-1 text-[13px] text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-x-4">
+          <div className="mt-2 flex flex-col gap-1 text-[13px] text-[var(--color-text-secondary)] sm:flex-row sm:flex-wrap sm:gap-x-4">
             <span className="inline-flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5 text-primary/80" strokeWidth={1.75} />
+              <Clock
+                className="size-3.5 text-[var(--brand-accent)]"
+                strokeWidth={1.75}
+              />
               {meetup.time}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 text-primary/80" strokeWidth={1.75} />
+              <MapPin
+                className="size-3.5 text-[var(--brand-accent)]"
+                strokeWidth={1.75}
+              />
               {meetupLocationLabel(meetup)}, {meetup.city}
             </span>
           </div>
-          <p className="mt-2.5 text-[13px] leading-relaxed text-muted-foreground">{meetup.blurb}</p>
+          <p className="mt-2 line-clamp-2 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
+            {meetup.blurb}
+          </p>
         </div>
 
         <div className="flex flex-wrap gap-2 md:col-span-4 md:justify-end">
           <Link
             to="/events/$slug"
             params={{ slug: meetup.slug }}
-            className="group/link inline-flex items-center gap-1.5 rounded-full border border-border px-3.5 py-2 text-[13px] font-medium text-foreground transition-colors hover:bg-muted"
+            className="btn-secondary group/link gap-1.5"
           >
             View Details
             <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover/link:translate-x-0.5" />
           </Link>
-          <RsvpButton
-            event={meetup}
-            className="rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground hover:opacity-90"
-          >
+          <RsvpButton event={meetup} className="btn-primary">
             RSVP
           </RsvpButton>
         </div>

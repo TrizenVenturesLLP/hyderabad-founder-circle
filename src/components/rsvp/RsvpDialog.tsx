@@ -69,16 +69,13 @@ const emptyForm: FormState = {
 
 const roles = [
   "Founder / Co-founder",
-  "SDE",
-  "AI Engineer",
-  "AI Intern",
+  "Aspiring entrepreneur",
   "Product Manager",
   "Designer",
   "Operator / Growth",
   "Investor / Ecosystem",
   "Working professional",
   "Student",
-  "Aspiring entrepreneur",
   "Other",
 ] as const;
 
@@ -202,6 +199,38 @@ export function RsvpDialog() {
     if (!el) return;
     el.scrollTop = 0;
   }, [step]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const { body } = document;
+    const scrollY = window.scrollY;
+    const previous = {
+      overflow: body.style.overflow,
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+      paddingRight: body.style.paddingRight,
+    };
+    const scrollbarGap = window.innerWidth - document.documentElement.clientWidth;
+
+    body.style.overflow = "hidden";
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.width = "100%";
+    if (scrollbarGap > 0) {
+      body.style.paddingRight = `${scrollbarGap}px`;
+    }
+
+    return () => {
+      body.style.overflow = previous.overflow;
+      body.style.position = previous.position;
+      body.style.top = previous.top;
+      body.style.width = previous.width;
+      body.style.paddingRight = previous.paddingRight;
+      window.scrollTo(0, scrollY);
+    };
+  }, [open]);
 
   function resetAll() {
     setStep(1);
@@ -409,12 +438,23 @@ export function RsvpDialog() {
     >
       <DialogContent
         closeLabel={step === "success" ? "Close" : undefined}
+        onOpenAutoFocus={(e) => {
+          // Keep focus in dialog; avoid jumping page scroll under the modal.
+          if (step === "success") e.preventDefault();
+        }}
+        onWheel={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
         className={cn(
-          "flex flex-col gap-0 overflow-hidden rounded-[20px] border-border/80 bg-background p-0 shadow-[0_28px_70px_-30px_rgba(0,0,0,0.45)]",
+          "flex flex-col gap-0 overflow-hidden overscroll-contain rounded-[20px] border-border/80 bg-background p-0 shadow-[0_28px_70px_-30px_rgba(0,0,0,0.45)]",
           step === "success"
-            ? "max-h-[min(92vh,760px)] w-[calc(100%-1.5rem)] max-w-[560px] sm:max-w-[560px]"
+            ? [
+                "max-h-[min(92dvh,760px)] w-[calc(100%-1.5rem)] max-w-[560px] sm:max-w-[560px]",
+                "max-sm:!inset-x-0 max-sm:!bottom-0 max-sm:!left-0 max-sm:!right-0 max-sm:!top-auto",
+                "max-sm:!translate-x-0 max-sm:!translate-y-0",
+                "max-sm:!w-full max-sm:!max-w-none max-sm:rounded-b-none max-sm:rounded-t-[20px] max-sm:!max-h-[94dvh]",
+              ]
             : [
-                "max-h-[min(92vh,880px)] w-[calc(100%-1rem)] max-w-[1080px] sm:max-w-[1080px]",
+                "max-h-[min(92dvh,880px)] w-[calc(100%-1rem)] max-w-[1080px] sm:max-w-[1080px]",
                 // Full-bleed bottom sheet on mobile — override dialog centering
                 "max-sm:!inset-x-0 max-sm:!bottom-0 max-sm:!left-0 max-sm:!right-0 max-sm:!top-auto",
                 "max-sm:!translate-x-0 max-sm:!translate-y-0",
@@ -451,7 +491,7 @@ export function RsvpDialog() {
               <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
                 <div
                   ref={formScrollRef}
-                  className="scrollbar-none min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-5 pb-6 sm:px-6"
+                  className="scrollbar-none min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-5 pb-6 [-webkit-overflow-scrolling:touch] sm:px-6"
                 >
                   <MobileEventSummary
                     event={event}
@@ -1145,7 +1185,7 @@ function SuccessView({ event }: { event: Meetup }) {
     .toUpperCase();
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,color-mix(in_oklab,var(--saffron)_16%,transparent),transparent_50%),radial-gradient(ellipse_at_50%_100%,color-mix(in_oklab,var(--terracotta)_9%,transparent),transparent_48%)]"
