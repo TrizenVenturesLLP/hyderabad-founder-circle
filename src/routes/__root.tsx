@@ -84,39 +84,60 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Hyderabad Founders Network — Monthly Startup Meetup" },
-      {
-        name: "description",
-        content:
-          "A community of founders, operators and aspiring entrepreneurs in Hyderabad. Monthly meetups on the 3rd Saturday.",
-      },
-      { name: "author", content: "Hyderabad Founders Network" },
-      { property: "og:site_name", content: "Hyderabad Founders Network" },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { property: "og:title", content: "Hyderabad Founders Network — Monthly Startup Meetup" },
-      { name: "twitter:title", content: "Hyderabad Founders Network — Monthly Startup Meetup" },
-      { name: "description", content: "Hyderabad Founder Connect is a community-owned website for monthly Hyderabad startup founder meetups." },
-      { property: "og:description", content: "Hyderabad Founder Connect is a community-owned website for monthly Hyderabad startup founder meetups." },
-      { name: "twitter:description", content: "Hyderabad Founder Connect is a community-owned website for monthly Hyderabad startup founder meetups." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8b22cec7-5784-4e21-bcf9-8e78b6381586/id-preview-9bb6069f--7bbd9719-b085-465f-ad3c-413c0a23f918.lovable.app-1782141749945.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8b22cec7-5784-4e21-bcf9-8e78b6381586/id-preview-9bb6069f--7bbd9719-b085-465f-ad3c-413c0a23f918.lovable.app-1782141749945.png" },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "icon", type: "image/png", href: "/favicon.png" },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Poppins:wght@400;500;600&display=swap",
-      },
-    ],
-  }),
+  head: () => {
+    const siteUrl = "https://community.trizenventures.com";
+    const ogImage = `${siteUrl}/og-image.png`;
+    const description =
+      "A community of founders, operators and aspiring entrepreneurs in Hyderabad. Monthly meetups on the 3rd Saturday.";
+
+    return {
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { title: "Hyderabad Founders Network — Monthly Startup Meetup" },
+        { name: "description", content: description },
+        { name: "author", content: "Hyderabad Founders Network" },
+        { property: "og:site_name", content: "Hyderabad Founders Network" },
+        { property: "og:type", content: "website" },
+        { property: "og:url", content: siteUrl },
+        {
+          property: "og:title",
+          content: "Hyderabad Founders Network — Monthly Startup Meetup",
+        },
+        { property: "og:description", content: description },
+        { property: "og:image", content: ogImage },
+        { property: "og:image:type", content: "image/png" },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "1200" },
+        {
+          property: "og:image:alt",
+          content: "Trizen Community — Hyderabad Founders Network",
+        },
+        { name: "twitter:card", content: "summary" },
+        {
+          name: "twitter:title",
+          content: "Hyderabad Founders Network — Monthly Startup Meetup",
+        },
+        { name: "twitter:description", content: description },
+        { name: "twitter:image", content: ogImage },
+      ],
+      links: [
+        { rel: "stylesheet", href: appCss },
+        { rel: "icon", type: "image/png", href: "/favicon.png" },
+        { rel: "apple-touch-icon", href: "/favicon.png" },
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        {
+          rel: "preconnect",
+          href: "https://fonts.gstatic.com",
+          crossOrigin: "anonymous",
+        },
+        {
+          rel: "stylesheet",
+          href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Poppins:wght@400;500;600&display=swap",
+        },
+      ],
+    };
+  },
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
