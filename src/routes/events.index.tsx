@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import eventImg from "@/assets/event-room.jpg";
 import {
-  meetups,
+  getMeetups,
   type Meetup,
   isRsvpOpen,
   meetupLocationLabel,
@@ -16,6 +16,7 @@ import { RsvpButton } from "@/components/rsvp/RsvpButton";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/events/")({
+  loader: async () => ({ meetups: await getMeetups() }),
   head: () => ({
     meta: [
       { title: "Events — Hyderabad Founders Network" },
@@ -40,6 +41,7 @@ const filters = ["Upcoming", "Past Events", "Community Meetups", "Themed Session
 type Filter = (typeof filters)[number];
 
 function EventsIndex() {
+  const { meetups } = Route.useLoaderData();
   const [filter, setFilter] = useState<Filter>("Upcoming");
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
@@ -55,7 +57,7 @@ function EventsIndex() {
       }
       return true;
     });
-  }, [filter, today]);
+  }, [filter, today, meetups]);
 
   const featured = visible[0] ?? null;
   const rest = visible.slice(1);

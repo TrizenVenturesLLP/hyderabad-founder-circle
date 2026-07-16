@@ -1,13 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
-import { meetups } from "@/lib/events";
+import { getMeetups } from "@/lib/events";
 
-const BASE_URL = "https://hyderabad-founder-circle.lovable.app";
+const BASE_URL = "https://community.trizenventures.com";
 
 interface SitemapEntry {
   path: string;
   lastmod?: string;
-  changefreq?: "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never";
+  changefreq?:
+    | "always"
+    | "hourly"
+    | "daily"
+    | "weekly"
+    | "monthly"
+    | "yearly"
+    | "never";
   priority?: string;
 }
 
@@ -15,6 +22,7 @@ export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
       GET: async () => {
+        const meetups = await getMeetups();
         const entries: SitemapEntry[] = [
           { path: "/", changefreq: "weekly", priority: "1.0" },
           { path: "/events", changefreq: "weekly", priority: "0.9" },

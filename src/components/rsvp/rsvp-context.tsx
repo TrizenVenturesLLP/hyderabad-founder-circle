@@ -2,12 +2,13 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
 import type { Meetup } from "@/lib/events";
-import { isRsvpOpen, nextMeetup } from "@/lib/events";
+import { getMeetups, isRsvpOpen, nextMeetup as fallbackNext } from "@/lib/events";
 
 type RsvpContextValue = {
   open: boolean;
@@ -20,14 +21,29 @@ const RsvpContext = createContext<RsvpContextValue | null>(null);
 
 export function RsvpProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
-  const [event, setEvent] = useState<Meetup>(nextMeetup);
+  const [defaultEvent, setDefaultEvent] = useState<Meetup>(fallbackNext);
+  const [event, setEvent] = useState<Meetup>(fallbackNext);
 
-  const openRsvp = useCallback((meetup?: Meetup) => {
-    const target = meetup ?? nextMeetup;
-    if (!isRsvpOpen(target)) return;
-    setEvent(target);
-    setOpen(true);
+  useEffect(() => {
+    void getMeetups().then((list) => {
+      if (list[0]) {
+        setDefaultEvent(list[0]);
+        setEvent((current) =>
+          current.slug === fallbackNext.slug ? list[0] : current,
+        );
+      }
+    });
   }, []);
+
+  const openRsvp = useCallback(
+    (meetup?: Meetup) => {
+      const target = meetup ?? defaultEvent;
+      if (!isRsvpOpen(target)) return;
+      setEvent(target);
+      setOpen(true);
+    },
+    [defaultEvent],
+  );
 
   const closeRsvp = useCallback(() => setOpen(false), []);
 

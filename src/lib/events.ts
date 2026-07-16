@@ -1,3 +1,7 @@
+import shripujaPhoto from "@/assets/Shripuja-Siddamsetty.jpeg";
+import katlaPhoto from "@/assets/Katla-Charitavya.jpeg";
+import prasadPhoto from "@/assets/Prasad-Anumula.jpeg";
+
 export type CommunityHost = {
   name: string;
   role: string;
@@ -12,12 +16,25 @@ export type GuestFounder = {
   photo?: string;
 };
 
+export type EventSpeaker = {
+  name: string;
+  role: string;
+  org?: string;
+  badge?: string;
+  bio: string;
+  linkedin?: string;
+  website?: string;
+  photo?: string;
+  photoPosition?: string;
+  photoPaddingBottom?: string;
+};
+
 export type Meetup = {
   slug: string;
   title: string;
-  dateISO: string; // e.g. 2026-07-18
-  dateLabel: string; // "Saturday, 18 July 2026"
-  time: string; // "11:00 AM – 1:00 PM"
+  dateISO: string;
+  dateLabel: string;
+  time: string;
   venue: string;
   space?: string;
   area?: string;
@@ -31,6 +48,21 @@ export type Meetup = {
   blurb: string;
   hosts?: CommunityHost[];
   guestFounder?: GuestFounder;
+  speakers?: EventSpeaker[];
+};
+
+const API_BASE =
+  (import.meta as ImportMeta & { env: Record<string, string> }).env
+    .VITE_API_URL || "http://localhost:4000";
+
+/** Resolve known speaker photo keys / names to bundled assets. */
+const SPEAKER_PHOTO_MAP: Record<string, string> = {
+  "Shripuja-Siddamsetty": shripujaPhoto,
+  "Katla-Charitavya": katlaPhoto,
+  "Prasad-Anumula": prasadPhoto,
+  "Dr. Shripuja Siddamsetty": shripujaPhoto,
+  "Katla Charitavya": katlaPhoto,
+  "Prasad Anumula": prasadPhoto,
 };
 
 const venueDefaults = {
@@ -49,8 +81,8 @@ const venueDefaults = {
   format: "Offline" as const,
 };
 
-// The recurring "3rd Saturday" rhythm. Easy to edit each month.
-export const meetups: Meetup[] = [
+/** Fallback if API is unavailable. */
+export const fallbackMeetups: Meetup[] = [
   {
     slug: "hyderabad-founders-network-july",
     title: "Hyderabad Founders Network – July",
@@ -60,6 +92,34 @@ export const meetups: Meetup[] = [
     status: "open",
     blurb:
       "The monthly roundtable. Show up, share what you're building, find your people.",
+    speakers: [
+      {
+        name: "Prasad Anumula",
+        role: "Founder & CEO, Risk Guard Enterprise Solutions",
+        bio: "Driving enterprise resilience through risk management, governance, and innovation.",
+        photo: prasadPhoto,
+        photoPosition: "center top",
+        photoPaddingBottom: "22%",
+        linkedin: "https://www.linkedin.com/in/prasad-anumula/",
+      },
+      {
+        name: "Dr. Shripuja Siddamsetty",
+        role: "Founder, Calm Mind Wellness & Barefoot Learning Experience",
+        bio: "Empowering well-being, fostering growth, and building better workplaces.",
+        photo: shripujaPhoto,
+        linkedin:
+          "https://www.linkedin.com/in/dr-shripuja-siddamsetty-m-phil-ph-d-scholar-973342a2",
+      },
+      {
+        name: "Katla Charitavya",
+        role: "Founder and Career Counselor, Yatrivese Edutours",
+        bio: "Empowering founders to build, scale, and succeed globally.",
+        photo: katlaPhoto,
+        photoPosition: "center 18%",
+        photoPaddingBottom: "12%",
+        website: "https://yatriverse.in/",
+      },
+    ],
   },
   {
     slug: "hyderabad-founders-network-august",
@@ -82,19 +142,110 @@ export const meetups: Meetup[] = [
   },
 ];
 
-/** Old URLs → current slug (bookmark/link compatibility). */
+/** @deprecated Prefer getMeetups() — kept for gradual migration. */
+export const meetups = fallbackMeetups;
+
 const meetupSlugAliases: Record<string, string> = {
   "founders-open-house": "hyderabad-founders-network-july",
   "founders-open-house-aug": "hyderabad-founders-network-august",
   "founders-open-house-sep": "hyderabad-founders-network-september",
 };
 
-export function findMeetupBySlug(slug: string) {
-  const canonical = meetupSlugAliases[slug] ?? slug;
-  return meetups.find((m) => m.slug === canonical) ?? null;
+function resolveSpeakerPhoto(speaker: EventSpeaker): EventSpeaker {
+  const key = speaker.photo || speaker.name;
+  const mapped = key ? SPEAKER_PHOTO_MAP[key] : undefined;
+  if (mapped) return { ...speaker, photo: mapped };
+  if (speaker.photo?.startsWith("http") || speaker.photo?.startsWith("/")) {
+    return speaker;
+  }
+  return { ...speaker, photo: mapped || speaker.photo };
 }
 
-export const nextMeetup = meetups[0];
+export function mapApiEventToMeetup(raw: Record<string, unknown>): Meetup {
+  const speakers = Array.isArray(raw.speakers)
+    ? (raw.speakers as EventSpeaker[]).map(resolveSpeakerPhoto)
+    : undefined;
+
+  const guest = raw.guestFounder as GuestFounder | undefined;
+  const hasGuest = guest?.name;
+
+  return {
+    slug: String(raw.slug || ""),
+    title: String(raw.title || ""),
+    dateISO: String(raw.dateISO || ""),
+    dateLabel: String(raw.dateLabel || ""),
+    time: String(raw.time || ""),
+    venue: String(raw.venue || ""),
+    space: raw.space ? String(raw.space) : undefined,
+    area: raw.area ? String(raw.area) : undefined,
+    address: raw.address ? String(raw.address) : undefined,
+    mapsUrl: raw.mapsUrl ? String(raw.mapsUrl) : undefined,
+    mapsEmbedUrl: raw.mapsEmbedUrl ? String(raw.mapsEmbedUrl) : undefined,
+    city: String(raw.city || "Hyderabad"),
+    seats: typeof raw.seats === "number" ? raw.seats : undefined,
+    format: (raw.format as Meetup["format"]) || "Offline",
+    status: (raw.status as Meetup["status"]) || "open",
+    blurb: String(raw.blurb || ""),
+    hosts: Array.isArray(raw.hosts) ? (raw.hosts as CommunityHost[]) : undefined,
+    guestFounder: hasGuest ? guest : undefined,
+    speakers,
+  };
+}
+
+let meetupsCache: Meetup[] | null = null;
+let meetupsCacheAt = 0;
+const CACHE_MS = 30_000;
+
+export async function getMeetups(options?: {
+  force?: boolean;
+}): Promise<Meetup[]> {
+  const now = Date.now();
+  if (
+    !options?.force &&
+    meetupsCache &&
+    now - meetupsCacheAt < CACHE_MS
+  ) {
+    return meetupsCache;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/events`);
+    if (!res.ok) throw new Error("events fetch failed");
+    const data = (await res.json()) as { items?: Record<string, unknown>[] };
+    const items = (data.items || []).map(mapApiEventToMeetup);
+    if (items.length > 0) {
+      meetupsCache = items;
+      meetupsCacheAt = now;
+      return items;
+    }
+  } catch {
+    // fall through to local fallback
+  }
+
+  meetupsCache = fallbackMeetups;
+  meetupsCacheAt = now;
+  return fallbackMeetups;
+}
+
+export async function getMeetupBySlug(slug: string): Promise<Meetup | null> {
+  const canonical = meetupSlugAliases[slug] ?? slug;
+  const all = await getMeetups();
+  return all.find((m) => m.slug === canonical) ?? null;
+}
+
+export function findMeetupBySlug(slug: string) {
+  const canonical = meetupSlugAliases[slug] ?? slug;
+  const list = meetupsCache ?? fallbackMeetups;
+  return list.find((m) => m.slug === canonical) ?? null;
+}
+
+export function getNextMeetup(list?: Meetup[]) {
+  const source = list ?? meetupsCache ?? fallbackMeetups;
+  return source[0];
+}
+
+/** Sync fallback for modules that still expect a static next meetup. */
+export const nextMeetup = fallbackMeetups[0];
 
 export function isRsvpOpen(meetup: Meetup) {
   return meetup.status === "open";
@@ -127,4 +278,9 @@ export function meetupMapsEmbedUrl(meetup: Meetup) {
 export function meetupSeatsLabel(meetup: Meetup) {
   if (typeof meetup.seats === "number") return String(meetup.seats);
   return "Limited";
+}
+
+export function invalidateMeetupsCache() {
+  meetupsCache = null;
+  meetupsCacheAt = 0;
 }

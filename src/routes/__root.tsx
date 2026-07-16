@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -160,24 +161,37 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isAdminShell =
+    pathname.startsWith("/admin") || pathname.startsWith("/admin-login");
+
   return (
     <QueryClientProvider client={queryClient}>
       <RsvpProvider>
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"
-        >
-          Skip to content
-        </a>
-        <div className="flex min-h-dvh flex-col overflow-x-clip">
-          <SiteHeader />
-          <main id="main-content" className="min-w-0 flex-1">
+        {isAdminShell ? (
+          <>
             <Outlet />
-          </main>
-          <SiteFooter />
-        </div>
-        <LazyRsvpDialog />
-        <Toaster />
+            <Toaster />
+          </>
+        ) : (
+          <>
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"
+            >
+              Skip to content
+            </a>
+            <div className="flex min-h-dvh flex-col overflow-x-clip">
+              <SiteHeader />
+              <main id="main-content" className="min-w-0 flex-1">
+                <Outlet />
+              </main>
+              <SiteFooter />
+            </div>
+            <LazyRsvpDialog />
+            <Toaster />
+          </>
+        )}
       </RsvpProvider>
     </QueryClientProvider>
   );

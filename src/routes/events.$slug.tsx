@@ -6,6 +6,8 @@ import {
   CircleParking,
   Clock,
   Coffee,
+  ExternalLink,
+  Linkedin,
   MapPin,
   Ticket,
   TrainFront,
@@ -13,11 +15,12 @@ import {
   Accessibility,
 } from "lucide-react";
 import {
-  findMeetupBySlug,
+  getMeetupBySlug,
   isRsvpOpen,
   meetupMapsEmbedUrl,
   meetupMapsUrl,
   meetupVenueLine,
+  type EventSpeaker,
 } from "@/lib/events";
 import { links } from "@/lib/links";
 import { EventShareBar } from "@/components/EventShareBar";
@@ -26,16 +29,16 @@ import { useInView } from "@/hooks/use-in-view";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/events/$slug")({
-  loader: ({ params }) => {
-    const m = findMeetupBySlug(params.slug);
-    if (!m) throw notFound();
-    if (params.slug !== m.slug) {
+  loader: async ({ params }) => {
+    const meetup = await getMeetupBySlug(params.slug);
+    if (!meetup) throw notFound();
+    if (params.slug !== meetup.slug) {
       throw redirect({
         to: "/events/$slug",
-        params: { slug: m.slug },
+        params: { slug: meetup.slug },
       });
     }
-    return { meetup: m };
+    return { meetup };
   },
   head: ({ loaderData }) => {
     const m = loaderData?.meetup;
@@ -263,14 +266,131 @@ function MetaRow({
   );
 }
 
+function speakerInitials(name: string) {
+  return name
+    .replace(/^Dr\.\s*/i, "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function SpeakerCard({ speaker }: { speaker: EventSpeaker }) {
+  return (
+    <article className="mx-auto w-full max-w-[20.5rem] px-2 py-2.5 sm:max-w-none">
+      {/*
+        IMAGE CONTAINER (fixed size)
+        - image lives inside
+        - overlay + text live inside
+        - photoPaddingBottom only moves the image up; container/overlay size unchanged
+        - article padding slightly shrinks the box without changing grid gaps
+      */}
+      <div className="group relative aspect-[3/4] overflow-hidden rounded-[1.25rem] bg-black">
+        {/* Image layer — bottom inset lifts this photo only; overflow clipped */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div
+            className="absolute inset-x-0 top-0 overflow-hidden"
+            style={{ bottom: speaker.photoPaddingBottom ?? 0 }}
+          >
+            {speaker.photo ? (
+              <img
+                src={speaker.photo}
+                alt=""
+                className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+                style={{
+                  objectPosition: speaker.photoPosition ?? "center top",
+                }}
+              />
+            ) : (
+              <div
+                className="flex size-full items-center justify-center bg-[linear-gradient(160deg,color-mix(in_oklab,var(--brand-primary)_92%,white),var(--brand-primary))]"
+                aria-hidden
+              >
+                <span className="font-display text-[2.5rem] tracking-tight text-white/90">
+                  {speakerInitials(speaker.name)}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Overlay layer — same size/position for every card */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-[linear-gradient(to_top,#000_0%,#000_45%,rgba(0,0,0,0.72)_70%,transparent_100%)]"
+        />
+
+        {speaker.badge ? (
+          <span className="absolute left-3.5 top-3.5 z-20 rounded-full bg-[var(--brand-accent)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white">
+            {speaker.badge}
+          </span>
+        ) : null}
+
+        {/* Text sits on the overlay, inside the image container */}
+        <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col p-4 sm:p-5">
+          <div className="flex items-end justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="font-display text-[1.15rem] leading-snug tracking-tight text-white sm:text-[1.25rem]">
+                {speaker.name}
+              </h3>
+              <p className="mt-1 text-[12px] leading-snug text-white/75 sm:text-[13px]">
+                {speaker.role}
+                {speaker.org ? (
+                  <>
+                    <br />
+                    <span className="text-white/90">{speaker.org}</span>
+                  </>
+                ) : null}
+              </p>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-1.5 pb-0.5">
+              {speaker.linkedin ? (
+                <a
+                  href={speaker.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${speaker.name} on LinkedIn`}
+                  className="inline-flex size-8 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white backdrop-blur-sm transition-colors hover:border-white/50 hover:bg-white/20"
+                >
+                  <Linkedin className="size-3.5" strokeWidth={1.75} />
+                </a>
+              ) : null}
+              {speaker.website ? (
+                <a
+                  href={speaker.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${speaker.name} website`}
+                  className="inline-flex size-8 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white backdrop-blur-sm transition-colors hover:border-white/50 hover:bg-white/20"
+                >
+                  <ExternalLink className="size-3.5" strokeWidth={1.75} />
+                </a>
+              ) : null}
+            </div>
+          </div>
+
+          <p className="mt-2.5 border-t border-white/15 pt-2.5 text-[12px] leading-[1.55] text-white/80 italic sm:text-[13px]">
+            {speaker.bio}
+          </p>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function EventDetail() {
   const { meetup } = Route.useLoaderData();
   const mapsUrl = meetupMapsUrl(meetup);
   const mapsEmbed = meetupMapsEmbedUrl(meetup);
   const hosts = meetup.hosts ?? [];
+  const speakers = meetup.speakers ?? [];
   const venueLine = meetupVenueLine(meetup);
   const whoReveal = useInView<HTMLElement>(scrollRevealOpts);
   const takeawaysReveal = useInView<HTMLElement>(scrollRevealOpts);
+  const speakersReveal = useInView<HTMLElement>(scrollRevealOpts);
   const faqReveal = useInView<HTMLElement>(scrollRevealOpts);
 
   return (
@@ -491,6 +611,51 @@ function EventDetail() {
           </div>
         </div>
       </section>
+
+      {/* 5b. SPEAKERS */}
+      {speakers.length > 0 ? (
+        <section
+          ref={speakersReveal.ref}
+          className="border-b border-[var(--color-border)] bg-[var(--color-background-alt)] py-10 md:py-12"
+        >
+          <div className="page-container">
+            <div
+              className={cn(
+                "reveal-up max-w-2xl",
+                speakersReveal.inView && "is-visible",
+              )}
+            >
+              <SectionLabel>Speakers</SectionLabel>
+              <h2 className="mt-3 font-display text-[clamp(1.5rem,2.5vw,2.05rem)] tracking-tight text-foreground">
+                Meet Our Speakers
+              </h2>
+              <p className="mt-3 text-[14px] leading-[1.65] text-[var(--color-text-secondary)] md:text-[15px]">
+                Learn from industry leaders, founders, and innovators sharing
+                their insights and experiences.
+              </p>
+            </div>
+
+            <ul className="mt-9 grid list-none gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+              {speakers.map((speaker, i) => (
+                <li
+                  key={speaker.name}
+                  className={cn(
+                    "reveal-up",
+                    speakersReveal.inView && "is-visible",
+                  )}
+                  style={{
+                    transitionDelay: speakersReveal.inView
+                      ? `${70 + i * 70}ms`
+                      : undefined,
+                  }}
+                >
+                  <SpeakerCard speaker={speaker} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ) : null}
 
       {/* 6. HOSTS */}
       <section className="border-b border-[var(--color-border)] py-10 md:py-12">

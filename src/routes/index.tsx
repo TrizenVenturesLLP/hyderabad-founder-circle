@@ -24,11 +24,15 @@ import bestverseLogo from "@/assets/logo-Bestverse.jpeg";
 import draperLogo from "@/assets/draper_logo.svg";
 import { useInView } from "@/hooks/use-in-view";
 import { cn } from "@/lib/utils";
-import { meetupVenueLine, nextMeetup } from "@/lib/events";
+import { meetupVenueLine, getMeetups, nextMeetup as fallbackNext } from "@/lib/events";
 import { links } from "@/lib/links";
 import { RsvpButton } from "@/components/rsvp/RsvpButton";
 
 export const Route = createFileRoute("/")({
+  loader: async () => {
+    const meetups = await getMeetups();
+    return { nextMeetup: meetups[0] ?? fallbackNext };
+  },
   head: () => ({
     meta: [
       { title: "Hyderabad Founders Network — Monthly Startup Meetup" },
@@ -398,6 +402,7 @@ function GainsSection() {
 }
 
 function MeetupSection() {
+  const { nextMeetup } = Route.useLoaderData();
   const { ref, inView } = useInView<HTMLElement>(scrollRevealOpts);
 
   return (
