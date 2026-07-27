@@ -386,7 +386,7 @@ function SpeakerCard({ speaker }: { speaker: EventSpeaker }) {
         ) : null}
 
         {/* Text + light black fade under it (bottom → top) */}
-        <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col bg-[linear-gradient(to_top,rgba(0,0,0,0.55)_0%,rgba(0,0,0,0.28)_45%,rgba(0,0,0,0.08)_75%,transparent_100%)] p-4 pt-14 sm:p-5 sm:pt-16">
+        <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col bg-[linear-gradient(to_top,rgba(0,0,0,0.98)_0%,rgba(0,0,0,0.58)_45%,rgba(0,0,0,0.22)_75%,transparent_100%)] p-4 pt-14 sm:p-5 sm:pt-16">
           <div className="flex items-end justify-between gap-3">
             <div className="min-w-0">
               <h3 className="font-display text-[1.15rem] leading-snug tracking-tight text-white sm:text-[1.25rem]">
