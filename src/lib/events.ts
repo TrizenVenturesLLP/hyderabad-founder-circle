@@ -1,6 +1,7 @@
 import shripujaPhoto from "@/assets/Shripuja-Siddamsetty.jpeg";
 import katlaPhoto from "@/assets/Katla-Charitavya.jpeg";
 import prasadPhoto from "@/assets/Prasad-Anumula.jpeg";
+import sreeKeerthanaPhoto from "@/assets/Sree-Keerthana-Gorty.jpg";
 
 export type CommunityHost = {
   name: string;
@@ -60,9 +61,11 @@ const SPEAKER_PHOTO_MAP: Record<string, string> = {
   "Shripuja-Siddamsetty": shripujaPhoto,
   "Katla-Charitavya": katlaPhoto,
   "Prasad-Anumula": prasadPhoto,
+  "Sree-Keerthana-Gorty": sreeKeerthanaPhoto,
   "Dr. Shripuja Siddamsetty": shripujaPhoto,
   "Katla Charitavya": katlaPhoto,
   "Prasad Anumula": prasadPhoto,
+  "Sree Keerthana Gorty": sreeKeerthanaPhoto,
 };
 
 const venueDefaults = {
@@ -130,6 +133,16 @@ export const fallbackMeetups: Meetup[] = [
     status: "open",
     blurb:
       "Connect with founders, builders, startup operators, mentors and aspiring entrepreneurs for meaningful conversations and long-term relationships.",
+    speakers: [
+      {
+        name: "Sree Keerthana Gorty",
+        role: "Founder · AI Practitioner & Mentor",
+        bio: "Building in AI after a decade in business systems — mentoring founders and professionals on career growth and startup journeys.",
+        photo: sreeKeerthanaPhoto,
+        photoPosition: "center 18%",
+        linkedin: "https://www.linkedin.com/in/sree-keerthana-gorty",
+      },
+    ],
   },
   {
     slug: "hyderabad-founders-network-september",
