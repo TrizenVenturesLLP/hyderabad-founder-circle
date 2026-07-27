@@ -353,46 +353,31 @@ function SpeakerCard({ speaker }: { speaker: EventSpeaker }) {
   return (
     <article className="mx-auto w-full max-w-[20.5rem] px-2 py-2.5 sm:max-w-none">
       {/*
-        IMAGE CONTAINER (fixed size)
-        - image lives inside
-        - overlay + text live inside
-        - photoPaddingBottom only moves the image up; container/overlay size unchanged
-        - article padding slightly shrinks the box without changing grid gaps
+        Full photo fills the container. Text sits on a light bottom→top fade only.
       */}
-      <div className="group relative aspect-[3/4] overflow-hidden rounded-[1.5rem] bg-black">
-        {/* Image layer — bottom inset lifts this photo only; overflow clipped */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div
-            className="absolute inset-x-0 top-0 overflow-hidden"
-            style={{ bottom: speaker.photoPaddingBottom ?? 0 }}
-          >
-            {speaker.photo ? (
-              <img
-                src={speaker.photo}
-                alt=""
-                className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-                style={{
-                  objectPosition: speaker.photoPosition ?? "center top",
-                }}
-              />
-            ) : (
-              <div
-                className="flex size-full items-center justify-center bg-[linear-gradient(160deg,color-mix(in_oklab,var(--brand-primary)_92%,white),var(--brand-primary))]"
-                aria-hidden
-              >
-                <span className="font-display text-[2.5rem] tracking-tight text-white/90">
-                  {speakerInitials(speaker.name)}
-                </span>
-              </div>
-            )}
-          </div>
+      <div className="group relative aspect-[3/4] overflow-hidden rounded-[1.5rem] bg-[#111]">
+        {/* Full-bleed photo fills the container; text sits on a soft fade */}
+        <div className="absolute inset-0">
+          {speaker.photo ? (
+            <img
+              src={speaker.photo}
+              alt=""
+              className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+              style={{
+                objectPosition: speaker.photoPosition || "center center",
+              }}
+            />
+          ) : (
+            <div
+              className="flex size-full items-center justify-center bg-[linear-gradient(160deg,color-mix(in_oklab,var(--brand-primary)_92%,white),var(--brand-primary))]"
+              aria-hidden
+            >
+              <span className="font-display text-[2.5rem] tracking-tight text-white/90">
+                {speakerInitials(speaker.name)}
+              </span>
+            </div>
+          )}
         </div>
-
-        {/* Overlay layer — softer so more of the photo stays visible */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-[48%] bg-[linear-gradient(to_top,rgba(0,0,0,0.82)_0%,rgba(0,0,0,0.45)_42%,rgba(0,0,0,0.12)_72%,transparent_100%)]"
-        />
 
         {speaker.badge ? (
           <span className="absolute left-3.5 top-3.5 z-20 rounded-full bg-[var(--brand-accent)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white">
@@ -400,19 +385,19 @@ function SpeakerCard({ speaker }: { speaker: EventSpeaker }) {
           </span>
         ) : null}
 
-        {/* Text sits on the overlay, inside the image container */}
-        <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col p-4 sm:p-5">
+        {/* Text + light black fade under it (bottom → top) */}
+        <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col bg-[linear-gradient(to_top,rgba(0,0,0,0.55)_0%,rgba(0,0,0,0.28)_45%,rgba(0,0,0,0.08)_75%,transparent_100%)] p-4 pt-14 sm:p-5 sm:pt-16">
           <div className="flex items-end justify-between gap-3">
             <div className="min-w-0">
               <h3 className="font-display text-[1.15rem] leading-snug tracking-tight text-white sm:text-[1.25rem]">
                 {speaker.name}
               </h3>
-              <p className="mt-1 text-[12px] leading-snug text-white/75 sm:text-[13px]">
+              <p className="mt-1 text-[12px] leading-snug text-white/90 sm:text-[13px]">
                 {speaker.role}
                 {speaker.org ? (
                   <>
                     <br />
-                    <span className="text-white/90">{speaker.org}</span>
+                    <span className="text-white">{speaker.org}</span>
                   </>
                 ) : null}
               </p>
@@ -425,7 +410,7 @@ function SpeakerCard({ speaker }: { speaker: EventSpeaker }) {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`${speaker.name} on LinkedIn`}
-                  className="inline-flex size-8 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white backdrop-blur-sm transition-colors hover:border-white/50 hover:bg-white/20"
+                  className="inline-flex size-8 items-center justify-center rounded-full border border-white/35 bg-black/25 text-white backdrop-blur-[2px] transition-colors hover:border-white/55 hover:bg-black/35"
                 >
                   <Linkedin className="size-3.5" strokeWidth={1.75} />
                 </a>
@@ -436,7 +421,7 @@ function SpeakerCard({ speaker }: { speaker: EventSpeaker }) {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`${speaker.name} website`}
-                  className="inline-flex size-8 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white backdrop-blur-sm transition-colors hover:border-white/50 hover:bg-white/20"
+                  className="inline-flex size-8 items-center justify-center rounded-full border border-white/35 bg-black/25 text-white backdrop-blur-[2px] transition-colors hover:border-white/55 hover:bg-black/35"
                 >
                   <ExternalLink className="size-3.5" strokeWidth={1.75} />
                 </a>
@@ -444,7 +429,7 @@ function SpeakerCard({ speaker }: { speaker: EventSpeaker }) {
             </div>
           </div>
 
-          <p className="mt-2.5 border-t border-white/15 pt-2.5 text-[12px] leading-[1.55] text-white/80 italic sm:text-[13px]">
+          <p className="mt-2.5 border-t border-white/25 pt-2.5 text-[12px] leading-[1.55] text-white/95 italic sm:text-[13px]">
             {speaker.bio}
           </p>
         </div>
