@@ -196,21 +196,25 @@ function AdminEventsPage() {
   }
 
   return (
-    <div className="p-5 md:p-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="p-4 sm:p-5 md:p-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
         <div>
           <p className="hidden text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--brand-accent)] lg:block">
             Admin
           </p>
-          <h1 className="mt-1 font-display text-2xl tracking-tight text-foreground md:text-[1.75rem]">
+          <h1 className="mt-1 font-display text-xl tracking-tight text-foreground sm:text-2xl md:text-[1.75rem]">
             Events
           </h1>
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            {loading ? "Loading…" : `${items.length} event(s)`} — edit full page
-            content including speakers & venue.
+            {loading ? "Loading…" : `${items.length} event(s)`} — edit speakers,
+            venue & page content.
           </p>
         </div>
-        <button type="button" className="btn-primary gap-1.5" onClick={startCreate}>
+        <button
+          type="button"
+          className="btn-primary w-full gap-1.5 sm:w-auto"
+          onClick={startCreate}
+        >
           <Plus className="size-4" strokeWidth={2} />
           Add event
         </button>
@@ -220,49 +224,67 @@ function AdminEventsPage() {
         <p className="mt-4 text-sm text-red-600">{error}</p>
       ) : null}
 
-      <div className="mt-6 grid gap-4">
-        {items.map((item) => (
-          <article
-            key={item._id}
-            className="rounded-[16px] border border-[var(--color-border)] bg-white p-5 shadow-[0_1px_2px_rgba(59,35,24,0.04)]"
-          >
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-display text-lg tracking-tight text-foreground">
-                    {item.title}
-                  </h2>
-                  <StatusPill status={item.status} published={item.published} />
+      <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+        {items.map((item) => {
+          const day = item.dateISO
+            ? new Date(`${item.dateISO}T12:00:00`)
+            : null;
+          const dayNum = day ? day.getDate() : "—";
+          const monthShort = day
+            ? day.toLocaleDateString("en-IN", { month: "short" }).toUpperCase()
+            : "";
+          const year = day ? day.getFullYear() : "";
+
+          return (
+            <li
+              key={item._id}
+              className="flex aspect-square flex-col rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-[0_1px_2px_rgba(59,35,24,0.04)]"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-display text-[2rem] leading-none tracking-tight text-foreground">
+                    {dayNum}
+                  </p>
+                  <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+                    {monthShort} {year}
+                  </p>
                 </div>
-                <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                <StatusPill status={item.status} published={item.published} />
+              </div>
+
+              <div className="mt-3 min-h-0 flex-1">
+                <h2 className="line-clamp-2 font-display text-[0.95rem] leading-snug tracking-tight text-foreground sm:text-base">
+                  {item.title}
+                </h2>
+                <p className="mt-1.5 truncate text-[11px] text-[var(--color-text-muted)]">
                   /{item.slug}
                 </p>
-                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-[var(--color-text-secondary)]">
-                  <span className="inline-flex items-center gap-1.5">
-                    <CalendarDays className="size-3.5" strokeWidth={1.75} />
-                    {item.dateLabel} · {item.time}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <MapPin className="size-3.5" strokeWidth={1.75} />
-                    {item.venue}
-                    {item.area ? ` · ${item.area}` : ""}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <Users className="size-3.5" strokeWidth={1.75} />
-                    {item.speakers?.length || 0} speaker(s) ·{" "}
-                    {item.hosts?.length || 0} host(s)
-                  </span>
-                </div>
-                {item.blurb ? (
-                  <p className="mt-3 line-clamp-2 text-sm text-[var(--color-text-secondary)]">
-                    {item.blurb}
+                <div className="mt-2.5 space-y-1 text-[12px] text-[var(--color-text-secondary)]">
+                  <p className="flex items-center gap-1.5 truncate">
+                    <CalendarDays className="size-3.5 shrink-0" strokeWidth={1.75} />
+                    <span className="truncate">{item.time}</span>
                   </p>
-                ) : null}
+                  <p className="flex items-center gap-1.5 truncate">
+                    <MapPin className="size-3.5 shrink-0" strokeWidth={1.75} />
+                    <span className="truncate">
+                      {item.venue}
+                      {item.area ? ` · ${item.area}` : ""}
+                    </span>
+                  </p>
+                  <p className="flex items-center gap-1.5 truncate">
+                    <Users className="size-3.5 shrink-0" strokeWidth={1.75} />
+                    <span className="truncate">
+                      {item.speakers?.length || 0} speakers ·{" "}
+                      {item.hosts?.length || 0} hosts
+                    </span>
+                  </p>
+                </div>
               </div>
-              <div className="flex shrink-0 gap-2">
+
+              <div className="mt-3 flex gap-2 border-t border-[var(--color-border)] pt-3">
                 <button
                   type="button"
-                  className="btn-secondary"
+                  className="btn-secondary flex-1 !px-2 !py-2 text-xs sm:text-sm"
                   onClick={() => startEdit(item)}
                 >
                   Edit
@@ -270,19 +292,19 @@ function AdminEventsPage() {
                 {item._id ? (
                   <button
                     type="button"
-                    className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100"
+                    className="flex-1 rounded-xl border border-red-200 bg-red-50 px-2 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 sm:text-sm"
                     onClick={() => void onDelete(item._id!)}
                   >
                     Delete
                   </button>
                 ) : null}
               </div>
-            </div>
-          </article>
-        ))}
+            </li>
+          );
+        })}
 
         {!loading && items.length === 0 ? (
-          <div className="rounded-[16px] border border-dashed border-[var(--color-border)] bg-white px-5 py-14 text-center">
+          <li className="col-span-full rounded-2xl border border-dashed border-[var(--color-border)] bg-white px-5 py-14 text-center">
             <p className="text-sm text-[var(--color-text-secondary)]">
               No events yet. Add one to publish on the site.
             </p>
@@ -293,9 +315,9 @@ function AdminEventsPage() {
             >
               Add event
             </button>
-          </div>
+          </li>
         ) : null}
-      </div>
+      </ul>
 
       {editorOpen ? (
         <EventEditorModal
@@ -340,26 +362,32 @@ function StatusPill({
   published?: boolean;
 }) {
   return (
-    <span className="flex flex-wrap gap-1.5">
+    <span className="flex max-w-[46%] flex-col items-end gap-1">
       <span
         className={cn(
-          "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+          "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
           status === "open"
             ? "bg-emerald-50 text-emerald-700"
-            : "bg-amber-50 text-amber-700",
+            : status === "completed"
+              ? "bg-zinc-100 text-zinc-600"
+              : "bg-amber-50 text-amber-700",
         )}
       >
-        {status}
+        {status === "coming-soon"
+          ? "soon"
+          : status === "completed"
+            ? "done"
+            : status}
       </span>
       <span
         className={cn(
-          "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+          "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
           published !== false
             ? "bg-[var(--brand-accent-soft)] text-[var(--brand-primary)]"
             : "bg-zinc-100 text-zinc-500",
         )}
       >
-        {published !== false ? "Published" : "Draft"}
+        {published !== false ? "Live" : "Draft"}
       </span>
     </span>
   );
@@ -552,6 +580,7 @@ function EventEditorModal({
                     >
                       <option value="open">Open</option>
                       <option value="coming-soon">Coming soon</option>
+                      <option value="completed">Completed</option>
                     </select>
                   </Field>
                   <Field label="Format">

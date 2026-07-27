@@ -44,7 +44,7 @@ export type Meetup = {
   city: string;
   seats?: number;
   format: "Offline" | "Online" | "Hybrid";
-  status: "open" | "coming-soon";
+  status: "open" | "coming-soon" | "completed";
   blurb: string;
   hosts?: CommunityHost[];
   guestFounder?: GuestFounder;
@@ -89,7 +89,7 @@ export const fallbackMeetups: Meetup[] = [
     dateISO: "2026-07-18",
     dateLabel: "Saturday, 18 July 2026",
     ...venueDefaults,
-    status: "open",
+    status: "completed",
     blurb:
       "The monthly roundtable. Show up, share what you're building, find your people.",
     speakers: [
@@ -241,14 +241,37 @@ export function findMeetupBySlug(slug: string) {
 
 export function getNextMeetup(list?: Meetup[]) {
   const source = list ?? meetupsCache ?? fallbackMeetups;
-  return source[0];
+  return (
+    source.find((m) => isRsvpOpen(m)) ??
+    source.find((m) => !isMeetupCompleted(m)) ??
+    source[0]
+  );
 }
 
 /** Sync fallback for modules that still expect a static next meetup. */
-export const nextMeetup = fallbackMeetups[0];
+export const nextMeetup =
+  fallbackMeetups.find((m) => m.status === "open") ?? fallbackMeetups[0];
+
+/** True when the event date has ended (end of day, Asia/Kolkata). */
+export function isMeetupPast(meetup: Meetup) {
+  if (!meetup.dateISO) return false;
+  const end = new Date(`${meetup.dateISO}T23:59:59+05:30`);
+  return Number.isFinite(end.getTime()) && Date.now() > end.getTime();
+}
+
+/** Explicitly completed, or past its date. */
+export function isMeetupCompleted(meetup: Meetup) {
+  return meetup.status === "completed" || isMeetupPast(meetup);
+}
 
 export function isRsvpOpen(meetup: Meetup) {
-  return meetup.status === "open";
+  return meetup.status === "open" && !isMeetupPast(meetup);
+}
+
+export function meetupStatusLabel(meetup: Meetup) {
+  if (isMeetupCompleted(meetup)) return "Completed";
+  if (meetup.status === "coming-soon") return "Coming soon";
+  return "Open";
 }
 
 export function meetupLocationLabel(meetup: Meetup) {

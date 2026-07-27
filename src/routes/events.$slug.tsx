@@ -2,20 +2,28 @@ import { type ReactNode } from "react";
 import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-router";
 import {
   ArrowUpRight,
+  BookOpen,
+  Briefcase,
   Calendar,
   CircleParking,
   Clock,
   Coffee,
   ExternalLink,
+  Handshake,
+  Lightbulb,
   Linkedin,
   MapPin,
+  MessageSquare,
+  Rocket,
   Ticket,
   TrainFront,
+  UserRound,
   Users,
   Accessibility,
 } from "lucide-react";
 import {
   getMeetupBySlug,
+  isMeetupCompleted,
   isRsvpOpen,
   meetupMapsEmbedUrl,
   meetupMapsUrl,
@@ -102,26 +110,32 @@ const whoFor = [
   {
     title: "Startup Founders",
     desc: "Meet other founders solving similar challenges.",
+    icon: UserRound,
   },
   {
     title: "Co-founders",
     desc: "Expand your network and exchange experiences.",
+    icon: Users,
   },
   {
     title: "Builders",
     desc: "Developers, designers and engineers interested in startups.",
+    icon: Lightbulb,
   },
   {
     title: "Product & Startup Operators",
     desc: "Connect with teams building high-growth companies.",
+    icon: Briefcase,
   },
   {
     title: "Investors & Mentors",
     desc: "Meet founders and contribute to the ecosystem.",
+    icon: Handshake,
   },
   {
     title: "Aspiring Entrepreneurs",
     desc: "Learn from real startup journeys before building your own.",
+    icon: Rocket,
   },
 ];
 
@@ -198,6 +212,64 @@ const faqs = [
   {
     q: "Will there be food?",
     a: "Light refreshments (or snacks) will be provided.",
+  },
+];
+
+const eventGallery = [
+  {
+    src: "/july-2026-1.jpeg",
+    alt: "Hyderabad Founders Network July meetup — group photo",
+  },
+  {
+    src: "/july-2026-2.jpeg",
+    alt: "Token of appreciation at the July founders meetup",
+  },
+  {
+    src: "/july-2026-3.jpeg",
+    alt: "Speaker recognition moment at the July meetup",
+  },
+  {
+    src: "/july-2026-4.jpeg",
+    alt: "Guest appreciation at Hyderabad Founders Network July",
+  },
+];
+
+const trizenProducts = [
+  {
+    name: "TrizenHR",
+    category: "Workforce Ops",
+    tagline: "Standalone SaaS",
+    desc: "Attendance and payroll in one place — clock in on web or mobile, manage leave, and get accurate payslips.",
+    href: "https://trizenhr.com/",
+    cta: "Learn More",
+    image: "https://trizenventures.com/products/trizen-hr-v2.jpg",
+    accent: "#3b2318",
+    soft: "#efe5de",
+    icon: Users,
+  },
+  {
+    name: "TrizenDialog",
+    category: "WhatsApp Ops",
+    tagline: "Standalone console & API",
+    desc: "Run WhatsApp notifications without the chaos — manage templates, sends, delivery status, and backend integrations in one console.",
+    href: "https://trizendialog.extrahand.in/",
+    cta: "Learn More",
+    image: "https://trizenventures.com/products/trizen-dialog-card-v3.jpg",
+    accent: "#5a6b4e",
+    soft: "#e8efe4",
+    icon: MessageSquare,
+  },
+  {
+    name: "Trizen Courses",
+    category: "Learning",
+    tagline: "Industry-ready programs",
+    desc: "Practical courses and bootcamps in web development, AI, and building — designed for aspiring builders.",
+    href: "https://courses.trizenventures.com/",
+    cta: "Learn More",
+    image: "/image.png" as string | null,
+    accent: "#d8643c",
+    soft: "#f6ded3",
+    icon: BookOpen,
   },
 ];
 
@@ -287,7 +359,7 @@ function SpeakerCard({ speaker }: { speaker: EventSpeaker }) {
         - photoPaddingBottom only moves the image up; container/overlay size unchanged
         - article padding slightly shrinks the box without changing grid gaps
       */}
-      <div className="group relative aspect-[3/4] overflow-hidden rounded-[1.25rem] bg-black">
+      <div className="group relative aspect-[3/4] overflow-hidden rounded-[1.5rem] bg-black">
         {/* Image layer — bottom inset lifts this photo only; overflow clipped */}
         <div className="absolute inset-0 overflow-hidden">
           <div
@@ -316,10 +388,10 @@ function SpeakerCard({ speaker }: { speaker: EventSpeaker }) {
           </div>
         </div>
 
-        {/* Overlay layer — same size/position for every card */}
+        {/* Overlay layer — softer so more of the photo stays visible */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-[linear-gradient(to_top,#000_0%,#000_45%,rgba(0,0,0,0.72)_70%,transparent_100%)]"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[48%] bg-[linear-gradient(to_top,rgba(0,0,0,0.82)_0%,rgba(0,0,0,0.45)_42%,rgba(0,0,0,0.12)_72%,transparent_100%)]"
         />
 
         {speaker.badge ? (
@@ -392,6 +464,9 @@ function EventDetail() {
   const takeawaysReveal = useInView<HTMLElement>(scrollRevealOpts);
   const speakersReveal = useInView<HTMLElement>(scrollRevealOpts);
   const faqReveal = useInView<HTMLElement>(scrollRevealOpts);
+  const galleryReveal = useInView<HTMLElement>(scrollRevealOpts);
+  const offeringsReveal = useInView<HTMLElement>(scrollRevealOpts);
+  const completed = isMeetupCompleted(meetup);
 
   return (
     <article className="bg-[var(--color-background)]">
@@ -441,18 +516,13 @@ function EventDetail() {
                   Get Directions
                 </a>
               </div>
-              <p className="mt-3 text-[13px] text-[var(--color-text-muted)]">
+              <p className="mt-3 pb-8 text-[13px] text-[var(--color-text-muted)] md:pb-12">
                 Registration is required due to limited capacity.
               </p>
             </div>
 
-            <div className="flex flex-col gap-5 lg:col-span-5 lg:flex-row lg:items-start lg:gap-4">
-              <EventShareBar
-                meetup={meetup}
-                orientation="vertical"
-                className="shrink-0 lg:pt-0.5"
-              />
-              <ul className="min-w-0 flex-1 lg:border-l lg:border-[var(--color-border)] lg:pl-8">
+            <div className="flex flex-col gap-5 lg:col-span-5">
+              <ul className="min-w-0 lg:border-l lg:border-[var(--color-border)] lg:pl-8">
                 <MetaRow label="Date" value={meetup.dateLabel} icon={Calendar} />
                 <MetaRow label="Time" value={meetup.time} icon={Clock} />
                 <MetaRow label="Venue" value={venueLine} icon={MapPin} />
@@ -463,18 +533,23 @@ function EventDetail() {
                 />
                 <MetaRow label="Seats" value="Limited Seats" icon={Users} />
               </ul>
+              <EventShareBar
+                meetup={meetup}
+                orientation="horizontal"
+                className="lg:pl-8"
+              />
             </div>
           </div>
         </div>
       </header>
 
       {/* 2. WHY */}
-      <section className="border-b border-[var(--color-border)] py-10 md:py-12">
+      <section className="border-b border-[var(--color-border)] py-12 md:py-16">
         <div className="page-container">
           <Reveal className="grid gap-6 lg:grid-cols-12 lg:gap-12" variant="up">
             <div className="lg:col-span-5">
               <SectionLabel>Why this meetup?</SectionLabel>
-              <h2 className="mt-3 max-w-[18ch] font-display text-[clamp(1.5rem,2.5vw,2.05rem)] leading-[1.1] tracking-tight text-foreground">
+              <h2 className="mt-3 max-w-[16ch] font-display text-[clamp(1.5rem,2.5vw,2.05rem)] leading-[1.15] tracking-tight text-foreground">
                 More than networking. A community that grows together.
               </h2>
             </div>
@@ -494,10 +569,106 @@ function EventDetail() {
         </div>
       </section>
 
-      {/* 3. WHO */}
+      {/* 3. EVENT HIGHLIGHTS (gallery) — completed only, right after Why */}
+      {completed ? (
+        <section
+          ref={galleryReveal.ref}
+          className="border-b border-[var(--color-border)] bg-[var(--color-background)] py-12 md:py-16"
+        >
+          <div className="page-container">
+            <div
+              className={cn(
+                "reveal-up flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-6",
+                galleryReveal.inView && "is-visible",
+              )}
+            >
+              <div>
+                <SectionLabel>Event Highlights</SectionLabel>
+                <h2 className="mt-2 font-display text-[clamp(1.35rem,2.2vw,1.75rem)] tracking-tight text-foreground">
+                  Moments that mattered
+                </h2>
+              </div>
+              <p className="max-w-sm text-[13px] leading-relaxed text-[var(--color-text-secondary)] sm:text-right">
+                Snapshots from the July meetup.
+              </p>
+            </div>
+
+            <div
+              className={cn(
+                "reveal-up mt-5 grid gap-4 lg:grid-cols-12 lg:items-stretch",
+                galleryReveal.inView && "is-visible",
+              )}
+            >
+              <figure
+                className={cn(
+                  "reveal-up relative aspect-[16/10] overflow-hidden rounded-[12px] bg-[var(--color-background-warm)] lg:col-span-8 lg:aspect-auto lg:min-h-[28rem]",
+                  galleryReveal.inView && "is-visible",
+                )}
+                style={{
+                  transitionDelay: galleryReveal.inView ? "40ms" : undefined,
+                }}
+              >
+                <img
+                  src={eventGallery[0].src}
+                  alt={eventGallery[0].alt}
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 h-full w-full object-cover object-center"
+                />
+              </figure>
+
+              <ul className="grid list-none grid-cols-3 gap-2.5 lg:col-span-4 lg:grid-cols-1 lg:grid-rows-3 lg:gap-4">
+                {eventGallery.slice(1).map((shot, i) => (
+                  <li
+                    key={shot.alt}
+                    className={cn(
+                      "reveal-up min-h-0",
+                      galleryReveal.inView && "is-visible",
+                    )}
+                    style={{
+                      transitionDelay: galleryReveal.inView
+                        ? `${90 + i * 50}ms`
+                        : undefined,
+                    }}
+                  >
+                    <figure className="relative aspect-[4/3] h-full overflow-hidden rounded-[10px] bg-[var(--color-background-warm)] lg:aspect-auto">
+                      <img
+                        src={shot.src}
+                        alt={shot.alt}
+                        loading="lazy"
+                        decoding="async"
+                        className="absolute inset-0 h-full w-full object-cover object-center"
+                      />
+                    </figure>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div
+              className={cn(
+                "reveal-up mt-8 max-w-2xl border-t border-[var(--color-border)] pt-7",
+                galleryReveal.inView && "is-visible",
+              )}
+              style={{
+                transitionDelay: galleryReveal.inView ? "160ms" : undefined,
+              }}
+            >
+              <SectionLabel>July Meetup Recap</SectionLabel>
+              <p className="mt-3 text-[15px] leading-[1.75] text-[var(--color-text-secondary)] md:text-[16px]">
+                Founders, operators, and aspiring entrepreneurs came together to
+                exchange ideas, hear founder stories, and build lasting
+                connections. Thank you to everyone who joined us.
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {/* 4. WHO */}
       <section
         ref={whoReveal.ref}
-        className="border-b border-[var(--color-border)] bg-[var(--color-background-alt)] py-10 md:py-12"
+        className="border-b border-[var(--color-border)] bg-[var(--color-background-alt)] py-12 md:py-16"
       >
         <div className="page-container">
           <div
@@ -512,35 +683,47 @@ function EventDetail() {
             </h2>
           </div>
           <ul className="mt-8 grid list-none gap-x-10 gap-y-0 sm:grid-cols-2 lg:grid-cols-3">
-            {whoFor.map((item, i) => (
-              <li
-                key={item.title}
-                className={cn(
-                  "reveal-up border-t border-[var(--color-border)] py-5",
-                  whoReveal.inView && "is-visible",
-                )}
-                style={{
-                  transitionDelay: whoReveal.inView
-                    ? `${60 + i * 45}ms`
-                    : undefined,
-                }}
-              >
-                <p className="font-display text-[1.05rem] tracking-tight text-foreground">
-                  {item.title}
-                </p>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
-                  {item.desc}
-                </p>
-              </li>
-            ))}
+            {whoFor.map((item, i) => {
+              const Icon = item.icon;
+              return (
+                <li
+                  key={item.title}
+                  className={cn(
+                    "reveal-up border-t border-[var(--color-border)] py-7",
+                    whoReveal.inView && "is-visible",
+                  )}
+                  style={{
+                    transitionDelay: whoReveal.inView
+                      ? `${60 + i * 45}ms`
+                      : undefined,
+                  }}
+                >
+                  <div className="flex items-start gap-3">
+                    <Icon
+                      className="mt-0.5 size-4 shrink-0 text-[var(--brand-accent)]"
+                      strokeWidth={1.75}
+                      aria-hidden
+                    />
+                    <div className="min-w-0">
+                      <p className="font-display text-[1.05rem] tracking-tight text-foreground">
+                        {item.title}
+                      </p>
+                      <p className="mt-2.5 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
+                        {item.desc}
+                      </p>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </section>
 
-      {/* 4 + 5. TAKEAWAYS + AGENDA */}
+      {/* 5 + 6. TAKEAWAYS + AGENDA */}
       <section
         ref={takeawaysReveal.ref}
-        className="border-b border-[var(--color-border)] py-7 md:py-9"
+        className="border-b border-[var(--color-border)] py-12 md:py-16"
       >
         <div className="page-container grid gap-7 lg:grid-cols-2 lg:gap-8">
           <div
@@ -586,14 +769,14 @@ function EventDetail() {
               {agenda.map((step) => (
                 <li
                   key={step.time + step.title}
-                  className="relative pb-3 last:pb-0"
+                  className="relative pb-3.5 last:pb-0"
                 >
                   <span
                     className="absolute top-1.5 -left-[1.15rem] size-1.5 rounded-full bg-[var(--brand-accent)]"
                     aria-hidden
                   />
                   <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
-                    <p className="text-[12px] font-semibold tabular-nums text-[var(--brand-accent)]">
+                    <p className="text-[12px] font-bold tabular-nums text-[var(--brand-accent)] md:text-[13px]">
                       {step.time}
                     </p>
                     <p className="text-[13px] font-medium tracking-tight text-foreground md:text-[14px]">
@@ -601,7 +784,7 @@ function EventDetail() {
                     </p>
                   </div>
                   {step.desc ? (
-                    <p className="mt-0.5 text-[12px] leading-snug text-[var(--color-text-secondary)]">
+                    <p className="mt-1 text-[12px] leading-[1.8] text-[var(--color-text-secondary)]">
                       {step.desc}
                     </p>
                   ) : null}
@@ -616,7 +799,7 @@ function EventDetail() {
       {speakers.length > 0 ? (
         <section
           ref={speakersReveal.ref}
-          className="border-b border-[var(--color-border)] bg-[var(--color-background-alt)] py-10 md:py-12"
+          className="border-b border-[var(--color-border)] bg-[var(--color-background-alt)] py-12 md:py-16"
         >
           <div className="page-container">
             <div
@@ -657,26 +840,77 @@ function EventDetail() {
         </section>
       ) : null}
 
-      {/* 6. HOSTS */}
-      <section className="border-b border-[var(--color-border)] py-10 md:py-12">
-        <div className="page-container">
-          <Reveal variant="up">
-            <SectionLabel>Featured community members</SectionLabel>
-            <h2 className="mt-3 font-display text-[clamp(1.5rem,2.5vw,2.05rem)] tracking-tight text-foreground">
-              Community Hosts
-            </h2>
-            <p className="mt-3 max-w-2xl text-[14px] leading-[1.65] text-[var(--color-text-secondary)]">
-              Each meetup is led by founders from the community — not speakers on
-              a stage.
-            </p>
+      {/* 6. HOSTS — only when hosts or guest founder exist */}
+      {hosts.length > 0 || meetup.guestFounder ? (
+        <section className="border-b border-[var(--color-border)] py-12 md:py-16">
+          <div className="page-container">
+            <Reveal variant="up">
+              <SectionLabel>Featured community members</SectionLabel>
+              <h2 className="mt-3 font-display text-[clamp(1.5rem,2.5vw,2.05rem)] tracking-tight text-foreground">
+                Community Hosts
+              </h2>
+              <p className="mt-3 max-w-2xl text-[14px] leading-[1.65] text-[var(--color-text-secondary)]">
+                Each meetup is led by founders from the community — not speakers
+                on a stage.
+              </p>
 
-            {hosts.length > 0 ? (
-              <ul className="mt-7 grid gap-6 sm:grid-cols-2">
-                {hosts.map((host, i) => (
-                  <li key={`${host.name}-${i}`} className="flex gap-3.5">
-                    {host.photo ? (
+              {hosts.length > 0 ? (
+                <ul className="mt-7 grid gap-6 sm:grid-cols-2">
+                  {hosts.map((host, i) => (
+                    <li key={`${host.name}-${i}`} className="flex gap-3.5">
+                      {host.photo ? (
+                        <img
+                          src={host.photo}
+                          alt=""
+                          className="size-12 shrink-0 rounded-full object-cover"
+                          width={48}
+                          height={48}
+                        />
+                      ) : (
+                        <div
+                          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary-soft)] text-sm font-medium text-[var(--color-text-secondary)]"
+                          aria-hidden
+                        >
+                          {host.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-[15px] font-medium tracking-tight text-foreground">
+                          {host.name}
+                        </p>
+                        <p className="mt-0.5 text-[13px] text-[var(--color-text-secondary)]">
+                          {host.role}
+                          {host.startup ? ` · ${host.startup}` : ""}
+                        </p>
+                        <a
+                          href={host.linkedin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-1.5 inline-flex items-center gap-1 text-[13px] font-semibold text-[var(--brand-accent)] underline-offset-4 hover:underline"
+                        >
+                          LinkedIn
+                          <ArrowUpRight className="size-3.5" aria-hidden />
+                        </a>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+
+              {meetup.guestFounder ? (
+                <div className="mt-8 border-t border-[var(--color-border)] pt-6">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--brand-accent)]">
+                    Optional Guest Founder
+                  </p>
+                  <div className="mt-3 flex gap-3.5">
+                    {meetup.guestFounder.photo ? (
                       <img
-                        src={host.photo}
+                        src={meetup.guestFounder.photo}
                         alt=""
                         className="size-12 shrink-0 rounded-full object-cover"
                         width={48}
@@ -687,86 +921,27 @@ function EventDetail() {
                         className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary-soft)] text-sm font-medium text-[var(--color-text-secondary)]"
                         aria-hidden
                       >
-                        {host.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .slice(0, 2)
-                          .toUpperCase()}
+                        {meetup.guestFounder.name.slice(0, 2).toUpperCase()}
                       </div>
                     )}
-                    <div className="min-w-0">
+                    <div>
                       <p className="text-[15px] font-medium tracking-tight text-foreground">
-                        {host.name}
+                        {meetup.guestFounder.name}
                       </p>
-                      <p className="mt-0.5 text-[13px] text-[var(--color-text-secondary)]">
-                        {host.role}
-                        {host.startup ? ` · ${host.startup}` : ""}
+                      <p className="mt-1 max-w-xl text-[13px] leading-[1.65] text-[var(--color-text-secondary)]">
+                        {meetup.guestFounder.bio}
                       </p>
-                      <a
-                        href={host.linkedin}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-1.5 inline-flex items-center gap-1 text-[13px] font-semibold text-[var(--brand-accent)] underline-offset-4 hover:underline"
-                      >
-                        LinkedIn
-                        <ArrowUpRight className="size-3.5" aria-hidden />
-                      </a>
                     </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-5 text-[14px] text-[var(--color-text-secondary)]">
-                Hosts for this meetup will be announced soon.{" "}
-                <Link
-                  to="/contact"
-                  className="font-medium text-foreground underline-offset-4 hover:text-[var(--brand-accent)] hover:underline"
-                >
-                  Want to host?
-                </Link>
-              </p>
-            )}
-
-            {meetup.guestFounder ? (
-              <div className="mt-8 border-t border-[var(--color-border)] pt-6">
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--brand-accent)]">
-                  Optional Guest Founder
-                </p>
-                <div className="mt-3 flex gap-3.5">
-                  {meetup.guestFounder.photo ? (
-                    <img
-                      src={meetup.guestFounder.photo}
-                      alt=""
-                      className="size-12 shrink-0 rounded-full object-cover"
-                      width={48}
-                      height={48}
-                    />
-                  ) : (
-                    <div
-                      className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary-soft)] text-sm font-medium text-[var(--color-text-secondary)]"
-                      aria-hidden
-                    >
-                      {meetup.guestFounder.name.slice(0, 2).toUpperCase()}
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-[15px] font-medium tracking-tight text-foreground">
-                      {meetup.guestFounder.name}
-                    </p>
-                    <p className="mt-1 max-w-xl text-[13px] leading-[1.65] text-[var(--color-text-secondary)]">
-                      {meetup.guestFounder.bio}
-                    </p>
                   </div>
                 </div>
-              </div>
-            ) : null}
-          </Reveal>
-        </div>
-      </section>
+              ) : null}
+            </Reveal>
+          </div>
+        </section>
+      ) : null}
 
       {/* 7. VENUE */}
-      <section className="border-b border-[var(--color-border)] bg-[var(--color-background-alt)] py-10 md:py-12">
+      <section className="border-b border-[var(--color-border)] bg-[var(--color-background-alt)] py-12 md:py-16">
         <div className="page-container">
           <Reveal variant="up">
             <SectionLabel>Venue</SectionLabel>
@@ -777,7 +952,7 @@ function EventDetail() {
               {meetup.area ?? "Gachibowli"}, {meetup.city}
             </p>
 
-            <div className="mt-5 grid gap-8 lg:grid-cols-12 lg:items-start lg:gap-12">
+            <div className="mt-5 grid gap-8 lg:grid-cols-12 lg:items-start lg:gap-10">
               <div className="overflow-hidden rounded-[16px] border border-[var(--color-border)] lg:col-span-7">
                 <iframe
                   title={`Map of ${meetup.venue}`}
@@ -827,100 +1002,223 @@ function EventDetail() {
         </div>
       </section>
 
-      {/* 9. REGISTRATION + 10. FAQ */}
-      <section
-        id="register"
-        ref={faqReveal.ref}
-        className="border-b border-[var(--color-border)] bg-[var(--color-background-warm)] py-10 md:py-12"
-      >
-        <div className="page-container grid gap-10 lg:grid-cols-2 lg:gap-14">
-          <div className={cn("reveal-left", faqReveal.inView && "is-visible")}>
-            <SectionLabel>Registration</SectionLabel>
-            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <h2 className="font-display text-[clamp(1.5rem,2.5vw,2.05rem)] tracking-tight text-foreground">
-                Reserve Your Seat
-              </h2>
-              <div className="flex shrink-0 flex-wrap items-center gap-3">
-                <RsvpButton event={meetup} className="btn-primary">
-                  Register Now
-                </RsvpButton>
-                {isRsvpOpen(meetup) ? null : (
-                  <p className="text-[13px] text-[var(--color-text-muted)]">
-                    Registration opens closer to the event date.
-                  </p>
+      {/* After venue: completed → Trizen; open → Registration + FAQ */}
+      {completed ? (
+        <>
+          <section
+            ref={offeringsReveal.ref}
+            className="border-b border-[var(--color-border)] bg-[var(--color-background)] py-12 md:py-16"
+          >
+            <div className="page-container">
+              <div
+                className={cn(
+                  "reveal-up flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between",
+                  offeringsReveal.inView && "is-visible",
                 )}
-              </div>
-            </div>
-            <p className="mt-3 max-w-xl text-[14px] leading-[1.65] text-[var(--color-text-secondary)]">
-              Free registration. Limited capacity — reserve your seat to join
-              this meetup.
-            </p>
-            <p className="mt-3 max-w-xl text-[13px] leading-relaxed text-[var(--color-text-muted)]">
-              We'll send your confirmation email, venue details and WhatsApp
-              community link after registration.
-            </p>
-          </div>
-
-          <div
-            className={cn("reveal-right", faqReveal.inView && "is-visible")}
-            style={{
-              transitionDelay: faqReveal.inView ? "90ms" : undefined,
-            }}
-          >
-            <SectionLabel>FAQ</SectionLabel>
-            <h2 className="mt-3 font-display text-[clamp(1.5rem,2.5vw,2.05rem)] tracking-tight text-foreground">
-              Common questions
-            </h2>
-            <dl className="mt-5 divide-y divide-[var(--color-border)] border-y border-[var(--color-border)]">
-              {faqs.map((f) => (
-                <div key={f.q} className="py-3.5">
-                  <dt className="text-[14px] font-semibold tracking-tight text-foreground">
-                    {f.q}
-                  </dt>
-                  <dd className="mt-1.5 text-[13px] leading-[1.6] text-[var(--color-text-secondary)]">
-                    {f.a}
-                  </dd>
+              >
+                <div className="max-w-2xl">
+                  <SectionLabel>Company</SectionLabel>
+                  <h2 className="mt-3 font-display text-[clamp(1.5rem,2.5vw,2.05rem)] tracking-tight text-foreground">
+                    Continue your journey with Trizen
+                  </h2>
+                  <p className="mt-2 text-[14px] leading-[1.65] text-[var(--color-text-secondary)]">
+                    Products and community initiatives from the company behind
+                    this meetup.
+                  </p>
                 </div>
-              ))}
-            </dl>
-          </div>
-        </div>
-      </section>
+                <a
+                  href="https://trizenventures.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary shrink-0 gap-1.5"
+                >
+                  Visit Trizen
+                  <ExternalLink className="size-3.5" strokeWidth={1.75} />
+                </a>
+              </div>
 
-      {/* 11. COMMUNITY CTA */}
-      <section className="border-t border-[var(--color-border)] bg-[var(--color-background-alt)] py-10 md:py-12">
-        <div className="page-container">
-          <Reveal
-            className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between md:gap-10"
-            variant="up"
-          >
-            <div className="max-w-2xl">
-              <h2 className="font-display text-[clamp(1.5rem,2.5vw,2.05rem)] tracking-tight text-foreground">
-                This meetup is just the beginning.
-              </h2>
-              <p className="mt-3 text-[14px] leading-[1.65] text-[var(--color-text-secondary)]">
-                When you attend, you also become part of a growing community that
-                continues beyond monthly events. Stay connected through our
-                WhatsApp community, future meetups, founder stories and ecosystem
-                initiatives.
+              <ul
+                className={cn(
+                  "reveal-up mt-8 grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5",
+                  offeringsReveal.inView && "is-visible",
+                )}
+              >
+                {trizenProducts.map((product) => {
+                  const Icon = product.icon;
+                  return (
+                    <li
+                      key={product.name}
+                      className="flex h-full flex-col overflow-hidden rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)]"
+                    >
+                      <div className="relative aspect-[16/10] shrink-0 overflow-hidden bg-[var(--color-background-warm)]">
+                        {product.image ? (
+                          <img
+                            src={product.image}
+                            alt={`${product.name} preview`}
+                            loading="lazy"
+                            decoding="async"
+                            className="absolute inset-0 h-full w-full object-cover object-top"
+                          />
+                        ) : (
+                          <div
+                            className="absolute inset-0 flex items-end p-4"
+                            style={{ background: product.soft }}
+                          >
+                            <span
+                              className="flex size-11 items-center justify-center rounded-xl text-white shadow-sm"
+                              style={{ background: product.accent }}
+                            >
+                              <Icon className="size-5" strokeWidth={1.75} />
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-1 flex-col p-4 sm:p-5">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--brand-accent)]">
+                          {product.category}
+                        </p>
+                        <h3 className="mt-1.5 font-display text-[1.2rem] tracking-tight text-foreground">
+                          {product.name}
+                        </h3>
+                        <p className="mt-2 flex-1 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
+                          {product.desc}
+                        </p>
+                        <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">
+                          {product.tagline}
+                        </p>
+                        <a
+                          href={product.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-4 inline-flex items-center gap-1 text-[13px] font-semibold text-[var(--brand-accent)] transition-colors hover:text-[var(--brand-accent-hover)]"
+                        >
+                          {product.cta}
+                          <ArrowUpRight className="size-3.5" strokeWidth={2} />
+                        </a>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              <p
+                className={cn(
+                  "reveal-up mt-8 text-center text-[13px] text-[var(--color-text-muted)]",
+                  offeringsReveal.inView && "is-visible",
+                )}
+              >
+                An initiative of{" "}
+                <a
+                  href={links.sponsor.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-foreground underline-offset-4 hover:underline"
+                >
+                  Trizen Ventures
+                </a>
+                .
               </p>
             </div>
-            <div className="flex shrink-0 flex-wrap items-center gap-3">
-              <a
-                href={links.community}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary"
+          </section>
+        </>
+      ) : (
+        <>
+          <section
+            id="register"
+            ref={faqReveal.ref}
+            className="border-b border-[var(--color-border)] bg-[var(--color-background-warm)] py-12 md:py-16"
+          >
+            <div className="page-container grid gap-10 lg:grid-cols-2 lg:gap-14">
+              <div
+                className={cn("reveal-left", faqReveal.inView && "is-visible")}
               >
-                Join Community
-              </a>
-              <Link to="/events" className="btn-secondary">
-                Upcoming Events
-              </Link>
+                <SectionLabel>Registration</SectionLabel>
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                  <h2 className="font-display text-[clamp(1.5rem,2.5vw,2.05rem)] tracking-tight text-foreground">
+                    Reserve Your Seat
+                  </h2>
+                  <div className="flex shrink-0 flex-wrap items-center gap-3">
+                    <RsvpButton event={meetup} className="btn-primary">
+                      Register Now
+                    </RsvpButton>
+                    {isRsvpOpen(meetup) ? null : (
+                      <p className="text-[13px] text-[var(--color-text-muted)]">
+                        Registration opens closer to the event date.
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <p className="mt-3 max-w-xl text-[14px] leading-[1.65] text-[var(--color-text-secondary)]">
+                  Free registration. Limited capacity — reserve your seat to join
+                  this meetup.
+                </p>
+                <p className="mt-3 max-w-xl text-[13px] leading-relaxed text-[var(--color-text-muted)]">
+                  We'll send your confirmation email, venue details and WhatsApp
+                  community link after registration.
+                </p>
+              </div>
+
+              <div
+                className={cn("reveal-right", faqReveal.inView && "is-visible")}
+                style={{
+                  transitionDelay: faqReveal.inView ? "90ms" : undefined,
+                }}
+              >
+                <SectionLabel>FAQ</SectionLabel>
+                <h2 className="mt-3 font-display text-[clamp(1.5rem,2.5vw,2.05rem)] tracking-tight text-foreground">
+                  Common questions
+                </h2>
+                <dl className="mt-5 divide-y divide-[var(--color-border)] border-y border-[var(--color-border)]">
+                  {faqs.map((f) => (
+                    <div key={f.q} className="py-3.5">
+                      <dt className="text-[14px] font-semibold tracking-tight text-foreground">
+                        {f.q}
+                      </dt>
+                      <dd className="mt-1.5 text-[13px] leading-[1.6] text-[var(--color-text-secondary)]">
+                        {f.a}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
             </div>
-          </Reveal>
-        </div>
-      </section>
+          </section>
+
+          <section className="border-t border-[var(--color-border)] bg-[var(--color-background-alt)] py-12 md:py-16">
+            <div className="page-container">
+              <Reveal
+                className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between md:gap-10"
+                variant="up"
+              >
+                <div className="max-w-2xl">
+                  <h2 className="font-display text-[clamp(1.5rem,2.5vw,2.05rem)] tracking-tight text-foreground">
+                    This meetup is just the beginning.
+                  </h2>
+                  <p className="mt-3 text-[14px] leading-[1.65] text-[var(--color-text-secondary)]">
+                    When you attend, you also become part of a growing community
+                    that continues beyond monthly events. Stay connected through
+                    our WhatsApp community, future meetups, founder stories and
+                    ecosystem initiatives.
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-wrap items-center gap-3">
+                  <a
+                    href={links.community}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-primary"
+                  >
+                    Join Community
+                  </a>
+                  <Link to="/events" className="btn-secondary">
+                    Upcoming Events
+                  </Link>
+                </div>
+              </Reveal>
+            </div>
+          </section>
+        </>
+      )}
     </article>
   );
 }

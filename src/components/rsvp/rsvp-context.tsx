@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Meetup } from "@/lib/events";
-import { getMeetups, isRsvpOpen, nextMeetup as fallbackNext } from "@/lib/events";
+import { getMeetups, getNextMeetup, isRsvpOpen, nextMeetup as fallbackNext } from "@/lib/events";
 
 type RsvpContextValue = {
   open: boolean;
@@ -26,10 +26,11 @@ export function RsvpProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void getMeetups().then((list) => {
-      if (list[0]) {
-        setDefaultEvent(list[0]);
+      const next = getNextMeetup(list);
+      if (next) {
+        setDefaultEvent(next);
         setEvent((current) =>
-          current.slug === fallbackNext.slug ? list[0] : current,
+          current.slug === fallbackNext.slug ? next : current,
         );
       }
     });

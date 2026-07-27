@@ -76,7 +76,7 @@ function XIcon({ className }: { className?: string }) {
 }
 
 const iconBtnClass =
-  "inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] transition-colors duration-200 hover:border-[var(--color-border-strong)] hover:bg-[var(--brand-accent-soft)] hover:text-[var(--brand-accent)]";
+  "inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] transition-colors duration-200 hover:border-[var(--color-border-strong)] hover:bg-[var(--brand-accent-soft)] hover:text-[var(--brand-accent)]";
 
 export function EventShareBar({
   meetup,
@@ -152,7 +152,7 @@ export function EventShareBar({
         aria-label="Add to calendar"
         title="Add to calendar"
       >
-        <CalendarPlus className="size-4" strokeWidth={1.75} aria-hidden />
+        <CalendarPlus className="size-3.5" strokeWidth={1.75} aria-hidden />
       </button>
       {share.map(({ label, href, Icon }) => (
         <a
@@ -164,7 +164,7 @@ export function EventShareBar({
           title={label}
           className={iconBtnClass}
         >
-          <Icon className="size-4" aria-hidden />
+          <Icon className="size-3.5" aria-hidden />
         </a>
       ))}
       <button
@@ -175,9 +175,9 @@ export function EventShareBar({
         title={copied ? "Link copied" : "Copy link"}
       >
         {copied ? (
-          <Check className="size-4 text-[var(--brand-accent)]" strokeWidth={1.75} aria-hidden />
+          <Check className="size-3.5 text-[var(--brand-accent)]" strokeWidth={1.75} aria-hidden />
         ) : (
-          <Link2 className="size-4" strokeWidth={1.75} aria-hidden />
+          <Link2 className="size-3.5" strokeWidth={1.75} aria-hidden />
         )}
       </button>
     </div>

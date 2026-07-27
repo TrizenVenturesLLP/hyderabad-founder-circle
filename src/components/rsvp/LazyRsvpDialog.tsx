@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from "react";
-import { useRsvp } from "./rsvp-context";
+import { useRsvp } from "@/components/rsvp/rsvp-context";
 
 const RsvpDialog = lazy(() =>
   import("./RsvpDialog").then((m) => ({ default: m.RsvpDialog })),

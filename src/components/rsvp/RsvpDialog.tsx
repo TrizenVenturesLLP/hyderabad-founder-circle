@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   CalendarDays,
   Check,
   ChevronDown,
   Clock,
+  ImagePlus,
   Mail,
   MapPin,
   MessageCircle,
@@ -448,10 +450,10 @@ export function RsvpDialog() {
           "flex flex-col gap-0 overflow-hidden overscroll-contain rounded-[20px] border-border/80 bg-background p-0 shadow-[0_28px_70px_-30px_rgba(0,0,0,0.45)]",
           step === "success"
             ? [
-                "max-h-[min(92dvh,760px)] w-[calc(100%-1.5rem)] max-w-[560px] sm:max-w-[560px]",
+                "max-h-[min(92dvh,560px)] w-[calc(100%-1.25rem)] max-w-[680px] sm:max-w-[680px]",
                 "max-sm:!inset-x-0 max-sm:!bottom-0 max-sm:!left-0 max-sm:!right-0 max-sm:!top-auto",
                 "max-sm:!translate-x-0 max-sm:!translate-y-0",
-                "max-sm:!w-full max-sm:!max-w-none max-sm:rounded-b-none max-sm:rounded-t-[20px] max-sm:!max-h-[94dvh]",
+                "max-sm:!w-full max-sm:!max-w-none max-sm:rounded-b-none max-sm:rounded-t-[20px] max-sm:!max-h-[92dvh]",
               ]
             : [
                 "max-h-[min(92dvh,880px)] w-[calc(100%-1rem)] max-w-[1080px] sm:max-w-[1080px]",
@@ -468,7 +470,7 @@ export function RsvpDialog() {
         </DialogDescription>
 
         {step === "success" ? (
-          <SuccessView event={event} />
+          <SuccessView event={event} registrantName={form.name} />
         ) : (
           <div className="grid min-h-0 flex-1 md:grid-cols-12">
             <div className="flex min-h-0 min-w-0 flex-col md:col-span-8 md:border-r md:border-border/70">
@@ -1177,93 +1179,143 @@ function googleCalendarUrl(event: Meetup) {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-function SuccessView({ event }: { event: Meetup }) {
+function SuccessView({
+  event,
+  registrantName,
+}: {
+  event: Meetup;
+  registrantName: string;
+}) {
+  const { closeRsvp } = useRsvp();
   const day = new Date(event.dateISO + "T12:00:00");
   const dayNum = day.getDate();
   const monthShort = day
     .toLocaleDateString("en-IN", { month: "short" })
     .toUpperCase();
 
+  const badgeSearch = {
+    event: event.slug,
+    ...(registrantName.trim()
+      ? { name: registrantName.trim() }
+      : {}),
+  };
+
+  const eventCard = (
+    <div className="h-full w-full overflow-hidden rounded-[16px] border border-border/70 bg-background/90 text-left shadow-[0_16px_36px_-26px_rgba(0,0,0,0.35)]">
+      <div className="flex items-center justify-center gap-2 border-b border-border/70 bg-primary px-4 py-3 text-primary-foreground">
+        <span className="text-[11px] font-medium uppercase tracking-[0.14em]">
+          {monthShort}
+        </span>
+        <span className="font-display text-xl leading-none">{dayNum}</span>
+      </div>
+      <div className="divide-y divide-border/70">
+        <SuccessMeta
+          icon={CalendarDays}
+          label="Event"
+          value={event.title}
+          hint={event.dateLabel}
+        />
+        <SuccessMeta
+          icon={MapPin}
+          label="Location"
+          value={
+            event.space
+              ? `${event.venue} · ${event.space}`
+              : `${event.venue}, ${event.city}`
+          }
+          hint={event.address}
+        />
+        <SuccessMeta icon={Clock} label="Time" value={event.time} />
+      </div>
+    </div>
+  );
+
+  const actions = (
+    <div className="flex h-full w-full flex-col justify-center gap-2">
+      <Link
+        to="/badge"
+        search={badgeSearch}
+        onClick={() => {
+          closeRsvp();
+        }}
+        className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-3.5 py-2.5 text-[13px] font-medium text-primary-foreground shadow-[0_10px_24px_-14px_color-mix(in_oklab,var(--terracotta)_75%,transparent)] transition-[opacity,transform] hover:opacity-90 active:scale-[0.98] sm:px-4 sm:text-sm"
+      >
+        <ImagePlus className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" strokeWidth={1.75} />
+        <span className="truncate">Create badge</span>
+      </Link>
+      <a
+        href={links.community}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex items-center justify-center gap-2 rounded-full border border-border/90 bg-background/80 px-3.5 py-2.5 text-[13px] font-medium text-foreground transition-colors hover:border-primary/30 hover:bg-secondary/40 sm:px-4 sm:text-sm"
+      >
+        <MessageCircle className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" strokeWidth={1.75} />
+        <span className="truncate">WhatsApp</span>
+      </a>
+      <a
+        href={googleCalendarUrl(event)}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex items-center justify-center gap-2 rounded-full border border-border/90 bg-background/80 px-3.5 py-2.5 text-[13px] font-medium text-foreground transition-colors hover:border-primary/30 hover:bg-secondary/40 sm:px-4 sm:text-sm"
+      >
+        <CalendarDays className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" strokeWidth={1.75} />
+        <span className="truncate">Calendar</span>
+      </a>
+    </div>
+  );
+
   return (
     <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,color-mix(in_oklab,var(--saffron)_16%,transparent),transparent_50%),radial-gradient(ellipse_at_50%_100%,color-mix(in_oklab,var(--terracotta)_9%,transparent),transparent_48%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,color-mix(in_oklab,var(--saffron)_14%,transparent),transparent_52%),radial-gradient(ellipse_at_85%_100%,color-mix(in_oklab,var(--terracotta)_8%,transparent),transparent_50%)]"
       />
 
-      <div className="relative mx-auto flex w-full max-w-[28rem] flex-col items-center px-6 pb-7 pt-8 text-center sm:px-8 sm:pb-8 sm:pt-9">
-        <span className="relative mb-4 inline-flex h-12 w-12 items-center justify-center">
-          <span
-            aria-hidden
-            className="absolute inset-0 animate-[hero-pulse_2.4s_ease-in-out_infinite] rounded-full bg-primary/20"
-          />
-          <span className="relative flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_24px_-10px_color-mix(in_oklab,var(--terracotta)_70%,transparent)]">
-            <Check className="h-5 w-5" strokeWidth={2.5} />
-          </span>
-        </span>
+      <div className="relative px-4 pb-5 pt-12 sm:px-6 sm:pb-6 sm:pt-14">
+        {/* Desktop: copy + actions | card · Mobile: header, then card | actions */}
+        <div className="grid gap-4 md:grid-cols-2 md:items-stretch md:gap-6">
+          <div className="flex min-w-0 flex-col">
+            <div className="flex flex-col items-center text-center md:items-start md:text-left">
+              <div className="mb-2.5 inline-flex items-center gap-2.5">
+                <span className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center">
+                  <span
+                    aria-hidden
+                    className="absolute inset-0 animate-[hero-pulse_2.4s_ease-in-out_infinite] rounded-full bg-primary/20"
+                  />
+                  <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_24px_-10px_color-mix(in_oklab,var(--terracotta)_70%,transparent)]">
+                    <Check className="h-4 w-4" strokeWidth={2.5} />
+                  </span>
+                </span>
+                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-primary sm:text-[11px]">
+                  Confirmed
+                </p>
+              </div>
+              <h2 className="font-display text-[1.45rem] leading-tight tracking-tight text-foreground sm:text-[1.7rem]">
+                You&apos;re Registered!
+              </h2>
+              <p className="mt-1.5 max-w-sm text-[13px] leading-relaxed text-muted-foreground sm:text-sm">
+                Seat locked in. Create a badge, join WhatsApp, and save the date.
+              </p>
+            </div>
 
-        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-primary">
-          Confirmed
-        </p>
-        <h2 className="mt-1.5 font-display text-[1.85rem] leading-tight tracking-tight text-foreground sm:text-[2rem]">
-          You&apos;re Registered!
-        </h2>
-        <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-          Your seat is locked in. Join the community and save the date.
-        </p>
-
-        <div className="mt-6 w-full overflow-hidden rounded-[16px] border border-border/70 bg-background/90 text-left shadow-[0_16px_36px_-26px_rgba(0,0,0,0.35)]">
-          <div className="flex items-center justify-center gap-2 border-b border-border/70 bg-primary px-4 py-3 text-primary-foreground">
-            <span className="text-[11px] font-medium uppercase tracking-[0.14em]">
-              {monthShort}
-            </span>
-            <span className="font-display text-xl leading-none">{dayNum}</span>
+            {/* Actions under copy on desktop only */}
+            <div className="mt-auto hidden pt-5 md:block">{actions}</div>
+            <p className="mt-3 hidden items-center gap-2 text-left text-[12px] text-muted-foreground md:inline-flex">
+              <Mail className="h-3.5 w-3.5 shrink-0 text-primary" strokeWidth={1.75} />
+              Confirmation + badge link sent to your email.
+            </p>
           </div>
-          <div className="divide-y divide-border/70">
-            <SuccessMeta
-              icon={CalendarDays}
-              label="Event"
-              value={event.title}
-              hint={event.dateLabel}
-            />
-            <SuccessMeta
-              icon={MapPin}
-              label="Location"
-              value={
-                event.space
-                  ? `${event.venue} · ${event.space}`
-                  : `${event.venue}, ${event.city}`
-              }
-              hint={event.address}
-            />
-            <SuccessMeta icon={Clock} label="Time" value={event.time} />
+
+          {/* Card column — on mobile shares row with actions */}
+          <div className="grid min-w-0 grid-cols-[minmax(0,1.2fr)_minmax(7.5rem,0.8fr)] items-stretch gap-2.5 sm:gap-3 md:block">
+            <div className="min-w-0">{eventCard}</div>
+            <div className="min-w-0 md:hidden">{actions}</div>
           </div>
         </div>
 
-        <div className="mt-5 flex w-full flex-col gap-2.5">
-          <a
-            href={links.community}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-[0_10px_24px_-14px_color-mix(in_oklab,var(--terracotta)_75%,transparent)] transition-[opacity,transform] hover:opacity-90 active:scale-[0.98]"
-          >
-            <MessageCircle className="h-4 w-4" strokeWidth={1.75} />
-            Join WhatsApp Community
-          </a>
-          <a
-            href={googleCalendarUrl(event)}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-border/90 bg-background/70 px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-primary/30 hover:bg-secondary/40"
-          >
-            <CalendarDays className="h-4 w-4" strokeWidth={1.75} />
-            Add to Google Calendar
-          </a>
-        </div>
-
-        <p className="mt-5 inline-flex items-center justify-center gap-2 text-sm text-muted-foreground">
+        <p className="mt-3.5 flex items-center justify-center gap-2 text-center text-[11px] text-muted-foreground md:hidden">
           <Mail className="h-3.5 w-3.5 shrink-0 text-primary" strokeWidth={1.75} />
-          Check your email for confirmation.
+          Confirmation + badge link sent to your email.
         </p>
       </div>
     </div>

@@ -95,6 +95,12 @@ export async function deleteAdminEvent(id: string) {
   });
 }
 
+export async function deleteAdminRsvp(id: string) {
+  return adminFetch<{ ok: boolean }>(`/api/admin/rsvps/${id}`, {
+    method: "DELETE",
+  });
+}
+
 export async function sendReminderEmails(payload: {
   subject: string;
   body: string;
@@ -210,7 +216,7 @@ export type AdminEvent = {
   city: string;
   seats?: number;
   format: "Offline" | "Online" | "Hybrid";
-  status: "open" | "coming-soon";
+  status: "open" | "coming-soon" | "completed";
   blurb: string;
   speakers?: AdminSpeaker[];
   hosts?: AdminHost[];

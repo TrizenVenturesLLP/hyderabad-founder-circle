@@ -1,6 +1,6 @@
 import { type ButtonHTMLAttributes } from "react";
 import type { Meetup } from "@/lib/events";
-import { isRsvpOpen } from "@/lib/events";
+import { isMeetupCompleted, isRsvpOpen } from "@/lib/events";
 import { useRsvp } from "@/components/rsvp/rsvp-context";
 import { cn } from "@/lib/utils";
 
@@ -16,9 +16,10 @@ export function RsvpButton({
   ...props
 }: Props) {
   const { openRsvp } = useRsvp();
-  const comingSoon = event ? !isRsvpOpen(event) : false;
+  const closed = event ? !isRsvpOpen(event) : false;
 
-  if (comingSoon) {
+  if (closed) {
+    const label = event && isMeetupCompleted(event) ? "Completed" : "Coming soon";
     return (
       <button
         type="button"
@@ -29,7 +30,7 @@ export function RsvpButton({
         )}
         {...props}
       >
-        Coming soon
+        {label}
       </button>
     );
   }

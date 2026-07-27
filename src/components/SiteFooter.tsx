@@ -19,7 +19,7 @@ const labelClassName =
 export function SiteFooter() {
   return (
     <footer className="border-t border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)]">
-      <div className="page-container py-8 md:py-10">
+      <div className="page-container py-10 md:py-16">
         <div className="grid gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-12 lg:gap-x-8">
           <div className="sm:col-span-2 lg:col-span-4">
             <Link to="/" className="group inline-flex items-center gap-2.5">

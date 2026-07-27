@@ -7,6 +7,7 @@
 @source "../src/components/ui/input.tsx";
 @source "../src/components/ui/label.tsx";
 @source "../src/components/ui/sonner.tsx";
+@source "../src/components/ui/dropdown-menu.tsx";
 @source "../src/hooks";
 @source "../src/lib";
 @import "tw-animate-css";
@@ -123,12 +124,22 @@
   html {
     -webkit-text-size-adjust: 100%;
     overflow-x: clip;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Legacy Edge */
+  }
+  html::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
   }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     overflow-x: clip;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  body::-webkit-scrollbar {
+    display: none;
   }
   h1,
   h2,

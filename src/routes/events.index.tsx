@@ -8,8 +8,11 @@ import {
 import eventImg from "@/assets/event-room.jpg";
 import {
   getMeetups,
+  getNextMeetup,
   type Meetup,
+  isMeetupCompleted,
   isRsvpOpen,
+  meetupStatusLabel,
   meetupLocationLabel,
 } from "@/lib/events";
 import { RsvpButton } from "@/components/rsvp/RsvpButton";
@@ -37,16 +40,18 @@ export const Route = createFileRoute("/events/")({
   component: EventsIndex,
 });
 
-const filters = ["Upcoming", "Past Events", "Community Meetups", "Themed Sessions"] as const;
+const filters = ["All", "Upcoming", "Past Events", "Community Meetups", "Themed Sessions"] as const;
 type Filter = (typeof filters)[number];
 
 function EventsIndex() {
   const { meetups } = Route.useLoaderData();
-  const [filter, setFilter] = useState<Filter>("Upcoming");
+  const [filter, setFilter] = useState<Filter>("All");
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const nextMeetup = useMemo(() => getNextMeetup(meetups), [meetups]);
 
   const visible = useMemo(() => {
     return meetups.filter((m) => {
+      if (filter === "All") return true;
       if (filter === "Upcoming") return m.dateISO >= today;
       if (filter === "Past Events") return m.dateISO < today;
       if (filter === "Community Meetups") {
@@ -121,11 +126,14 @@ function EventsIndex() {
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <h2 className="font-display text-xl tracking-tight text-foreground md:text-2xl">
-              Next 3 meetups
+              Meetups
             </h2>
+            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+              {visible.length} event{visible.length === 1 ? "" : "s"}
+            </p>
           </div>
 
-          <div className="scrollbar-none -mx-5 flex gap-1.5 overflow-x-auto px-5 md:mx-0 md:px-0">
+          <div className="scrollbar-none -mx-5 flex gap-1.5 overflow-x-auto px-5 pb-0.5 md:mx-0 md:px-0">
             {filters.map((f) => (
               <button
                 key={f}
@@ -157,33 +165,34 @@ function EventsIndex() {
           </p>
         )}
 
-        {/* Reassurance */}
-        <div className="mt-8 flex flex-col gap-4 border-t border-[var(--color-border)] pt-6 md:flex-row md:items-center md:justify-between md:gap-6">
-          <p className="max-w-xl text-[13px] text-[var(--color-text-secondary)] md:text-sm">
-            New here? Start with the{" "}
-            <Link
-              to="/events/$slug"
-              params={{ slug: meetups[0].slug }}
-              className="font-medium text-foreground underline-offset-4 hover:underline"
-            >
-              next Hyderabad Founders Network meetup
-            </Link>
-            .
-          </p>
-          <div className="flex flex-wrap gap-2.5 md:shrink-0">
-            <Link
-              to="/events/$slug"
-              params={{ slug: meetups[0].slug }}
-              className="btn-secondary gap-1.5"
-            >
-              What to expect
-              <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
-            </Link>
-            <RsvpButton event={meetups[0]} className="btn-primary">
-              RSVP
-            </RsvpButton>
+        {nextMeetup ? (
+          <div className="mt-8 flex flex-col gap-4 border-t border-[var(--color-border)] pt-6 md:flex-row md:items-center md:justify-between md:gap-6">
+            <p className="max-w-xl text-[13px] text-[var(--color-text-secondary)] md:text-sm">
+              New here? Start with the{" "}
+              <Link
+                to="/events/$slug"
+                params={{ slug: nextMeetup.slug }}
+                className="font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                next Hyderabad Founders Network meetup
+              </Link>
+              .
+            </p>
+            <div className="flex flex-wrap gap-2.5 md:shrink-0">
+              <Link
+                to="/events/$slug"
+                params={{ slug: nextMeetup.slug }}
+                className="btn-secondary gap-1.5"
+              >
+                What to expect
+                <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+              </Link>
+              <RsvpButton event={nextMeetup} className="btn-primary">
+                RSVP
+              </RsvpButton>
+            </div>
           </div>
-        </div>
+        ) : null}
       </section>
     </div>
   );
@@ -210,7 +219,11 @@ function FeaturedEventCard({ meetup }: { meetup: Meetup }) {
                 : "bg-[var(--brand-primary-soft)] text-[var(--color-text-secondary)]",
             )}
           >
-            {isRsvpOpen(meetup) ? "Next event" : "Coming soon"}
+            {isRsvpOpen(meetup)
+              ? "Next event"
+              : isMeetupCompleted(meetup)
+                ? "Completed"
+                : "Coming soon"}
           </span>
           <div>
             <p className="font-display text-[3.25rem] leading-none tracking-tight text-foreground md:text-[3.75rem]">
@@ -253,14 +266,14 @@ function FeaturedEventCard({ meetup }: { meetup: Meetup }) {
               {meetup.blurb}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2.5">
-            <RsvpButton event={meetup} className="btn-primary">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
+            <RsvpButton event={meetup} className="btn-primary w-full justify-center sm:w-auto">
               RSVP
             </RsvpButton>
             <Link
               to="/events/$slug"
               params={{ slug: meetup.slug }}
-              className="btn-secondary group gap-1.5"
+              className="btn-secondary group w-full justify-center gap-1.5 sm:w-auto"
             >
               View Details
               <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
@@ -299,7 +312,7 @@ function EventCard({ meetup }: { meetup: Meetup }) {
             </h3>
             {!isRsvpOpen(meetup) ? (
               <span className="rounded-full bg-[var(--color-background-warm)] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-                Coming soon
+                {meetupStatusLabel(meetup)}
               </span>
             ) : null}
           </div>
@@ -324,16 +337,16 @@ function EventCard({ meetup }: { meetup: Meetup }) {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2 md:col-span-4 md:justify-end">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap md:col-span-4 md:justify-end">
           <Link
             to="/events/$slug"
             params={{ slug: meetup.slug }}
-            className="btn-secondary group/link gap-1.5"
+            className="btn-secondary group/link w-full justify-center gap-1.5 sm:w-auto"
           >
             View Details
             <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover/link:translate-x-0.5" />
           </Link>
-          <RsvpButton event={meetup} className="btn-primary">
+          <RsvpButton event={meetup} className="btn-primary w-full justify-center sm:w-auto">
             RSVP
           </RsvpButton>
         </div>
