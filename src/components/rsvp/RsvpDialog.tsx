@@ -5,14 +5,32 @@ import {
   Check,
   ChevronDown,
   Clock,
+  CreditCard,
   ImagePlus,
+  Info,
+  Landmark,
   Mail,
   MapPin,
   MessageCircle,
+  Smartphone,
+  Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
 import { meetupMapsUrl, type Meetup } from "@/lib/events";
-import { submitRsvp } from "@/lib/api";
+import {
+  createPaymentOrder,
+  REGISTRATION_FEE_INR,
+  verifyPaymentAndRegister,
+  type PaymentMethod,
+  type RsvpPayload,
+} from "@/lib/api";
+import { openRazorpayCheckout } from "@/lib/razorpay";
+import {
+  clearRsvpDraft,
+  hasRsvpDraftContent,
+  loadRsvpDraft,
+  saveRsvpDraft,
+} from "@/lib/rsvp-draft";
 import { links } from "@/lib/links";
 import { useRsvp } from "@/components/rsvp/rsvp-context";
 import {
@@ -25,7 +43,39 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-type Step = 1 | 2 | "success";
+type Step = 1 | 2 | 3 | "processing" | "success";
+
+const PAYMENT_OPTIONS: {
+  id: PaymentMethod;
+  label: string;
+  hint: string;
+  icon: typeof Smartphone;
+}[] = [
+  {
+    id: "upi",
+    label: "Pay with UPI",
+    hint: "GPay · PhonePe · BHIM",
+    icon: Smartphone,
+  },
+  {
+    id: "card",
+    label: "Pay with Cards",
+    hint: "Visa · Mastercard · RuPay · Amex · via Razorpay",
+    icon: CreditCard,
+  },
+  {
+    id: "netbanking",
+    label: "Pay with Net Banking",
+    hint: "All major banks",
+    icon: Landmark,
+  },
+  {
+    id: "wallet",
+    label: "Pay with Wallet",
+    hint: "Paytm · Amazon Pay · more",
+    icon: Wallet,
+  },
+];
 
 type FormState = {
   name: string;
@@ -194,13 +244,58 @@ export function RsvpDialog() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [errors, setErrors] = useState<Partial<Record<FormErrorKey, string>>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("upi");
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const formScrollRef = useRef<HTMLDivElement>(null);
+  const skipNextSaveRef = useRef(false);
 
   useEffect(() => {
     const el = formScrollRef.current;
     if (!el) return;
     el.scrollTop = 0;
   }, [step]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    skipNextSaveRef.current = true;
+    const draft = loadRsvpDraft(event.slug);
+    if (draft && hasRsvpDraftContent(draft.form)) {
+      setForm(draft.form);
+      setStep(draft.step);
+      setPaymentMethod(draft.paymentMethod);
+      setDraftRestored(true);
+      setErrors({});
+      setSubmitting(false);
+    } else {
+      setStep(1);
+      setForm(emptyForm);
+      setErrors({});
+      setSubmitting(false);
+      setPaymentMethod("upi");
+      setDraftRestored(false);
+    }
+  }, [open, event.slug]);
+
+  useEffect(() => {
+    if (!open || step === "success" || step === "processing") return;
+    if (skipNextSaveRef.current) {
+      skipNextSaveRef.current = false;
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      saveRsvpDraft(event.slug, {
+        form,
+        step,
+        paymentMethod,
+      });
+      setDraftRestored(hasRsvpDraftContent(form));
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [open, event.slug, form, step, paymentMethod]);
 
   useEffect(() => {
     if (!open) return;
@@ -239,6 +334,41 @@ export function RsvpDialog() {
     setForm(emptyForm);
     setErrors({});
     setSubmitting(false);
+    setPaymentMethod("upi");
+    setDraftRestored(false);
+    setCheckoutOpen(false);
+  }
+
+  function clearSavedDetails() {
+    clearRsvpDraft(event.slug);
+    skipNextSaveRef.current = true;
+    resetAll();
+    toast.message("Saved details cleared.");
+  }
+
+  function buildRsvpPayload(): RsvpPayload {
+    return {
+      name: form.name,
+      email: form.email,
+      phone: form.phone,
+      countryCode: "+91",
+      linkedin: form.linkedin,
+      role: form.role,
+      company: form.company,
+      startupStage: form.startupStage,
+      gtmChallenges: form.gtmChallenges,
+      leaveWith: form.leaveWith,
+      industry: form.industry,
+      lookingFor: form.lookingFor,
+      offerCommunity: form.offerCommunity,
+      wantToMeet: form.wantToMeet,
+      canHelpWith: form.canHelpWith,
+      biggestChallenge: form.biggestChallenge,
+      joinWhatsapp: form.joinWhatsapp,
+      subscribeUpdates: form.subscribeUpdates,
+      questions: form.questions,
+      event: eventPayload(event),
+    };
   }
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -372,45 +502,77 @@ export function RsvpDialog() {
     setStep(2);
   }
 
-  async function submitRegistration() {
+  function goToPayment() {
     if (step !== 2) return;
     if (!validateStep2()) return;
+    setErrors({});
+    setStep(3);
+  }
+
+  async function payAndRegister() {
+    if (step !== 3) return;
 
     setSubmitting(true);
     toast.dismiss();
     try {
-      await submitRsvp({
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        countryCode: "+91",
-        linkedin: form.linkedin,
-        role: form.role,
-        company: form.company,
-        startupStage: form.startupStage,
-        gtmChallenges: form.gtmChallenges,
-        leaveWith: form.leaveWith,
-        industry: form.industry,
-        lookingFor: form.lookingFor,
-        offerCommunity: form.offerCommunity,
-        wantToMeet: form.wantToMeet,
-        canHelpWith: form.canHelpWith,
-        biggestChallenge: form.biggestChallenge,
-        joinWhatsapp: form.joinWhatsapp,
-        subscribeUpdates: form.subscribeUpdates,
-        questions: form.questions,
-        event: eventPayload(event),
+      const payload = buildRsvpPayload();
+      const order = await createPaymentOrder({
+        ...payload,
+        paymentMethod,
       });
-      setStep("success");
+
+      setCheckoutOpen(true);
+      await openRazorpayCheckout({
+        keyId: order.keyId,
+        orderId: order.orderId,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Hyderabad Founders Network",
+        description: `${event.title} · Event Pass`,
+        method: paymentMethod,
+        prefill: order.prefill,
+        onDismiss: () => {
+          setCheckoutOpen(false);
+          setSubmitting(false);
+          toast.message("Payment cancelled. You can try again when ready.");
+        },
+        onSuccess: (response) => {
+          setCheckoutOpen(false);
+          void (async () => {
+            try {
+              setStep("processing");
+              await verifyPaymentAndRegister({
+                ...payload,
+                paymentMethod,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              });
+              setStep("success");
+              clearRsvpDraft(event.slug);
+              setDraftRestored(false);
+            } catch (err) {
+              setStep(3);
+              const message =
+                err instanceof Error
+                  ? err.message
+                  : "Payment received but registration failed. Please contact support.";
+              toast.error(message, { duration: 4500, closeButton: true });
+            } finally {
+              setSubmitting(false);
+            }
+          })();
+        },
+      });
     } catch (err) {
+      setCheckoutOpen(false);
       const message =
         err instanceof TypeError && /fetch/i.test(err.message)
           ? "Could not reach the server. Please try again."
           : err instanceof Error
             ? err.message
-            : "Could not submit RSVP.";
+            : "Could not start payment.";
       toast.error(message, { duration: 3500, closeButton: true });
-    } finally {
       setSubmitting(false);
     }
   }
@@ -420,6 +582,17 @@ export function RsvpDialog() {
   }
 
   function handleClose() {
+    if (step !== "success" && step !== "processing") {
+      saveRsvpDraft(event.slug, {
+        form,
+        step: step === 2 || step === 3 ? step : 1,
+        paymentMethod,
+      });
+      closeRsvp();
+      return;
+    }
+
+    clearRsvpDraft(event.slug);
     closeRsvp();
     window.setTimeout(resetAll, 200);
   }
@@ -434,21 +607,38 @@ export function RsvpDialog() {
   return (
     <Dialog
       open={open}
+      modal={!checkoutOpen}
       onOpenChange={(next) => {
-        if (!next) handleClose();
+        if (!next) {
+          if (checkoutOpen) return;
+          handleClose();
+        }
       }}
     >
       <DialogContent
         closeLabel={step === "success" ? "Close" : undefined}
+        overlayClassName={
+          checkoutOpen ? "pointer-events-none bg-black/40" : undefined
+        }
         onOpenAutoFocus={(e) => {
           // Keep focus in dialog; avoid jumping page scroll under the modal.
-          if (step === "success") e.preventDefault();
+          if (step === "success" || step === "processing" || checkoutOpen) e.preventDefault();
+        }}
+        onInteractOutside={(e) => {
+          if (checkoutOpen || step === "processing") e.preventDefault();
+        }}
+        onPointerDownOutside={(e) => {
+          if (checkoutOpen || step === "processing") e.preventDefault();
+        }}
+        onFocusOutside={(e) => {
+          if (checkoutOpen || step === "processing") e.preventDefault();
         }}
         onWheel={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}
         className={cn(
           "flex flex-col gap-0 overflow-hidden overscroll-contain rounded-[20px] border-border/80 bg-background p-0 shadow-[0_28px_70px_-30px_rgba(0,0,0,0.45)]",
-          step === "success"
+          checkoutOpen && "pointer-events-none",
+          step === "success" || step === "processing"
             ? [
                 "max-h-[min(92dvh,560px)] w-[calc(100%-1.25rem)] max-w-[680px] sm:max-w-[680px]",
                 "max-sm:!inset-x-0 max-sm:!bottom-0 max-sm:!left-0 max-sm:!right-0 max-sm:!top-auto",
@@ -471,21 +661,39 @@ export function RsvpDialog() {
 
         {step === "success" ? (
           <SuccessView event={event} registrantName={form.name} />
+        ) : step === "processing" ? (
+          <ProcessingView />
         ) : (
           <div className="grid min-h-0 flex-1 md:grid-cols-12">
             <div className="flex min-h-0 min-w-0 flex-col md:col-span-8 md:border-r md:border-border/70">
                 <header className="shrink-0 border-b border-border/70 px-4 pb-4 pt-6 pr-16 sm:px-6 sm:pt-7 sm:pr-20">
-                <div className="flex items-center gap-2.5 pr-8">
-                  <span className="h-px w-6 bg-primary" aria-hidden />
-                  <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
-                    Registration
-                  </p>
+                <div className="flex items-center justify-between gap-3 pr-8">
+                  <div className="flex items-center gap-2.5">
+                    <span className="h-px w-6 bg-primary" aria-hidden />
+                    <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
+                      Registration
+                    </p>
+                  </div>
+                  {draftRestored || hasRsvpDraftContent(form) ? (
+                    <button
+                      type="button"
+                      onClick={clearSavedDetails}
+                      className="text-[11px] font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline sm:text-xs"
+                    >
+                      Clear saved details
+                    </button>
+                  ) : null}
                 </div>
                 <h2 className="mt-3 font-display text-[1.45rem] tracking-tight text-foreground sm:text-[1.65rem]">
                   Founders & Builders Meetup Registration
                 </h2>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                   Reserve your seat for the next meetup in Hyderabad.
+                  {draftRestored || hasRsvpDraftContent(form) ? (
+                    <span className="mt-1 block text-xs text-primary/90">
+                      Your details are saved — reopen anytime to continue.
+                    </span>
+                  ) : null}
                 </p>
                 <Stepper step={step} />
               </header>
@@ -699,7 +907,9 @@ export function RsvpDialog() {
                         </select>
                       </Field>
                     </section>
-                  ) : (
+                  ) : null}
+
+                  {step === 2 ? (
                     <section className="space-y-6">
                       <div>
                         <Label className="text-[13px] font-medium text-foreground/90">
@@ -931,15 +1141,114 @@ export function RsvpDialog() {
                         />
                       </Field>
                     </section>
-                  )}
+                  ) : null}
+
+                  {step === 3 ? (
+                    <section className="space-y-5">
+                      <div>
+                        <h3 className="text-base font-medium text-foreground">
+                          Select a payment method
+                        </h3>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Complete your ₹{REGISTRATION_FEE_INR} registration fee
+                          securely via Razorpay.
+                        </p>
+                      </div>
+
+                      <div className="overflow-hidden rounded-[14px] border border-border/80">
+                        {PAYMENT_OPTIONS.map((option, index) => {
+                          const Icon = option.icon;
+                          const selected = paymentMethod === option.id;
+                          return (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => setPaymentMethod(option.id)}
+                              className={cn(
+                                "flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors",
+                                index > 0 && "border-t border-border/70",
+                                selected
+                                  ? "bg-primary/10"
+                                  : "bg-card hover:bg-secondary/40",
+                              )}
+                            >
+                              <span
+                                className={cn(
+                                  "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
+                                  selected
+                                    ? "border-primary"
+                                    : "border-border",
+                                )}
+                                aria-hidden
+                              >
+                                {selected ? (
+                                  <span className="h-2 w-2 rounded-full bg-primary" />
+                                ) : null}
+                              </span>
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary/70 text-primary">
+                                <Icon className="h-4 w-4" strokeWidth={1.75} />
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block text-sm font-medium text-foreground">
+                                  {option.label}
+                                </span>
+                                <span className="mt-0.5 block text-xs text-muted-foreground">
+                                  {option.hint}
+                                </span>
+                              </span>
+                              {option.id === "card" ? (
+                                <span className="hidden text-[11px] font-medium text-primary sm:inline">
+                                  via Razorpay
+                                </span>
+                              ) : null}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="flex items-start gap-2.5 rounded-[12px] border border-border/70 bg-secondary/30 px-3.5 py-3 text-xs leading-relaxed text-muted-foreground md:hidden">
+                        <Info
+                          className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary"
+                          strokeWidth={1.75}
+                        />
+                        <p>
+                          We do not store your card details or financial
+                          information. Payments are processed securely by
+                          Razorpay.
+                        </p>
+                      </div>
+
+                      <div className="rounded-[14px] border border-border/80 bg-secondary/20 p-4 md:hidden">
+                        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-primary">
+                          Payment summary
+                        </p>
+                        <div className="mt-3 flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            Event Pass × 1
+                          </span>
+                          <span className="font-medium text-foreground">
+                            ₹{REGISTRATION_FEE_INR}
+                          </span>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between border-t border-border/70 pt-3">
+                          <span className="text-sm font-medium text-foreground">
+                            Total
+                          </span>
+                          <span className="font-display text-xl text-foreground">
+                            ₹{REGISTRATION_FEE_INR}
+                          </span>
+                        </div>
+                      </div>
+                    </section>
+                  ) : null}
                 </div>
 
                 <footer className="shrink-0 border-t border-border/70 bg-background px-4 py-4 sm:px-6">
                   <div className="flex items-center justify-between gap-3">
-                    {step === 2 ? (
+                    {step === 2 || step === 3 ? (
                       <button
                         type="button"
-                        onClick={() => setStep(1)}
+                        onClick={() => setStep(step === 3 ? 2 : 1)}
                         className="rounded-full border border-border px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
                       >
                         Back
@@ -955,14 +1264,22 @@ export function RsvpDialog() {
                       >
                         Continue
                       </button>
+                    ) : step === 2 ? (
+                      <button
+                        type="button"
+                        onClick={goToPayment}
+                        className="rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-[opacity,transform] hover:opacity-90 active:scale-[0.98]"
+                      >
+                        continue 
+                      </button>
                     ) : (
                       <button
                         type="button"
-                        onClick={() => void submitRegistration()}
+                        onClick={() => void payAndRegister()}
                         disabled={submitting}
                         className="rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-[opacity,transform] hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
                       >
-                        {submitting ? "Submitting…" : "Reserve my spot"}
+                        {submitting ? "Opening checkout…" : "Proceed to payment"}
                       </button>
                     )}
                   </div>
@@ -972,69 +1289,119 @@ export function RsvpDialog() {
 
             <aside className="hidden min-h-0 bg-secondary/40 md:col-span-4 md:flex md:flex-col">
               <div className="flex h-full min-h-0 flex-col overflow-y-auto px-7 py-8 lg:px-8 lg:py-10">
-                <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
-                  Event details
-                </p>
-                <div className="mt-5 flex h-[4.75rem] w-[4.75rem] flex-col items-center justify-center rounded-2xl bg-card text-center shadow-sm ring-1 ring-border/80">
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-primary">
-                    {monthShort}
-                  </span>
-                  <span className="font-display text-3xl leading-none text-foreground">
-                    {dayNum}
-                  </span>
-                </div>
-                <span className="mt-5 inline-flex w-fit rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-primary">
-                  Registration open
-                </span>
-                <h3 className="mt-3 font-display text-[1.65rem] leading-snug tracking-tight text-foreground">
-                  {event.title}
-                </h3>
-                <ul className="mt-6 space-y-3.5 text-sm text-muted-foreground">
-                  <li className="flex items-start gap-2.5">
-                    <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-primary" strokeWidth={1.75} />
-                    <span>
-                      <span className="block text-[11px] uppercase tracking-[0.12em] text-muted-foreground/80">
-                        Date
-                      </span>
-                      <span className="font-medium text-foreground">{event.dateLabel}</span>
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <Clock className="mt-0.5 h-4 w-4 shrink-0 text-primary" strokeWidth={1.75} />
-                    <span>
-                      <span className="block text-[11px] uppercase tracking-[0.12em] text-muted-foreground/80">
-                        Time
-                      </span>
-                      <span className="font-medium text-foreground">
-                        {weekday} · {event.time}
-                      </span>
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" strokeWidth={1.75} />
-                    <span>
-                      <span className="block text-[11px] uppercase tracking-[0.12em] text-muted-foreground/80">
-                        Venue
-                      </span>
-                      <span className="font-medium text-foreground">
-                        {event.venue}
-                        {event.space ? ` · ${event.space}` : ""}
-                      </span>
-                      {event.address ? (
-                        <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-                          {event.address}
+                {step === 3 ? (
+                  <>
+                    <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
+                      Payment summary
+                    </p>
+                    <h3 className="mt-4 font-display text-[1.45rem] leading-snug tracking-tight text-foreground">
+                      {event.title}
+                    </h3>
+                    <div className="mt-6 space-y-3 text-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-muted-foreground">Event Pass × 1</span>
+                        <span className="font-medium text-foreground">
+                          ₹{REGISTRATION_FEE_INR}
                         </span>
-                      ) : (
-                        <span className="mt-0.5 block text-xs text-muted-foreground">
-                          {event.city}
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-muted-foreground">Sub total</span>
+                        <span className="font-medium text-foreground">
+                          ₹{REGISTRATION_FEE_INR}
                         </span>
-                      )}
+                      </div>
+                      <div className="flex items-center justify-between gap-3 border-t border-border/70 pt-3">
+                        <span className="font-medium text-foreground">Total</span>
+                        <span className="font-display text-2xl text-foreground">
+                          ₹{REGISTRATION_FEE_INR}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-6 flex items-start gap-2.5 rounded-[12px] border border-border/70 bg-card/80 px-3.5 py-3 text-xs leading-relaxed text-muted-foreground">
+                      <Info
+                        className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary"
+                        strokeWidth={1.75}
+                      />
+                      <p>
+                        We do not store your card details or financial
+                        information. Payments are processed securely by
+                        Razorpay.
+                      </p>
+                    </div>
+                    <p className="mt-auto pt-10 text-xs leading-relaxed text-muted-foreground">
+                      By proceeding, you agree to share registration details with
+                      Hyderabad Founders Network for event coordination.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
+                      Event summary
+                    </p>
+                    <div className="mt-5 flex h-[4.75rem] w-[4.75rem] flex-col items-center justify-center rounded-2xl bg-card text-center shadow-sm ring-1 ring-border/80">
+                      <span className="text-[11px] font-medium uppercase tracking-wider text-primary">
+                        {monthShort}
+                      </span>
+                      <span className="font-display text-3xl leading-none text-foreground">
+                        {dayNum}
+                      </span>
+                    </div>
+                    <span className="mt-5 inline-flex w-fit rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-primary">
+                      Registration open
                     </span>
-                  </li>
-                </ul>
-                <p className="mt-auto pt-10 text-xs text-muted-foreground">
-                  Free to attend · {typeof event.seats === "number" ? `${event.seats} seats` : "Limited seats"} · No pitching
-                </p>
+                    <h3 className="mt-3 font-display text-[1.65rem] leading-snug tracking-tight text-foreground">
+                      {event.title}
+                    </h3>
+                    <ul className="mt-6 space-y-3.5 text-sm text-muted-foreground">
+                      <li className="flex items-start gap-2.5">
+                        <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-primary" strokeWidth={1.75} />
+                        <span>
+                          <span className="block text-[11px] uppercase tracking-[0.12em] text-muted-foreground/80">
+                            Date
+                          </span>
+                          <span className="font-medium text-foreground">{event.dateLabel}</span>
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <Clock className="mt-0.5 h-4 w-4 shrink-0 text-primary" strokeWidth={1.75} />
+                        <span>
+                          <span className="block text-[11px] uppercase tracking-[0.12em] text-muted-foreground/80">
+                            Time
+                          </span>
+                          <span className="font-medium text-foreground">
+                            {weekday} · {event.time}
+                          </span>
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" strokeWidth={1.75} />
+                        <span>
+                          <span className="block text-[11px] uppercase tracking-[0.12em] text-muted-foreground/80">
+                            Venue
+                          </span>
+                          <span className="font-medium text-foreground">
+                            {event.venue}
+                            {event.space ? ` · ${event.space}` : ""}
+                          </span>
+                          {event.address ? (
+                            <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                              {event.address}
+                            </span>
+                          ) : (
+                            <span className="mt-0.5 block text-xs text-muted-foreground">
+                              {event.city}
+                            </span>
+                          )}
+                        </span>
+                      </li>
+                    </ul>
+                    <p className="mt-auto pt-10 text-xs text-muted-foreground">
+                      ₹{REGISTRATION_FEE_INR} registration ·{" "}
+                      {typeof event.seats === "number" ? `${event.seats} seats` : "Limited seats"}{" "}
+                      · No pitching
+                    </p>
+                  </>
+                )}
               </div>
             </aside>
           </div>
@@ -1107,12 +1474,14 @@ function MobileEventSummary({
   );
 }
 
-function Stepper({ step }: { step: 1 | 2 }) {
+function Stepper({ step }: { step: 1 | 2 | 3 }) {
   return (
     <ol className="mt-5 flex min-w-0 items-center gap-2 text-sm sm:gap-3">
-      <StepItem n={1} label="Your details" active={step === 1} done={step === 2} />
-      <span className="h-px min-w-4 flex-1 bg-border sm:max-w-10" aria-hidden />
-      <StepItem n={2} label="Your goals" active={step === 2} done={false} />
+      <StepItem n={1} label="Your details" active={step === 1} done={step > 1} />
+      <span className="h-px min-w-3 flex-1 bg-border sm:max-w-8" aria-hidden />
+      <StepItem n={2} label="Your goals" active={step === 2} done={step > 2} />
+      <span className="h-px min-w-3 flex-1 bg-border sm:max-w-8" aria-hidden />
+      <StepItem n={3} label="Payment" active={step === 3} done={false} />
     </ol>
   );
 }
@@ -1177,6 +1546,55 @@ function googleCalendarUrl(event: Meetup) {
     ctz: "Asia/Kolkata",
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function ProcessingView() {
+  return (
+    <div className="relative flex min-h-[320px] flex-1 flex-col items-center justify-center gap-6 px-8 py-12">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,color-mix(in_oklab,var(--saffron)_10%,transparent),transparent_55%)]"
+      />
+      <div className="relative flex flex-col items-center gap-4">
+        {/* Animated spinner */}
+        <span className="relative flex h-16 w-16 items-center justify-center">
+          <span
+            aria-hidden
+            className="absolute inset-0 animate-[hero-pulse_1.8s_ease-in-out_infinite] rounded-full bg-primary/20"
+          />
+          <svg
+            className="relative h-10 w-10 animate-spin text-primary"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden
+          >
+            <circle
+              className="opacity-20"
+              cx="12" cy="12" r="10"
+              stroke="currentColor"
+              strokeWidth="3"
+            />
+            <path
+              className="opacity-90"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
+          </svg>
+        </span>
+        <div className="text-center">
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-primary">
+            Processing
+          </p>
+          <h2 className="mt-2 font-display text-[1.5rem] font-semibold leading-tight tracking-tight text-foreground">
+            Confirming your registration…
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Please wait while we lock in your seat. Do not close this window.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function SuccessView({

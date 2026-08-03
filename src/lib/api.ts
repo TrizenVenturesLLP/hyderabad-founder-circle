@@ -4,6 +4,8 @@ const API_BASE =
   (import.meta as ImportMeta & { env: Record<string, string> }).env
     .VITE_API_URL || "http://localhost:4000";
 
+export const REGISTRATION_FEE_INR = 49;
+
 export type RsvpPayload = {
   name: string;
   email: string;
@@ -32,6 +34,22 @@ export type RsvpPayload = {
   };
 };
 
+export type PaymentMethod = "upi" | "card" | "netbanking" | "wallet";
+
+export type CreatePaymentOrderResponse = {
+  keyId: string;
+  orderId: string;
+  amount: number;
+  currency: string;
+  amountInr: number;
+  ticketName: string;
+  prefill: {
+    name: string;
+    email: string;
+    contact: string;
+  };
+};
+
 export async function submitRsvp(payload: RsvpPayload) {
   const res = await fetch(`${API_BASE}/api/rsvp`, {
     method: "POST",
@@ -46,6 +64,53 @@ export async function submitRsvp(payload: RsvpPayload) {
 
   if (!res.ok) {
     throw new Error(data.error || "Could not submit RSVP.");
+  }
+
+  return data;
+}
+
+export async function createPaymentOrder(
+  payload: RsvpPayload & { paymentMethod: PaymentMethod },
+) {
+  const res = await fetch(`${API_BASE}/api/payments/create-order`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = (await res.json().catch(() => ({}))) as CreatePaymentOrderResponse & {
+    error?: string;
+  };
+
+  if (!res.ok) {
+    throw new Error(data.error || "Could not start payment.");
+  }
+
+  return data;
+}
+
+export async function verifyPaymentAndRegister(
+  payload: RsvpPayload & {
+    paymentMethod: PaymentMethod;
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  },
+) {
+  const res = await fetch(`${API_BASE}/api/payments/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    message?: string;
+    id?: string;
+  };
+
+  if (!res.ok) {
+    throw new Error(data.error || "Could not verify payment.");
   }
 
   return data;

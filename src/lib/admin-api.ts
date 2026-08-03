@@ -147,6 +147,16 @@ export type AdminRsvp = {
   startupStage: string;
   industry: string;
   createdAt: string;
+  payment?: {
+    status?: string;
+    amountInr?: number;
+    amountPaise?: number;
+    currency?: string;
+    method?: string;
+    razorpayOrderId?: string;
+    razorpayPaymentId?: string;
+    paidAt?: string;
+  };
   event: {
     slug: string;
     title: string;

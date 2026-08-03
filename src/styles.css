@@ -464,3 +464,9 @@
     transition: none;
   }
 }
+
+/* Keep Razorpay checkout above the registration dialog overlay */
+.razorpay-container,
+.razorpay-checkout-frame {
+  z-index: 2147483647 !important;
+}

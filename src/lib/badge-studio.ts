@@ -282,7 +282,7 @@ export function drawBadge(input: BadgeDrawInput) {
   ctx.fillStyle = "#ffffff";
   ctx.font = "800 64px system-ui, -apple-system, sans-serif";
   const nameLines = wrapLines(ctx, displayName, 900, 2);
-  let nameY = 920;
+  let nameY = 1000;
   for (const line of nameLines) {
     ctx.fillText(line, BADGE_WIDTH / 2, nameY);
     nameY += 72;

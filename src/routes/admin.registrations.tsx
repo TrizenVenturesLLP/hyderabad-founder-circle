@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   ChevronLeft,
   ChevronRight,
+  CreditCard,
   Mail,
   MoreHorizontal,
   Search,
@@ -22,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/registrations")({
   component: AdminRegistrationsPage,
@@ -31,6 +33,60 @@ export const Route = createFileRoute("/admin/registrations")({
 });
 
 const PAGE_SIZE = 15;
+
+function paymentMethodLabel(method?: string) {
+  const labels: Record<string, string> = {
+    upi: "UPI",
+    card: "Card",
+    netbanking: "Net Banking",
+    wallet: "Wallet",
+  };
+  const key = String(method || "").toLowerCase();
+  return labels[key] || (method ? String(method) : "—");
+}
+
+function PaymentStatusCell({ payment }: { payment?: AdminRsvp["payment"] }) {
+  const status = payment?.status || "unpaid";
+  const paid = status === "paid";
+  const amount = Number(payment?.amountInr) || 0;
+
+  return (
+    <div className="min-w-[8.5rem]">
+      <span
+        className={cn(
+          "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+          paid
+            ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+            : status === "failed"
+              ? "bg-red-50 text-red-700 ring-1 ring-red-200"
+              : "bg-[var(--color-background-alt)] text-[var(--color-text-muted)] ring-1 ring-[var(--color-border)]",
+        )}
+      >
+        {paid ? "Paid" : status === "failed" ? "Failed" : "Unpaid"}
+      </span>
+      {paid ? (
+        <>
+          <p className="mt-1 text-xs font-medium text-foreground">
+            ₹{amount}
+            {payment?.method ? (
+              <span className="ml-1 font-normal text-[var(--color-text-muted)]">
+                · {paymentMethodLabel(payment.method)}
+              </span>
+            ) : null}
+          </p>
+          {payment?.razorpayPaymentId ? (
+            <p
+              className="mt-0.5 max-w-[10rem] truncate font-mono text-[10px] text-[var(--color-text-muted)]"
+              title={payment.razorpayPaymentId}
+            >
+              {payment.razorpayPaymentId}
+            </p>
+          ) : null}
+        </>
+      ) : null}
+    </div>
+  );
+}
 
 function CompactPagination({
   currentPage,
@@ -86,6 +142,7 @@ function AdminRegistrationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [composeOpen, setComposeOpen] = useState(false);
+  const [paymentDetail, setPaymentDetail] = useState<AdminRsvp | null>(null);
   const [page, setPage] = useState(1);
 
   async function load() {
@@ -260,7 +317,7 @@ function AdminRegistrationsPage() {
 
       <div className="min-h-0 flex-1 overflow-auto px-4 py-3 sm:px-5 sm:py-4 md:px-8">
         <div className="overflow-x-auto rounded-[16px] border border-[var(--color-border)] bg-white shadow-[0_1px_2px_rgba(59,35,24,0.04)]">
-          <table className="w-full min-w-[900px] text-left text-sm">
+          <table className="w-full min-w-[1040px] text-left text-sm">
             <thead className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-[var(--color-background-alt)] text-[11px] uppercase tracking-wider text-[var(--color-text-muted)]">
               <tr>
                 <th className="px-4 py-3">
@@ -280,6 +337,7 @@ function AdminRegistrationsPage() {
                 <th className="px-4 py-3 font-semibold">Role</th>
                 <th className="px-4 py-3 font-semibold">Company</th>
                 <th className="px-4 py-3 font-semibold">Event</th>
+                <th className="px-4 py-3 font-semibold">Payment</th>
                 <th className="px-4 py-3 font-semibold">Emails sent</th>
                 <th className="px-4 py-3 font-semibold">Registered</th>
                 <th className="px-4 py-3 text-right font-semibold">Actions</th>
@@ -320,6 +378,9 @@ function AdminRegistrationsPage() {
                     <td className="px-4 py-3 text-xs text-[var(--color-text-secondary)]">
                       {row.event?.title}
                     </td>
+                    <td className="px-4 py-3">
+                      <PaymentStatusCell payment={row.payment} />
+                    </td>
                     <td className="px-4 py-3 text-xs">
                       <span className="font-medium text-foreground">{sent}</span>
                       {failed > 0 ? (
@@ -342,7 +403,14 @@ function AdminRegistrationsPage() {
                             <MoreHorizontal className="size-4" strokeWidth={1.75} />
                           </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-44">
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem
+                            onClick={() => setPaymentDetail(row)}
+                            className="cursor-pointer gap-2"
+                          >
+                            <CreditCard className="size-4" strokeWidth={1.75} />
+                            Payment details
+                          </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => onSendMailOne(row._id)}
                             className="cursor-pointer gap-2"
@@ -366,7 +434,7 @@ function AdminRegistrationsPage() {
               {!loading && items.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={9}
+                    colSpan={10}
                     className="px-4 py-10 text-center text-[var(--color-text-secondary)]"
                   >
                     No registrations found.
@@ -390,6 +458,126 @@ function AdminRegistrationsPage() {
           }}
         />
       ) : null}
+
+      {paymentDetail ? (
+        <PaymentDetailsModal
+          rsvp={paymentDetail}
+          onClose={() => setPaymentDetail(null)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function PaymentDetailsModal({
+  rsvp,
+  onClose,
+}: {
+  rsvp: AdminRsvp;
+  onClose: () => void;
+}) {
+  const payment = rsvp.payment;
+  const status = payment?.status || "unpaid";
+  const paid = status === "paid";
+  const rows: { label: string; value: string; mono?: boolean }[] = [
+    { label: "Registrant", value: rsvp.name },
+    { label: "Email", value: rsvp.email },
+    { label: "Event", value: rsvp.event?.title || "—" },
+    {
+      label: "Status",
+      value: paid ? "Paid" : status === "failed" ? "Failed" : "Unpaid",
+    },
+    {
+      label: "Amount",
+      value:
+        payment?.amountInr != null && payment.amountInr > 0
+          ? `₹${payment.amountInr}`
+          : "—",
+    },
+    { label: "Method", value: paymentMethodLabel(payment?.method) },
+    {
+      label: "Payment ID",
+      value: payment?.razorpayPaymentId || "—",
+      mono: true,
+    },
+    {
+      label: "Order ID",
+      value: payment?.razorpayOrderId || "—",
+      mono: true,
+    },
+    {
+      label: "Paid on",
+      value: payment?.paidAt
+        ? new Date(payment.paidAt).toLocaleString("en-IN", {
+            timeZone: "Asia/Kolkata",
+          })
+        : "—",
+    },
+  ];
+
+  async function copyValue(value: string, label: string) {
+    if (!value || value === "—") return;
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(`${label} copied`);
+    } catch {
+      toast.error("Could not copy");
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-md rounded-[16px] border border-[var(--color-border)] bg-white p-5 shadow-xl">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--brand-accent)]">
+              Payment details
+            </p>
+            <h3 className="mt-1 font-display text-xl tracking-tight text-foreground">
+              {rsvp.name}
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-[var(--color-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-background-alt)]"
+          >
+            Close
+          </button>
+        </div>
+
+        <dl className="mt-5 space-y-3">
+          {rows.map((row) => (
+            <div
+              key={row.label}
+              className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] pb-3 last:border-0 last:pb-0"
+            >
+              <dt className="shrink-0 text-xs text-[var(--color-text-muted)]">
+                {row.label}
+              </dt>
+              <dd className="min-w-0 text-right">
+                <p
+                  className={cn(
+                    "break-all text-xs font-medium text-foreground",
+                    row.mono && "font-mono text-[11px]",
+                  )}
+                >
+                  {row.value}
+                </p>
+                {row.mono && row.value !== "—" ? (
+                  <button
+                    type="button"
+                    onClick={() => void copyValue(row.value, row.label)}
+                    className="mt-1 text-[10px] font-medium text-[var(--brand-accent)] hover:underline"
+                  >
+                    Copy
+                  </button>
+                ) : null}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
     </div>
   );
 }

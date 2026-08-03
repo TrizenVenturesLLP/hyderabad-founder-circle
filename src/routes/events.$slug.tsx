@@ -89,10 +89,10 @@ export const Route = createFileRoute("/events/$slug")({
                   "@type": "Organization",
                   name: "Hyderabad Founders Network",
                 },
-                isAccessibleForFree: true,
+                isAccessibleForFree: false,
                 offers: {
                   "@type": "Offer",
-                  price: "0",
+                  price: "49",
                   priceCurrency: "INR",
                   availability: "https://schema.org/InStock",
                   url: `https://community.trizenventures.com/events/${m.slug}`,
@@ -191,7 +191,7 @@ const venueAmenities = [
 const faqs = [
   {
     q: "Is this event free?",
-    a: "Yes. Registration is free but required.",
+    a: "Registration is ₹49 per person and is required due to limited capacity.",
   },
   {
     q: "Can I attend if I'm not a founder?",
@@ -513,7 +513,7 @@ function EventDetail() {
                 <MetaRow label="Venue" value={venueLine} icon={MapPin} />
                 <MetaRow
                   label="Registration"
-                  value="Free Registration"
+                  value="₹49 Registration"
                   icon={Ticket}
                 />
                 <MetaRow label="Seats" value="Limited Seats" icon={Users} />
@@ -1134,7 +1134,7 @@ function EventDetail() {
                   </div>
                 </div>
                 <p className="mt-3 max-w-xl text-[14px] leading-[1.65] text-[var(--color-text-secondary)]">
-                  Free registration. Limited capacity — reserve your seat to join
+                  ₹49 registration. Limited capacity — reserve your seat to join
                   this meetup.
                 </p>
                 <p className="mt-3 max-w-xl text-[13px] leading-relaxed text-[var(--color-text-muted)]">
