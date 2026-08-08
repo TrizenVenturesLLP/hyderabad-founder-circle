@@ -14,24 +14,39 @@ const linkClassName =
   "inline-block whitespace-nowrap text-[14px] text-[var(--color-text-secondary)] transition-colors duration-200 hover:text-[var(--brand-accent)]";
 
 const labelClassName =
-  "text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--brand-accent)]";
+  "text-[12px] font-medium tracking-[0.06em] text-[var(--brand-accent)]";
 
 export function SiteFooter() {
   return (
     <footer className="border-t border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)]">
-      <div className="page-container py-10 md:py-16">
-        <div className="grid gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-12 lg:gap-x-8">
+      <div className="page-container py-10 md:py-14">
+        <div className="grid gap-8 sm:grid-cols-2 sm:gap-8 lg:grid-cols-12 lg:gap-x-8">
           <div className="sm:col-span-2 lg:col-span-4">
             <Link to="/" className="group inline-flex items-center gap-2.5">
-              <BrandLogo className="h-8 w-8 transition-transform duration-200 group-hover:scale-105" />
-              <span className="font-display text-[17px] font-semibold leading-tight tracking-tight text-[var(--color-text-primary)] md:text-[18px]">
-                Trizen Community
+              <BrandLogo className="h-8 w-8 shrink-0 transition-transform duration-200 group-hover:scale-105" />
+              <span className="flex min-w-0 flex-col leading-tight">
+                <span
+                  className="text-[16px] font-semibold tracking-tight text-[var(--color-text-primary)] transition-colors duration-200 group-hover:text-[var(--brand-accent)] md:text-[17px]"
+                  style={{ fontFamily: "var(--font-brand)" }}
+                >
+                  Trizen Community
+                </span>
+                <span className="text-[10.5px] font-medium text-[var(--color-text-muted)]">
+                  Hyderabad Founders Network
+                </span>
               </span>
             </Link>
-            <p className="mt-2.5 max-w-[40ch] text-[13px] leading-[1.55] text-[var(--color-text-secondary)]">
-              Hyderabad Founders Network.
-              <br />
-              An initiative of Trizen Ventures.
+            <p className="mt-3 max-w-[36ch] text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
+              An initiative of{" "}
+              <a
+                href={links.sponsor.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-foreground underline-offset-4 transition-colors duration-200 hover:text-[var(--brand-accent)] hover:underline"
+              >
+                Trizen Ventures
+              </a>
+              .
             </p>
           </div>
 
@@ -110,19 +125,10 @@ export function SiteFooter() {
         </div>
       </div>
 
-      <div className="border-t border-white/10 bg-black">
-        <div className="page-container flex flex-col gap-2 py-3.5 text-[13px] text-white/65 md:flex-row md:items-center md:justify-between md:py-4">
-          <p className="text-white/70">
-            © {new Date().getFullYear()} Trizen Community. An initiative of{" "}
-            <a
-              href={links.sponsor.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium text-white transition-colors duration-200 hover:text-[var(--brand-accent)]"
-            >
-              Trizen Ventures
-            </a>
-            .
+      <div className="border-t border-[var(--color-border)] bg-[var(--color-background-alt)]">
+        <div className="page-container flex flex-col gap-2 py-3.5 text-[13px] text-[var(--color-text-secondary)] md:flex-row md:items-center md:justify-between md:py-4">
+          <p>
+            © {new Date().getFullYear()} Trizen Community
           </p>
           <nav
             aria-label="Legal"
@@ -130,21 +136,23 @@ export function SiteFooter() {
           >
             <Link
               to="/privacy"
-              className="transition-colors duration-200 hover:text-white"
+              className="transition-colors duration-200 hover:text-[var(--brand-accent)]"
             >
               Privacy
             </Link>
-            <span className="whitespace-pre text-white/30">{" · "}</span>
+            <span className="whitespace-pre text-[var(--color-border-strong)]">
+              {" · "}
+            </span>
             <Link
               to="/terms"
-              className="transition-colors duration-200 hover:text-white"
+              className="transition-colors duration-200 hover:text-[var(--brand-accent)]"
             >
               Terms
             </Link>
-            <span className="whitespace-pre text-white/30">{" · "}</span>
+            <span className="whitespace-pre text-[var(--color-border-strong)]">
+              {" · "}
+            </span>
             <span>Made in Hyderabad</span>
-            <span className="whitespace-pre text-white/30">{" · "}</span>
-            <span>चाय & code</span>
           </nav>
         </div>
       </div>

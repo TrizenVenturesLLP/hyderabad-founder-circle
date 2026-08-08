@@ -64,7 +64,7 @@ function BadgePage() {
 
   return (
     <div className="min-h-[70vh] bg-[var(--color-background)]">
-      <div className="page-container py-8 md:py-10">
+      <div className="page-container py-10 md:py-14">
         <nav className="text-[12px] text-[var(--color-text-secondary)]">
           <Link
             to="/events"
@@ -78,21 +78,21 @@ function BadgePage() {
           <span className="text-foreground/80">Badge studio</span>
         </nav>
 
-        <header className="mt-5 max-w-2xl">
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--brand-accent)]">
+        <header className="mt-6 max-w-2xl">
+          <p className="text-[12px] font-medium tracking-[0.06em] text-[var(--brand-accent)]">
             Hyderabad Founders Network
           </p>
-          <h1 className="mt-2 font-display text-[clamp(1.6rem,3vw,2.15rem)] tracking-tight text-foreground">
+          <h1 className="mt-2.5 font-display text-[clamp(1.7rem,3vw,2.25rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
             Create your badge
           </h1>
-          <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
+          <p className="mt-3 max-w-xl text-[14.5px] leading-relaxed text-[var(--color-text-secondary)]">
             Add your photo and name, download the badge, and share that
             you&apos;re attending
             {meetup ? ` ${meetup.title}` : ""}.
           </p>
         </header>
 
-        <div className="mt-8 lg:mt-10">
+        <div className="mt-10 md:mt-12">
           {loading ? (
             <p className="text-sm text-[var(--color-text-muted)]">
               Loading event…

@@ -1,26 +1,37 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type KeyboardEvent } from "react";
+import { Send } from "lucide-react";
 import { toast } from "sonner";
 import { submitContact } from "@/lib/api";
+import { useInView } from "@/hooks/use-in-view";
 import { links } from "@/lib/links";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact — Hyderabad Founders Network" },
+      { title: "Get in touch — Hyderabad Founders Network" },
       {
         name: "description",
         content:
-          "Get in touch with the community organisers. Plus community guidelines.",
+          "Get in touch with Hyderabad Founders Network organisers — partner, host, share a story, or say hello.",
       },
-      { property: "og:title", content: "Contact — Hyderabad Founders Network" },
+      {
+        property: "og:title",
+        content: "Get in touch — Hyderabad Founders Network",
+      },
       { property: "og:url", content: "/contact" },
     ],
     links: [{ rel: "canonical", href: "/contact" }],
   }),
   component: ContactPage,
 });
+
+const scrollRevealOpts = {
+  once: true,
+  threshold: 0.28,
+  rootMargin: "0px 0px -22% 0px",
+} as const;
 
 const guidelines = [
   {
@@ -42,13 +53,21 @@ const guidelines = [
 ];
 
 const fieldClass =
-  "mt-2 w-full rounded-none border border-border/80 bg-background px-3.5 py-3 text-[0.975rem] text-foreground outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-muted-foreground/50 focus:border-primary focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--terracotta)_18%,transparent)]";
+  "mt-1.5 w-full rounded-none border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 text-[14px] text-foreground outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-[var(--color-text-muted)] focus:border-[var(--brand-accent)] focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--brand-accent)_16%,transparent)]";
 
 function ContactPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const hero = useInView<HTMLElement>({
+    once: true,
+    threshold: 0.12,
+    rootMargin: "0px 0px -8% 0px",
+  });
+  const form = useInView<HTMLElement>(scrollRevealOpts);
+  const guidelinesReveal = useInView<HTMLElement>(scrollRevealOpts);
 
   async function sendMessage() {
     const trimmedName = name.trim();
@@ -95,44 +114,50 @@ function ContactPage() {
     message.trim().length > 0;
 
   return (
-    <div>
-      <header className="relative overflow-hidden">
+    <div className="bg-[var(--color-background)]">
+      <header
+        ref={hero.ref}
+        className="trizen-mesh border-b border-[var(--color-border)]"
+      >
         <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_12%_0%,color-mix(in_oklab,var(--saffron)_12%,transparent),transparent_50%),radial-gradient(ellipse_at_100%_10%,color-mix(in_oklab,var(--terracotta)_7%,transparent),transparent_45%)]"
-          aria-hidden
-        />
-        <div className="relative mx-auto max-w-[1160px] px-5 pt-12 pb-10 sm:px-6 md:px-8 md:pt-14 md:pb-12">
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-primary">
+          className={cn(
+            "page-container reveal-up pt-8 pb-7 md:pt-10 md:pb-8",
+            hero.inView && "is-visible",
+          )}
+        >
+          <p className="text-[12px] font-medium tracking-[0.06em] text-[var(--brand-accent)]">
             Contact
           </p>
-          <h1 className="mt-3 font-display text-[2.5rem] leading-[1.05] tracking-tight text-foreground sm:text-[3rem] md:text-[3.25rem]">
-            Say hi.
+          <h1 className="mt-2 max-w-[14ch] font-display text-[clamp(1.9rem,3.8vw,2.6rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-foreground">
+            Get in touch.
           </h1>
-          <p className="mt-3 max-w-xl text-[1.0625rem] leading-[1.65] text-muted-foreground md:text-[1.125rem]">
-            Hosting an event? Want to share a story? Partner with us? Send a note.
+          <p className="mt-2 max-w-xl text-[14.5px] leading-relaxed text-[var(--color-text-secondary)]">
+            Partnering, hosting, sharing a story, or just saying hello — send a
+            note and we&apos;ll get back to you.
           </p>
-          <p className="mt-5 text-sm text-muted-foreground">
-            Prefer email?{" "}
+          <div className="mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-[var(--color-text-secondary)]">
             <a
               href={`mailto:${links.email}`}
-              className="font-medium text-foreground underline-offset-4 transition-colors duration-200 hover:text-primary hover:underline"
+              className="font-medium text-foreground underline-offset-4 transition-colors duration-200 hover:text-[var(--brand-accent)] hover:underline"
             >
               {links.email}
             </a>
-            {" · "}
+            <span className="text-[var(--color-border-strong)]" aria-hidden>
+              ·
+            </span>
             <a
               href={links.phoneHref}
-              className="font-medium text-foreground underline-offset-4 transition-colors duration-200 hover:text-primary hover:underline"
+              className="font-medium text-foreground underline-offset-4 transition-colors duration-200 hover:text-[var(--brand-accent)] hover:underline"
             >
               {links.phone}
             </a>
-          </p>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+          </div>
+          <p className="mt-1.5 max-w-xl text-[12.5px] leading-relaxed text-[var(--color-text-muted)]">
             <a
               href={links.address.mapsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-colors duration-200 hover:text-primary"
+              className="transition-colors duration-200 hover:text-[var(--brand-accent)]"
             >
               {links.address.line}
             </a>
@@ -140,14 +165,20 @@ function ContactPage() {
         </div>
       </header>
 
-      <section className="border-t border-border/60">
-        <div className="mx-auto grid max-w-[1160px] gap-12 px-5 py-12 sm:px-6 md:grid-cols-12 md:gap-12 md:px-8 md:py-14 lg:gap-16">
-          <div className="md:col-span-7">
-            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
-              Send a message
+      <section>
+        <div className="page-container grid gap-8 py-8 md:grid-cols-12 md:gap-10 md:py-9 lg:gap-12">
+          <div
+            ref={form.ref}
+            className={cn(
+              "reveal-left md:col-span-7",
+              form.inView && "is-visible",
+            )}
+          >
+            <p className="text-[12px] font-medium tracking-[0.06em] text-[var(--brand-accent)]">
+              Message
             </p>
-            <h2 className="mt-2 font-display text-[1.45rem] tracking-tight text-foreground md:text-[1.6rem]">
-              Write to the organisers
+            <h2 className="mt-1.5 font-display text-[clamp(1.25rem,2.2vw,1.45rem)] tracking-tight text-foreground">
+              Tell us what you have in mind
             </h2>
 
             {/*
@@ -155,15 +186,15 @@ function ContactPage() {
               Avoids Chrome's "This form is not secure" warning on HTTP (e.g. localhost).
             */}
             <div
-              className="mt-7"
+              className="mt-5"
               role="group"
-              aria-label="Write to the organisers"
+              aria-label="Get in touch form"
               onKeyDown={onKeyDown}
             >
-              <div className="grid gap-5 sm:grid-cols-2 sm:gap-x-5">
+              <div className="grid gap-4 sm:grid-cols-2 sm:gap-x-4">
                 <div>
                   <label
-                    className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground"
+                    className="text-[12px] font-medium text-[var(--color-text-secondary)]"
                     htmlFor="contact-name"
                   >
                     Your name
@@ -183,7 +214,7 @@ function ContactPage() {
                 </div>
                 <div>
                   <label
-                    className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground"
+                    className="text-[12px] font-medium text-[var(--color-text-secondary)]"
                     htmlFor="contact-email"
                   >
                     Email
@@ -207,9 +238,9 @@ function ContactPage() {
                 </div>
               </div>
 
-              <div className="mt-5">
+              <div className="mt-4">
                 <label
-                  className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground"
+                  className="text-[12px] font-medium text-[var(--color-text-secondary)]"
                   htmlFor="contact-message"
                 >
                   Message
@@ -218,53 +249,71 @@ function ContactPage() {
                   id="contact-message"
                   name="contact-message"
                   required
-                  rows={6}
+                  rows={4}
                   maxLength={2000}
                   autoComplete="off"
                   placeholder="What would you like to talk about?"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  className={cn(fieldClass, "min-h-[9rem] resize-y leading-relaxed")}
+                  className={cn(
+                    fieldClass,
+                    "min-h-[6.5rem] resize-y leading-relaxed",
+                  )}
                 />
               </div>
 
-              <div className="mt-7">
+              <div className="mt-5">
                 <button
                   type="button"
                   disabled={!canSend}
                   onClick={() => void sendMessage()}
-                  className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-7 text-sm font-medium text-primary-foreground transition-[opacity,transform] duration-200 hover:opacity-95 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45"
+                  className="btn-primary gap-2 !min-h-10 !px-5 !text-[13.5px] disabled:pointer-events-none disabled:opacity-45"
                 >
-                  {submitting ? "Sending…" : "Send message"}
+                  <Send className="size-3.5" strokeWidth={1.75} aria-hidden />
+                  {submitting ? "Sending…" : "Get in touch"}
                 </button>
               </div>
             </div>
           </div>
 
-          <aside className="md:col-span-5">
+          <aside
+            ref={guidelinesReveal.ref}
+            className={cn(
+              "reveal-right md:col-span-5",
+              guidelinesReveal.inView && "is-visible",
+            )}
+            style={{
+              transitionDelay: guidelinesReveal.inView ? "80ms" : undefined,
+            }}
+          >
             <div className="md:sticky md:top-24">
-              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
+              <p className="text-[12px] font-medium tracking-[0.06em] text-[var(--brand-accent)]">
                 Community guidelines
               </p>
-              <h2 className="mt-2 font-display text-[1.45rem] tracking-tight text-foreground md:text-[1.6rem]">
+              <h2 className="mt-1.5 font-display text-[clamp(1.25rem,2.2vw,1.45rem)] tracking-tight text-foreground">
                 The rules that keep the room what it is.
               </h2>
 
-              <ol className="mt-6 divide-y divide-border/70 border-t border-border/70">
+              <ol
+                className={cn(
+                  "stagger-in-fast mt-4 divide-y divide-[var(--color-border)] border-t border-[var(--color-border)]",
+                  guidelinesReveal.inView && "is-visible",
+                )}
+              >
                 {guidelines.map((g, i) => (
-                  <li key={g.h} className="py-4">
-                    <div className="flex gap-3.5">
+                  <li key={g.h} className="py-3">
+                    <div className="flex gap-3">
                       <span
-                        className="mt-0.5 font-display text-[1.05rem] tabular-nums tracking-tight text-primary/55"
+                        className="mt-0.5 font-display text-[0.95rem] tabular-nums tracking-tight text-[var(--brand-accent)]"
                         aria-hidden
                       >
                         {String(i + 1).padStart(2, "0")}
                       </span>
                       <div className="min-w-0">
-                        <h3 className="text-[0.975rem] font-semibold tracking-tight text-foreground">
+                        <h3 className="text-[0.95rem] font-semibold tracking-tight text-foreground">
                           {g.h}
                         </h3>
-                        <p className="mt-1 text-sm leading-[1.65] text-muted-foreground">
+                        <p className="mt-0.5 text-[13px] leading-[1.55] text-[var(--color-text-secondary)]">
                           {g.p}
                         </p>
                       </div>

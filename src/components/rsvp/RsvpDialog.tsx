@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import {
+  ArrowLeft,
+  ArrowRight,
   CalendarDays,
   Check,
   ChevronDown,
@@ -9,6 +11,7 @@ import {
   ImagePlus,
   Info,
   Landmark,
+  Loader2,
   Mail,
   MapPin,
   MessageCircle,
@@ -225,10 +228,22 @@ const FIELD_LIMITS = {
 } as const;
 
 const fieldClass =
-  "h-[52px] w-full rounded-[11px] border border-border/90 bg-card px-3.5 text-sm text-foreground shadow-none outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground/65 focus-visible:border-primary/35 focus-visible:ring-1 focus-visible:ring-primary/40";
+  "h-[48px] w-full rounded-none border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 text-sm text-foreground shadow-none outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground/65 focus-visible:border-[var(--brand-accent)] focus-visible:ring-1 focus-visible:ring-[var(--brand-accent)]/30";
 
 const textareaClass =
-  "min-h-[96px] w-full resize-y rounded-[11px] border border-border/90 bg-card px-3.5 py-3 text-sm text-foreground shadow-none outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground/65 focus-visible:border-primary/35 focus-visible:ring-1 focus-visible:ring-primary/40";
+  "min-h-[88px] w-full resize-y rounded-none border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3 text-sm text-foreground shadow-none outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground/65 focus-visible:border-[var(--brand-accent)] focus-visible:ring-1 focus-visible:ring-[var(--brand-accent)]/30";
+
+const btnPrimaryClass =
+  "inline-flex min-h-[46px] items-center justify-center gap-2 rounded-none bg-[var(--brand-accent)] px-5 text-sm font-medium text-white transition-[opacity,background-color] hover:bg-[var(--brand-accent-hover)] disabled:opacity-60 sm:px-6";
+
+const btnSecondaryClass =
+  "inline-flex min-h-[46px] items-center justify-center gap-2 rounded-none border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-4 text-sm font-medium text-foreground transition-colors hover:bg-[var(--color-background-alt)] sm:px-5";
+
+const optionCardClass =
+  "flex items-center gap-3 rounded-none border px-3.5 py-3 text-left text-sm transition-colors";
+
+const checkBoxClass =
+  "flex h-4 w-4 shrink-0 items-center justify-center rounded-none border";
 
 const selectClass = cn(
   fieldClass,
@@ -236,7 +251,26 @@ const selectClass = cn(
   "bg-[url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23666%27 stroke-width=%272%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E')]",
 );
 
-type FormErrorKey = keyof FormState | "lookingFor";
+type FormErrorKey = keyof FormState;
+
+const STEP1_FIELD_ORDER = [
+  "name",
+  "email",
+  "phone",
+  "linkedin",
+  "role",
+  "company",
+  "startupStage",
+  "gtmChallenges",
+  "leaveWith",
+  "industry",
+] as const satisfies readonly FormErrorKey[];
+
+const STEP2_FIELD_ORDER = [
+  "lookingFor",
+  "offerCommunity",
+  "wantToMeet",
+] as const satisfies readonly FormErrorKey[];
 
 export function RsvpDialog() {
   const { open, event, closeRsvp } = useRsvp();
@@ -247,14 +281,57 @@ export function RsvpDialog() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("upi");
   const [draftRestored, setDraftRestored] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [stepAnim, setStepAnim] = useState<
+    "enter-forward" | "enter-back" | "exit-forward" | "exit-back" | null
+  >(null);
+  const [panelStep, setPanelStep] = useState<1 | 2 | 3>(1);
   const formScrollRef = useRef<HTMLDivElement>(null);
   const skipNextSaveRef = useRef(false);
+  const stepAnimTimerRef = useRef<number | null>(null);
+  const stepAnimatingRef = useRef(false);
 
   useEffect(() => {
     const el = formScrollRef.current;
     if (!el) return;
     el.scrollTop = 0;
-  }, [step]);
+  }, [panelStep]);
+
+  useEffect(() => {
+    return () => {
+      if (stepAnimTimerRef.current) window.clearTimeout(stepAnimTimerRef.current);
+    };
+  }, []);
+
+  function moveToStep(next: 1 | 2 | 3, opts?: { instant?: boolean }) {
+    const current = typeof step === "number" ? step : panelStep;
+    if (next === current && next === panelStep) return;
+    if (stepAnimatingRef.current && !opts?.instant) return;
+
+    if (stepAnimTimerRef.current) window.clearTimeout(stepAnimTimerRef.current);
+
+    if (opts?.instant) {
+      stepAnimatingRef.current = false;
+      setStep(next);
+      setPanelStep(next);
+      setStepAnim(null);
+      return;
+    }
+
+    const dir = next >= current ? "forward" : "back";
+    setStep(next);
+    stepAnimatingRef.current = true;
+    setStepAnim(dir === "forward" ? "exit-forward" : "exit-back");
+
+    stepAnimTimerRef.current = window.setTimeout(() => {
+      setPanelStep(next);
+      setStepAnim(dir === "forward" ? "enter-forward" : "enter-back");
+      stepAnimTimerRef.current = window.setTimeout(() => {
+        setStepAnim(null);
+        stepAnimatingRef.current = false;
+        stepAnimTimerRef.current = null;
+      }, 340);
+    }, 200);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -264,12 +341,18 @@ export function RsvpDialog() {
     if (draft && hasRsvpDraftContent(draft.form)) {
       setForm(draft.form);
       setStep(draft.step);
+      setPanelStep(draft.step);
+      setStepAnim(null);
+      stepAnimatingRef.current = false;
       setPaymentMethod(draft.paymentMethod);
       setDraftRestored(true);
       setErrors({});
       setSubmitting(false);
     } else {
       setStep(1);
+      setPanelStep(1);
+      setStepAnim(null);
+      stepAnimatingRef.current = false;
       setForm(emptyForm);
       setErrors({});
       setSubmitting(false);
@@ -331,6 +414,9 @@ export function RsvpDialog() {
 
   function resetAll() {
     setStep(1);
+    setPanelStep(1);
+    setStepAnim(null);
+    stepAnimatingRef.current = false;
     setForm(emptyForm);
     setErrors({});
     setSubmitting(false);
@@ -477,8 +563,7 @@ export function RsvpDialog() {
       next.leaveWith = "Please select at least one option.";
     }
     if (!form.industry) next.industry = "Please select your industry.";
-    setErrors(next);
-    return Object.keys(next).length === 0;
+    return next;
   }
 
   function validateStep2() {
@@ -492,21 +577,70 @@ export function RsvpDialog() {
     if (form.wantToMeet.length === 0) {
       next.wantToMeet = "Please select at least one option.";
     }
-    setErrors(next);
-    return Object.keys(next).length === 0;
+    return next;
+  }
+
+  function firstErrorKey(
+    next: Partial<Record<FormErrorKey, string>>,
+    order: readonly FormErrorKey[],
+  ) {
+    return order.find((key) => Boolean(next[key]));
+  }
+
+  function scrollToField(key: FormErrorKey) {
+    const root = formScrollRef.current;
+    if (!root) return;
+
+    const run = () => {
+      const section = root.querySelector(
+        `[data-rsvp-field="${key}"]`,
+      ) as HTMLElement | null;
+      if (!section) return;
+
+      section.scrollIntoView({ behavior: "smooth", block: "center" });
+
+      const control = (section.querySelector(
+        "[data-rsvp-control]",
+      ) ||
+        section.querySelector("input, select, textarea") ||
+        section.querySelector("button")) as HTMLElement | null;
+
+      if (!control) return;
+
+      control.classList.remove("rsvp-field-flash");
+      // Restart animation if triggered again quickly
+      void control.offsetWidth;
+      control.classList.add("rsvp-field-flash");
+      window.setTimeout(() => control.classList.remove("rsvp-field-flash"), 900);
+      control.focus({ preventScroll: true });
+    };
+
+    requestAnimationFrame(() => requestAnimationFrame(run));
   }
 
   function goNext() {
-    if (!validateStep1()) return;
+    const next = validateStep1();
+    setErrors(next);
+    const key = firstErrorKey(next, STEP1_FIELD_ORDER);
+    if (key) {
+      scrollToField(key);
+      return;
+    }
     setErrors({});
-    setStep(2);
+    moveToStep(2);
   }
 
   function goToPayment() {
     if (step !== 2) return;
-    if (!validateStep2()) return;
+    const next = validateStep2();
+    setErrors(next);
+    const key = firstErrorKey(next, STEP2_FIELD_ORDER);
+    if (key) {
+      scrollToField(key);
+      return;
+    }
     setErrors({});
-    setStep(3);
+    moveToStep(3);
   }
 
   async function payAndRegister() {
@@ -553,6 +687,9 @@ export function RsvpDialog() {
               setDraftRestored(false);
             } catch (err) {
               setStep(3);
+              setPanelStep(3);
+              setStepAnim(null);
+              stepAnimatingRef.current = false;
               const message =
                 err instanceof Error
                   ? err.message
@@ -636,21 +773,20 @@ export function RsvpDialog() {
         onWheel={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}
         className={cn(
-          "flex flex-col gap-0 overflow-hidden overscroll-contain rounded-[20px] border-border/80 bg-background p-0 shadow-[0_28px_70px_-30px_rgba(0,0,0,0.45)]",
+          "flex flex-col gap-0 overflow-hidden overscroll-contain !rounded-none border-border/80 bg-background p-0 shadow-[0_28px_70px_-30px_rgba(0,0,0,0.45)] sm:!rounded-none",
           checkoutOpen && "pointer-events-none",
           step === "success" || step === "processing"
             ? [
                 "max-h-[min(92dvh,560px)] w-[calc(100%-1.25rem)] max-w-[680px] sm:max-w-[680px]",
                 "max-sm:!inset-x-0 max-sm:!bottom-0 max-sm:!left-0 max-sm:!right-0 max-sm:!top-auto",
                 "max-sm:!translate-x-0 max-sm:!translate-y-0",
-                "max-sm:!w-full max-sm:!max-w-none max-sm:rounded-b-none max-sm:rounded-t-[20px] max-sm:!max-h-[92dvh]",
+                "max-sm:!w-full max-sm:!max-w-none max-sm:!rounded-none max-sm:!max-h-[92dvh]",
               ]
             : [
                 "max-h-[min(92dvh,880px)] w-[calc(100%-1rem)] max-w-[1080px] sm:max-w-[1080px]",
-                // Full-bleed bottom sheet on mobile — override dialog centering
                 "max-sm:!inset-x-0 max-sm:!bottom-0 max-sm:!left-0 max-sm:!right-0 max-sm:!top-auto",
                 "max-sm:!translate-x-0 max-sm:!translate-y-0",
-                "max-sm:!w-full max-sm:!max-w-none max-sm:rounded-b-none max-sm:rounded-t-[20px] max-sm:!max-h-[94dvh]",
+                "max-sm:!w-full max-sm:!max-w-none max-sm:!rounded-none max-sm:!max-h-[94dvh]",
               ],
         )}
       >
@@ -666,42 +802,40 @@ export function RsvpDialog() {
         ) : (
           <div className="grid min-h-0 flex-1 md:grid-cols-12">
             <div className="flex min-h-0 min-w-0 flex-col md:col-span-8 md:border-r md:border-border/70">
-                <header className="shrink-0 border-b border-border/70 px-4 pb-4 pt-6 pr-16 sm:px-6 sm:pt-7 sm:pr-20">
-                <div className="flex items-center justify-between gap-3 pr-8">
-                  <div className="flex items-center gap-2.5">
-                    <span className="h-px w-6 bg-primary" aria-hidden />
-                    <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
-                      Registration
-                    </p>
-                  </div>
-                  {draftRestored || hasRsvpDraftContent(form) ? (
-                    <button
-                      type="button"
-                      onClick={clearSavedDetails}
-                      className="text-[11px] font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline sm:text-xs"
-                    >
-                      Clear saved details
-                    </button>
-                  ) : null}
+                <header className="shrink-0 border-b border-[var(--color-border)] px-4 pb-4 pt-6 pr-14 sm:px-6 sm:pt-7 sm:pr-16">
+                <div className="flex items-center gap-2.5">
+                  <span className="h-px w-6 bg-[var(--brand-accent)]" aria-hidden />
+                  <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--brand-accent)]">
+                    Registration
+                  </p>
                 </div>
                 <h2 className="mt-3 font-display text-[1.45rem] tracking-tight text-foreground sm:text-[1.65rem]">
                   Founders & Builders Meetup Registration
                 </h2>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                   Reserve your seat for the next meetup in Hyderabad.
-                  {draftRestored || hasRsvpDraftContent(form) ? (
-                    <span className="mt-1 block text-xs text-primary/90">
-                      Your details are saved — reopen anytime to continue.
-                    </span>
-                  ) : null}
                 </p>
+                {draftRestored || hasRsvpDraftContent(form) ? (
+                  <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <p className="text-xs text-[var(--brand-accent)]/90">
+                      Your details are saved — reopen anytime to continue.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={clearSavedDetails}
+                      className="text-xs font-medium text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground"
+                    >
+                      Clear saved details
+                    </button>
+                  </div>
+                ) : null}
                 <Stepper step={step} />
               </header>
 
               <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
                 <div
                   ref={formScrollRef}
-                  className="scrollbar-none min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-5 pb-6 [-webkit-overflow-scrolling:touch] sm:px-6"
+                  className="rsvp-step-viewport scrollbar-none min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-4 pb-5 [-webkit-overflow-scrolling:touch] sm:px-6 sm:py-5"
                 >
                   <MobileEventSummary
                     event={event}
@@ -710,9 +844,20 @@ export function RsvpDialog() {
                     weekday={weekday}
                   />
 
-                  {step === 1 ? (
+                  <div
+                    key={panelStep}
+                    className={cn(
+                      "rsvp-step",
+                      stepAnim === "exit-forward" && "rsvp-step-exit-forward",
+                      stepAnim === "exit-back" && "rsvp-step-exit-back",
+                      stepAnim === "enter-forward" && "rsvp-step-enter-forward",
+                      stepAnim === "enter-back" && "rsvp-step-enter-back",
+                    )}
+                  >
+                  {panelStep === 1 ? (
                     <section className="space-y-5">
                       <Field
+                        fieldKey="name"
                         label="Full Name"
                         required
                         error={errors.name}
@@ -731,6 +876,7 @@ export function RsvpDialog() {
 
                       <div className="grid gap-5 sm:grid-cols-2">
                         <Field
+                          fieldKey="email"
                           label="Email"
                           required
                           error={errors.email}
@@ -748,6 +894,7 @@ export function RsvpDialog() {
                           />
                         </Field>
                         <Field
+                          fieldKey="phone"
                           label="Mobile Number"
                           required
                           error={errors.phone}
@@ -785,6 +932,7 @@ export function RsvpDialog() {
                       </div>
 
                       <Field
+                        fieldKey="linkedin"
                         label="What is your LinkedIn profile URL?"
                         required
                         error={errors.linkedin}
@@ -801,6 +949,7 @@ export function RsvpDialog() {
                       </Field>
 
                       <Field
+                        fieldKey="role"
                         label="What best describes your role?"
                         required
                         error={errors.role}
@@ -820,6 +969,7 @@ export function RsvpDialog() {
                       </Field>
 
                       <Field
+                        fieldKey="company"
                         label="What is your startup or company name?"
                         required
                         error={errors.company}
@@ -836,6 +986,7 @@ export function RsvpDialog() {
                       </Field>
 
                       <Field
+                        fieldKey="startupStage"
                         label="What stage is your startup or venture currently in?"
                         required
                         error={errors.startupStage}
@@ -858,6 +1009,7 @@ export function RsvpDialog() {
                       </Field>
 
                       <Field
+                        fieldKey="gtmChallenges"
                         label="Which go-to-market challenges are most relevant to your startup today? Select 3 options."
                         required
                         error={errors.gtmChallenges}
@@ -873,6 +1025,7 @@ export function RsvpDialog() {
                       </Field>
 
                       <Field
+                        fieldKey="leaveWith"
                         label="What are you hoping to leave this session with?"
                         required
                         error={errors.leaveWith}
@@ -886,6 +1039,7 @@ export function RsvpDialog() {
                       </Field>
 
                       <Field
+                        fieldKey="industry"
                         label="What industry is your startup or company in?"
                         required
                         error={errors.industry}
@@ -909,14 +1063,17 @@ export function RsvpDialog() {
                     </section>
                   ) : null}
 
-                  {step === 2 ? (
+                  {panelStep === 2 ? (
                     <section className="space-y-6">
-                      <div>
+                      <div data-rsvp-field="lookingFor">
                         <Label className="text-[13px] font-medium text-foreground/90">
                           What are you looking for today?{" "}
                           <span className="text-primary">*</span>
                         </Label>
-                        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <div
+                          data-rsvp-control
+                          className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2"
+                        >
                           {lookingForOptions.map((option) => {
                             const selected = form.lookingFor.includes(option);
                             return (
@@ -925,18 +1082,18 @@ export function RsvpDialog() {
                                 type="button"
                                 onClick={() => toggleLookingFor(option)}
                                 className={cn(
-                                  "flex items-center gap-3 rounded-[12px] border px-3.5 py-3 text-left text-sm transition-colors",
+                                  optionCardClass,
                                   selected
-                                    ? "border-primary bg-primary/10 text-foreground"
-                                    : "border-border bg-card text-foreground/85 hover:border-primary/30",
+                                    ? "border-[var(--brand-accent)] bg-[color-mix(in_oklab,var(--brand-accent)_8%,transparent)] text-foreground"
+                                    : "border-[var(--color-border)] bg-[var(--color-surface)] text-foreground/85 hover:border-[var(--brand-accent)]/35",
                                 )}
                               >
                                 <span
                                   className={cn(
-                                    "flex h-4 w-4 items-center justify-center rounded border",
+                                    checkBoxClass,
                                     selected
-                                      ? "border-primary bg-primary text-primary-foreground"
-                                      : "border-border",
+                                      ? "border-[var(--brand-accent)] bg-[var(--brand-accent)] text-white"
+                                      : "border-[var(--color-border)]",
                                   )}
                                   aria-hidden
                                 >
@@ -954,7 +1111,7 @@ export function RsvpDialog() {
                         ) : null}
                       </div>
 
-                      <div>
+                      <div data-rsvp-field="offerCommunity">
                         <Label className="text-[13px] font-medium text-foreground/90">
                           What can you offer the community?{" "}
                           <span className="text-primary">*</span>
@@ -962,7 +1119,10 @@ export function RsvpDialog() {
                         <p className="mt-1 text-xs text-muted-foreground">
                           Skills, experience, mentoring — how you can help others.
                         </p>
-                        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <div
+                          data-rsvp-control
+                          className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2"
+                        >
                           {offerCommunityOptions.map((option) => {
                             const selected = form.offerCommunity.includes(option);
                             return (
@@ -971,18 +1131,18 @@ export function RsvpDialog() {
                                 type="button"
                                 onClick={() => toggleOfferCommunity(option)}
                                 className={cn(
-                                  "flex items-center gap-3 rounded-[12px] border px-3.5 py-3 text-left text-sm transition-colors",
+                                  optionCardClass,
                                   selected
-                                    ? "border-primary bg-primary/10 text-foreground"
-                                    : "border-border bg-card text-foreground/85 hover:border-primary/30",
+                                    ? "border-[var(--brand-accent)] bg-[color-mix(in_oklab,var(--brand-accent)_8%,transparent)] text-foreground"
+                                    : "border-[var(--color-border)] bg-[var(--color-surface)] text-foreground/85 hover:border-[var(--brand-accent)]/35",
                                 )}
                               >
                                 <span
                                   className={cn(
-                                    "flex h-4 w-4 items-center justify-center rounded border",
+                                    checkBoxClass,
                                     selected
-                                      ? "border-primary bg-primary text-primary-foreground"
-                                      : "border-border",
+                                      ? "border-[var(--brand-accent)] bg-[var(--brand-accent)] text-white"
+                                      : "border-[var(--color-border)]",
                                   )}
                                   aria-hidden
                                 >
@@ -1002,7 +1162,7 @@ export function RsvpDialog() {
                         ) : null}
                       </div>
 
-                      <div>
+                      <div data-rsvp-field="wantToMeet">
                         <Label className="text-[13px] font-medium text-foreground/90">
                           Who would you like to meet?{" "}
                           <span className="text-primary">*</span>
@@ -1010,7 +1170,10 @@ export function RsvpDialog() {
                         <p className="mt-1 text-xs text-muted-foreground">
                           Founders, builders, investors, operators — who should we connect you with?
                         </p>
-                        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <div
+                          data-rsvp-control
+                          className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2"
+                        >
                           {wantToMeetOptions.map((option) => {
                             const selected = form.wantToMeet.includes(option);
                             return (
@@ -1019,18 +1182,18 @@ export function RsvpDialog() {
                                 type="button"
                                 onClick={() => toggleWantToMeet(option)}
                                 className={cn(
-                                  "flex items-center gap-3 rounded-[12px] border px-3.5 py-3 text-left text-sm transition-colors",
+                                  optionCardClass,
                                   selected
-                                    ? "border-primary bg-primary/10 text-foreground"
-                                    : "border-border bg-card text-foreground/85 hover:border-primary/30",
+                                    ? "border-[var(--brand-accent)] bg-[color-mix(in_oklab,var(--brand-accent)_8%,transparent)] text-foreground"
+                                    : "border-[var(--color-border)] bg-[var(--color-surface)] text-foreground/85 hover:border-[var(--brand-accent)]/35",
                                 )}
                               >
                                 <span
                                   className={cn(
-                                    "flex h-4 w-4 items-center justify-center rounded border",
+                                    checkBoxClass,
                                     selected
-                                      ? "border-primary bg-primary text-primary-foreground"
-                                      : "border-border",
+                                      ? "border-[var(--brand-accent)] bg-[var(--brand-accent)] text-white"
+                                      : "border-[var(--color-border)]",
                                   )}
                                   aria-hidden
                                 >
@@ -1077,7 +1240,7 @@ export function RsvpDialog() {
                       </Field>
 
                       <div className="space-y-3">
-                        <div className="rounded-[14px] border border-border/80 bg-secondary/20 p-4">
+                        <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
                           <div className="flex items-start gap-3">
                             <button
                               type="button"
@@ -1085,10 +1248,11 @@ export function RsvpDialog() {
                                 update("joinWhatsapp", !form.joinWhatsapp);
                               }}
                               className={cn(
-                                "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border",
+                                checkBoxClass,
+                                "mt-0.5",
                                 form.joinWhatsapp
-                                  ? "border-primary bg-primary text-primary-foreground"
-                                  : "border-border bg-card",
+                                  ? "border-[var(--brand-accent)] bg-[var(--brand-accent)] text-white"
+                                  : "border-[var(--color-border)] bg-[var(--color-surface)]",
                               )}
                               aria-pressed={form.joinWhatsapp}
                               aria-label="Join our WhatsApp Community"
@@ -1109,7 +1273,7 @@ export function RsvpDialog() {
                                 target="_blank"
                                 rel="noreferrer"
                                 onClick={() => update("joinWhatsapp", true)}
-                                className="mt-2.5 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/15"
+                                className="mt-2.5 inline-flex items-center gap-2 border border-[var(--brand-accent)]/30 bg-[color-mix(in_oklab,var(--brand-accent)_8%,transparent)] px-3 py-1.5 text-xs font-medium text-[var(--brand-accent)] transition-colors hover:bg-[color-mix(in_oklab,var(--brand-accent)_12%,transparent)]"
                               >
                                 <MessageCircle className="h-3.5 w-3.5" strokeWidth={1.75} />
                                 Open community invite
@@ -1118,7 +1282,7 @@ export function RsvpDialog() {
                           </div>
                         </div>
 
-                        <div className="rounded-[14px] border border-border/80 bg-secondary/20 p-4">
+                        <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
                           <CheckboxRow
                             checked={form.subscribeUpdates}
                             onChange={(checked) => update("subscribeUpdates", checked)}
@@ -1143,7 +1307,7 @@ export function RsvpDialog() {
                     </section>
                   ) : null}
 
-                  {step === 3 ? (
+                  {panelStep === 3 ? (
                     <section className="space-y-5">
                       <div>
                         <h3 className="text-base font-medium text-foreground">
@@ -1155,7 +1319,7 @@ export function RsvpDialog() {
                         </p>
                       </div>
 
-                      <div className="overflow-hidden rounded-[14px] border border-border/80">
+                      <div className="overflow-hidden border border-[var(--color-border)]">
                         {PAYMENT_OPTIONS.map((option, index) => {
                           const Icon = option.icon;
                           const selected = paymentMethod === option.id;
@@ -1166,26 +1330,26 @@ export function RsvpDialog() {
                               onClick={() => setPaymentMethod(option.id)}
                               className={cn(
                                 "flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors",
-                                index > 0 && "border-t border-border/70",
+                                index > 0 && "border-t border-[var(--color-border)]",
                                 selected
-                                  ? "bg-primary/10"
-                                  : "bg-card hover:bg-secondary/40",
+                                  ? "bg-[color-mix(in_oklab,var(--brand-accent)_8%,transparent)]"
+                                  : "bg-[var(--color-surface)] hover:bg-[var(--color-background-alt)]",
                               )}
                             >
                               <span
                                 className={cn(
-                                  "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
+                                  checkBoxClass,
                                   selected
-                                    ? "border-primary"
-                                    : "border-border",
+                                    ? "border-[var(--brand-accent)]"
+                                    : "border-[var(--color-border)]",
                                 )}
                                 aria-hidden
                               >
                                 {selected ? (
-                                  <span className="h-2 w-2 rounded-full bg-primary" />
+                                  <span className="h-2 w-2 bg-[var(--brand-accent)]" />
                                 ) : null}
                               </span>
-                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary/70 text-primary">
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-[var(--color-border)] bg-[var(--color-background-alt)] text-[var(--brand-accent)]">
                                 <Icon className="h-4 w-4" strokeWidth={1.75} />
                               </span>
                               <span className="min-w-0 flex-1">
@@ -1197,7 +1361,7 @@ export function RsvpDialog() {
                                 </span>
                               </span>
                               {option.id === "card" ? (
-                                <span className="hidden text-[11px] font-medium text-primary sm:inline">
+                                <span className="hidden text-[11px] font-medium text-[var(--brand-accent)] sm:inline">
                                   via Razorpay
                                 </span>
                               ) : null}
@@ -1206,9 +1370,9 @@ export function RsvpDialog() {
                         })}
                       </div>
 
-                      <div className="flex items-start gap-2.5 rounded-[12px] border border-border/70 bg-secondary/30 px-3.5 py-3 text-xs leading-relaxed text-muted-foreground md:hidden">
+                      <div className="flex items-start gap-2.5 border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3 text-xs leading-relaxed text-muted-foreground md:hidden">
                         <Info
-                          className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary"
+                          className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--brand-accent)]"
                           strokeWidth={1.75}
                         />
                         <p>
@@ -1218,8 +1382,8 @@ export function RsvpDialog() {
                         </p>
                       </div>
 
-                      <div className="rounded-[14px] border border-border/80 bg-secondary/20 p-4 md:hidden">
-                        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-primary">
+                      <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-4 md:hidden">
+                        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--brand-accent)]">
                           Payment summary
                         </p>
                         <div className="mt-3 flex items-center justify-between text-sm">
@@ -1241,16 +1405,22 @@ export function RsvpDialog() {
                       </div>
                     </section>
                   ) : null}
+                  </div>
                 </div>
 
-                <footer className="shrink-0 border-t border-border/70 bg-background px-4 py-4 sm:px-6">
+                <footer className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3.5 sm:px-6">
                   <div className="flex items-center justify-between gap-3">
                     {step === 2 || step === 3 ? (
                       <button
                         type="button"
-                        onClick={() => setStep(step === 3 ? 2 : 1)}
-                        className="rounded-full border border-border px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                        onClick={() => moveToStep(step === 3 ? 2 : 1)}
+                        className={btnSecondaryClass}
                       >
+                        <ArrowLeft
+                          className="size-3.5"
+                          strokeWidth={1.75}
+                          aria-hidden
+                        />
                         Back
                       </button>
                     ) : (
@@ -1260,26 +1430,54 @@ export function RsvpDialog() {
                       <button
                         type="button"
                         onClick={goNext}
-                        className="rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-[opacity,transform] hover:opacity-90 active:scale-[0.98]"
+                        className={btnPrimaryClass}
                       >
-                        Continue
+                        Next step
+                        <ArrowRight
+                          className="size-3.5"
+                          strokeWidth={1.75}
+                          aria-hidden
+                        />
                       </button>
                     ) : step === 2 ? (
                       <button
                         type="button"
                         onClick={goToPayment}
-                        className="rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-[opacity,transform] hover:opacity-90 active:scale-[0.98]"
+                        className={btnPrimaryClass}
                       >
-                        continue 
+                        Next step
+                        <ArrowRight
+                          className="size-3.5"
+                          strokeWidth={1.75}
+                          aria-hidden
+                        />
                       </button>
                     ) : (
                       <button
                         type="button"
                         onClick={() => void payAndRegister()}
                         disabled={submitting}
-                        className="rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-[opacity,transform] hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
+                        className={btnPrimaryClass}
                       >
-                        {submitting ? "Opening checkout…" : "Proceed to payment"}
+                        {submitting ? (
+                          <>
+                            <Loader2
+                              className="size-3.5 animate-spin"
+                              strokeWidth={1.75}
+                              aria-hidden
+                            />
+                            Opening checkout…
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard
+                              className="size-3.5"
+                              strokeWidth={1.75}
+                              aria-hidden
+                            />
+                            Proceed to payment
+                          </>
+                        )}
                       </button>
                     )}
                   </div>
@@ -1317,7 +1515,7 @@ export function RsvpDialog() {
                         </span>
                       </div>
                     </div>
-                    <div className="mt-6 flex items-start gap-2.5 rounded-[12px] border border-border/70 bg-card/80 px-3.5 py-3 text-xs leading-relaxed text-muted-foreground">
+                    <div className="mt-6 flex items-start gap-2.5 rounded-none border border-border/70 bg-card/80 px-3.5 py-3 text-xs leading-relaxed text-muted-foreground">
                       <Info
                         className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary"
                         strokeWidth={1.75}
@@ -1338,7 +1536,7 @@ export function RsvpDialog() {
                     <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
                       Event summary
                     </p>
-                    <div className="mt-5 flex h-[4.75rem] w-[4.75rem] flex-col items-center justify-center rounded-2xl bg-card text-center shadow-sm ring-1 ring-border/80">
+                    <div className="mt-5 flex h-[4.75rem] w-[4.75rem] flex-col items-center justify-center rounded-none bg-card text-center shadow-sm ring-1 ring-border/80">
                       <span className="text-[11px] font-medium uppercase tracking-wider text-primary">
                         {monthShort}
                       </span>
@@ -1346,7 +1544,7 @@ export function RsvpDialog() {
                         {dayNum}
                       </span>
                     </div>
-                    <span className="mt-5 inline-flex w-fit rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-primary">
+                    <span className="mt-5 inline-flex w-fit rounded-none bg-primary/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-primary">
                       Registration open
                     </span>
                     <h3 className="mt-3 font-display text-[1.65rem] leading-snug tracking-tight text-foreground">
@@ -1428,10 +1626,10 @@ function CheckboxRow({
     >
       <span
         className={cn(
-          "flex h-4 w-4 items-center justify-center rounded border",
+          checkBoxClass,
           checked
-            ? "border-primary bg-primary text-primary-foreground"
-            : "border-border bg-card",
+            ? "border-[var(--brand-accent)] bg-[var(--brand-accent)] text-white"
+            : "border-[var(--color-border)] bg-[var(--color-surface)]",
         )}
         aria-hidden
       >
@@ -1454,8 +1652,8 @@ function MobileEventSummary({
   weekday: string;
 }) {
   return (
-    <div className="mb-6 flex gap-3 rounded-[14px] border border-border/80 bg-secondary/30 p-3 md:hidden">
-      <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-card text-center ring-1 ring-border/80">
+    <div className="mb-6 flex gap-3 rounded-none border border-border/80 bg-secondary/30 p-3 md:hidden">
+      <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-none bg-card text-center ring-1 ring-border/80">
         <span className="text-[9px] font-medium uppercase tracking-wider text-primary">
           {monthShort}
         </span>
@@ -1476,11 +1674,11 @@ function MobileEventSummary({
 
 function Stepper({ step }: { step: 1 | 2 | 3 }) {
   return (
-    <ol className="mt-5 flex min-w-0 items-center gap-2 text-sm sm:gap-3">
+    <ol className="mt-4 flex min-w-0 items-center gap-2 text-sm sm:mt-5 sm:gap-3">
       <StepItem n={1} label="Your details" active={step === 1} done={step > 1} />
-      <span className="h-px min-w-3 flex-1 bg-border sm:max-w-8" aria-hidden />
+      <span className="h-px min-w-3 flex-1 bg-[var(--color-border)] sm:max-w-8" aria-hidden />
       <StepItem n={2} label="Your goals" active={step === 2} done={step > 2} />
-      <span className="h-px min-w-3 flex-1 bg-border sm:max-w-8" aria-hidden />
+      <span className="h-px min-w-3 flex-1 bg-[var(--color-border)] sm:max-w-8" aria-hidden />
       <StepItem n={3} label="Payment" active={step === 3} done={false} />
     </ol>
   );
@@ -1506,15 +1704,20 @@ function StepItem({
     >
       <span
         className={cn(
-          "flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-medium",
-          done && "bg-primary text-primary-foreground",
-          active && !done && "bg-primary text-primary-foreground",
-          !active && !done && "border border-border bg-card",
+          "flex h-6 w-6 items-center justify-center rounded-none text-[11px] font-medium transition-colors duration-300",
+          done && "bg-[var(--brand-accent)] text-white",
+          active && !done && "bg-[var(--brand-accent)] text-white",
+          !active && !done && "border border-[var(--color-border)] bg-[var(--color-surface)]",
         )}
       >
         {done ? <Check className="h-3.5 w-3.5" strokeWidth={2.5} /> : `0${n}`}
       </span>
-      <span className={cn("text-xs font-medium sm:text-sm", active && "text-primary")}>
+      <span
+        className={cn(
+          "text-xs font-medium transition-colors duration-300 sm:text-sm",
+          active && "text-[var(--brand-accent)]",
+        )}
+      >
         {label}
       </span>
     </li>
@@ -1560,7 +1763,7 @@ function ProcessingView() {
         <span className="relative flex h-16 w-16 items-center justify-center">
           <span
             aria-hidden
-            className="absolute inset-0 animate-[hero-pulse_1.8s_ease-in-out_infinite] rounded-full bg-primary/20"
+            className="absolute inset-0 animate-[hero-pulse_1.8s_ease-in-out_infinite] rounded-none bg-primary/20"
           />
           <svg
             className="relative h-10 w-10 animate-spin text-primary"
@@ -1619,7 +1822,7 @@ function SuccessView({
   };
 
   const eventCard = (
-    <div className="h-full w-full overflow-hidden rounded-[16px] border border-border/70 bg-background/90 text-left shadow-[0_16px_36px_-26px_rgba(0,0,0,0.35)]">
+    <div className="h-full w-full overflow-hidden rounded-none border border-border/70 bg-background/90 text-left shadow-[0_16px_36px_-26px_rgba(0,0,0,0.35)]">
       <div className="flex items-center justify-center gap-2 border-b border-border/70 bg-primary px-4 py-3 text-primary-foreground">
         <span className="text-[11px] font-medium uppercase tracking-[0.14em]">
           {monthShort}
@@ -1656,7 +1859,7 @@ function SuccessView({
         onClick={() => {
           closeRsvp();
         }}
-        className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-3.5 py-2.5 text-[13px] font-medium text-primary-foreground shadow-[0_10px_24px_-14px_color-mix(in_oklab,var(--terracotta)_75%,transparent)] transition-[opacity,transform] hover:opacity-90 active:scale-[0.98] sm:px-4 sm:text-sm"
+        className={cn(btnPrimaryClass, "gap-2 px-3.5 text-[13px] sm:px-4 sm:text-sm")}
       >
         <ImagePlus className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" strokeWidth={1.75} />
         <span className="truncate">Create badge</span>
@@ -1665,7 +1868,7 @@ function SuccessView({
         href={links.community}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex items-center justify-center gap-2 rounded-full border border-border/90 bg-background/80 px-3.5 py-2.5 text-[13px] font-medium text-foreground transition-colors hover:border-primary/30 hover:bg-secondary/40 sm:px-4 sm:text-sm"
+        className={cn(btnSecondaryClass, "gap-2 px-3.5 text-[13px] sm:px-4 sm:text-sm")}
       >
         <MessageCircle className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" strokeWidth={1.75} />
         <span className="truncate">WhatsApp</span>
@@ -1674,7 +1877,7 @@ function SuccessView({
         href={googleCalendarUrl(event)}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex items-center justify-center gap-2 rounded-full border border-border/90 bg-background/80 px-3.5 py-2.5 text-[13px] font-medium text-foreground transition-colors hover:border-primary/30 hover:bg-secondary/40 sm:px-4 sm:text-sm"
+        className={cn(btnSecondaryClass, "gap-2 px-3.5 text-[13px] sm:px-4 sm:text-sm")}
       >
         <CalendarDays className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" strokeWidth={1.75} />
         <span className="truncate">Calendar</span>
@@ -1698,9 +1901,9 @@ function SuccessView({
                 <span className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center">
                   <span
                     aria-hidden
-                    className="absolute inset-0 animate-[hero-pulse_2.4s_ease-in-out_infinite] rounded-full bg-primary/20"
+                    className="absolute inset-0 animate-[hero-pulse_2.4s_ease-in-out_infinite] rounded-none bg-primary/20"
                   />
-                  <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_24px_-10px_color-mix(in_oklab,var(--terracotta)_70%,transparent)]">
+                  <span className="relative flex h-9 w-9 items-center justify-center rounded-none bg-primary text-primary-foreground shadow-[0_10px_24px_-10px_color-mix(in_oklab,var(--terracotta)_70%,transparent)]">
                     <Check className="h-4 w-4" strokeWidth={2.5} />
                   </span>
                 </span>
@@ -1753,7 +1956,7 @@ function SuccessMeta({
 }) {
   return (
     <div className="flex items-start justify-center gap-2.5 px-4 py-3.5 text-center">
-      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-none bg-primary/10 text-primary">
         <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
       </span>
       <div className="min-w-0 flex-1 text-left">
@@ -1813,13 +2016,15 @@ function MultiSelectDropdown({
     <div ref={rootRef} className="relative w-full min-w-0">
       <button
         type="button"
+        data-rsvp-control
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex h-[52px] w-full items-center justify-between gap-3 rounded-[11px] border border-border/90 bg-card px-3.5 text-left text-sm text-foreground shadow-none outline-none transition-[border-color,box-shadow] focus-visible:border-primary/35 focus-visible:ring-1 focus-visible:ring-primary/40",
+          fieldClass,
+          "flex items-center justify-between gap-3 text-left",
           selected.length === 0 && "text-muted-foreground/65",
-          open && "border-primary/35 ring-1 ring-primary/40",
+          open && "border-[var(--brand-accent)] ring-1 ring-[var(--brand-accent)]/30",
         )}
       >
         <span className="min-w-0 flex-1 truncate pr-2">{summary}</span>
@@ -1837,7 +2042,7 @@ function MultiSelectDropdown({
         <div
           role="listbox"
           aria-multiselectable="true"
-          className="absolute left-0 right-0 z-30 mt-1.5 max-h-56 overflow-y-auto rounded-[12px] border border-border/90 bg-card py-1.5 shadow-[0_16px_40px_-24px_rgba(0,0,0,0.45)]"
+          className="absolute left-0 right-0 z-30 mt-1 max-h-56 overflow-y-auto border border-[var(--color-border)] bg-[var(--color-surface)] py-1 shadow-[0_16px_40px_-24px_rgba(0,0,0,0.45)]"
         >
           {options.map((option) => {
             const isSelected = selected.includes(option);
@@ -1853,17 +2058,18 @@ function MultiSelectDropdown({
                 className={cn(
                   "flex w-full items-start gap-3 px-3.5 py-2.5 text-left text-sm transition-colors",
                   isSelected
-                    ? "bg-primary/10 text-foreground"
-                    : "text-foreground/85 hover:bg-muted/70",
+                    ? "bg-[color-mix(in_oklab,var(--brand-accent)_8%,transparent)] text-foreground"
+                    : "text-foreground/85 hover:bg-[var(--color-background-alt)]",
                   disabled && "cursor-not-allowed opacity-40 hover:bg-transparent",
                 )}
               >
                 <span
                   className={cn(
-                    "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border",
+                    checkBoxClass,
+                    "mt-0.5",
                     isSelected
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-background",
+                      ? "border-[var(--brand-accent)] bg-[var(--brand-accent)] text-white"
+                      : "border-[var(--color-border)] bg-[var(--color-surface)]",
                   )}
                   aria-hidden
                 >
@@ -1880,6 +2086,7 @@ function MultiSelectDropdown({
 }
 
 function Field({
+  fieldKey,
   label,
   required,
   error,
@@ -1889,6 +2096,7 @@ function Field({
   className,
   children,
 }: {
+  fieldKey?: FormErrorKey;
   label: string;
   required?: boolean;
   error?: string;
@@ -1899,7 +2107,10 @@ function Field({
   children: ReactNode;
 }) {
   return (
-    <div className={cn("space-y-1.5", className)}>
+    <div
+      className={cn("space-y-1.5", className)}
+      data-rsvp-field={fieldKey}
+    >
       <div className="flex items-start justify-between gap-3">
         <Label className="min-w-0 flex-1 text-[13px] font-medium leading-snug text-foreground/90">
           {label}

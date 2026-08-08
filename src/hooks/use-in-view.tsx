@@ -8,7 +8,7 @@ type Options = IntersectionObserverInit & {
 export function useInView<T extends HTMLElement = HTMLDivElement>(
   options: Options = {},
 ) {
-  const { once = true, threshold = 0.25, rootMargin = "0px 0px -10% 0px", ...rest } =
+  const { once = true, threshold = 0.14, rootMargin = "0px 0px -10% 0px", ...rest } =
     options;
   const ref = useRef<T>(null);
   const [inView, setInView] = useState(false);
@@ -26,10 +26,12 @@ export function useInView<T extends HTMLElement = HTMLDivElement>(
       return;
     }
 
+    let frame = 0;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setInView(true);
+          cancelAnimationFrame(frame);
+          frame = requestAnimationFrame(() => setInView(true));
           if (once) observer.unobserve(el);
         } else if (!once) {
           setInView(false);
@@ -39,7 +41,10 @@ export function useInView<T extends HTMLElement = HTMLDivElement>(
     );
 
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
   }, [once, threshold, rootMargin]);
 
   return { ref, inView };

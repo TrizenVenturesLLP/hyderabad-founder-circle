@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { links } from "@/lib/links";
 import { BrandLogo } from "@/components/BrandLogo";
+import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import {
   Sheet,
   SheetContent,
@@ -19,6 +20,38 @@ const nav = [
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
 ] as const;
+
+function BrandMark({ compact = false }: { compact?: boolean }) {
+  return (
+    <>
+      <BrandLogo
+        className={cn(
+          "shrink-0 transition-transform duration-200 group-hover:scale-105",
+          compact ? "h-8 w-8" : "h-9 w-9",
+        )}
+      />
+      <span className="flex min-w-0 flex-col leading-tight">
+        <span
+          className={cn(
+            "font-semibold tracking-tight text-foreground transition-colors duration-200 group-hover:text-[var(--brand-accent)]",
+            compact ? "text-[15px]" : "text-[15px] md:text-[16px]",
+          )}
+          style={{ fontFamily: "var(--font-brand)" }}
+        >
+          Trizen Community
+        </span>
+        <span
+          className={cn(
+            "truncate font-medium text-[var(--color-text-muted)]",
+            compact ? "text-[9.5px]" : "text-[9.5px] md:text-[10.5px]",
+          )}
+        >
+          Hyderabad Founders Network
+        </span>
+      </span>
+    </>
+  );
+}
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
@@ -46,42 +79,44 @@ export function SiteHeader() {
       className={cn(
         "sticky top-0 z-40 border-b transition-[background-color,border-color,box-shadow] duration-300",
         scrolled
-          ? "border-[var(--color-border)] bg-[var(--color-background)]/95 shadow-[var(--shadow-small)] backdrop-blur-md"
-          : "border-[var(--color-border)] bg-[var(--color-background)]/90 backdrop-blur-sm",
+          ? "border-[var(--color-border)] bg-white/90 shadow-[var(--shadow-small)] backdrop-blur-md"
+          : "border-transparent bg-white/80 backdrop-blur-sm",
       )}
     >
       <div className="page-container flex h-[64px] items-center justify-between md:h-[68px]">
         <Link
           to="/"
-          className="group flex items-center gap-2.5"
+          className="group flex min-w-0 items-center gap-2.5"
           onClick={() => setOpen(false)}
         >
-          <BrandLogo className="h-9 w-9 transition-transform duration-200 group-hover:scale-105" />
-          <span className="font-display text-[17px] tracking-tight text-foreground transition-colors duration-200 group-hover:text-[var(--brand-accent)] md:text-[18px]">
-            Trizen Community
-          </span>
+          <BrandMark />
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-0.5 md:flex">
           {nav.map((n) => (
             <Link
               key={n.to}
               to={n.to}
-              className="rounded-full px-3.5 py-2 text-[14px] font-medium text-[var(--color-text-secondary)] transition-colors duration-200 hover:text-foreground lg:px-4 lg:text-[15px]"
+              className="group/nav relative px-3.5 py-2 text-[14px] font-medium text-[var(--color-text-secondary)] transition-colors duration-250 hover:text-foreground lg:px-4 lg:text-[14.5px]"
               activeProps={{
                 className:
-                  "rounded-full px-3.5 py-2 text-[14px] font-semibold text-foreground transition-colors duration-200 lg:px-4 lg:text-[15px]",
+                  "group/nav relative px-3.5 py-2 text-[14px] font-semibold text-foreground transition-colors duration-250 lg:px-4 lg:text-[14.5px] [&_.nav-underline]:scale-x-100",
               }}
             >
               {n.label}
+              <span
+                className="nav-underline pointer-events-none absolute inset-x-3.5 bottom-1 h-px origin-left scale-x-0 bg-[var(--brand-accent)] transition-transform duration-300 ease-out group-hover/nav:scale-x-100 lg:inset-x-4"
+                aria-hidden
+              />
             </Link>
           ))}
           <a
             href={links.community}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-primary ml-3"
+            className="btn-primary ml-3 gap-1.5 !min-h-9 !px-3.5 !text-[12.5px]"
           >
+            <WhatsAppIcon className="size-3.5" />
             Join the Community
           </a>
         </nav>
@@ -91,7 +126,7 @@ export function SiteHeader() {
           aria-label="Open menu"
           aria-expanded={open}
           aria-controls="mobile-nav"
-          className="relative flex h-11 w-11 items-center justify-center rounded-full transition-colors duration-200 hover:bg-[var(--brand-primary-soft)] md:hidden"
+          className="relative flex h-11 w-11 items-center justify-center transition-colors duration-200 hover:bg-[var(--brand-primary-soft)] md:hidden"
           onClick={() => setOpen(true)}
         >
           <Menu className="h-5 w-5 text-foreground" strokeWidth={1.75} />
@@ -105,10 +140,10 @@ export function SiteHeader() {
           className="z-[60] inset-0 flex h-dvh w-full max-w-none flex-col gap-0 border-0 bg-[var(--color-background)] p-0 text-foreground shadow-none sm:max-w-none"
         >
           <SheetHeader className="flex flex-row items-center gap-2.5 border-b border-[var(--color-border)] px-6 py-5 pr-14 text-left">
-            <BrandLogo className="h-8 w-8" />
-            <SheetTitle className="truncate font-display text-[17px] font-normal tracking-tight text-foreground sm:text-[18px]">
-              Trizen Community
-            </SheetTitle>
+            <div className="group flex min-w-0 items-center gap-2.5">
+              <BrandMark compact />
+            </div>
+            <SheetTitle className="sr-only">Trizen Community</SheetTitle>
             <SheetDescription className="sr-only">
               Site navigation links
             </SheetDescription>
@@ -120,16 +155,16 @@ export function SiteHeader() {
                 <li key={n.to}>
                   <Link
                     to={n.to}
-                    className="flex items-center justify-between py-5 font-display text-[1.5rem] leading-none tracking-tight text-foreground/75 transition-colors duration-200 hover:text-foreground"
+                    className="group flex items-center justify-between py-5 font-display text-[1.5rem] leading-none tracking-tight text-foreground/75 transition-colors duration-200 hover:text-foreground"
                     activeProps={{
                       className:
-                        "flex items-center justify-between py-5 font-display text-[1.5rem] leading-none tracking-tight text-foreground transition-colors duration-200",
+                        "group flex items-center justify-between py-5 font-display text-[1.5rem] leading-none tracking-tight text-foreground transition-colors duration-200",
                     }}
                     onClick={() => setOpen(false)}
                   >
                     {n.label}
                     <span
-                      className="text-sm text-[var(--color-text-muted)]"
+                      className="translate-x-0 text-sm text-[var(--color-text-muted)] transition-transform duration-250 group-hover:translate-x-1"
                       aria-hidden
                     >
                       →
@@ -145,9 +180,10 @@ export function SiteHeader() {
               href={links.community}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-primary w-full"
+              className="btn-primary w-full gap-2 !min-h-11 !text-[13.5px]"
               onClick={() => setOpen(false)}
             >
+              <WhatsAppIcon className="size-4" />
               Join the Community
             </a>
           </div>

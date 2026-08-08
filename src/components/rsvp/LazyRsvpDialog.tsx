@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useRsvp } from "@/components/rsvp/rsvp-context";
 
 const RsvpDialog = lazy(() =>
@@ -10,9 +10,9 @@ export function LazyRsvpDialog() {
   const { open } = useRsvp();
   const [shouldLoad, setShouldLoad] = useState(false);
 
-  if (open && !shouldLoad) {
-    setShouldLoad(true);
-  }
+  useEffect(() => {
+    if (open) setShouldLoad(true);
+  }, [open]);
 
   if (!shouldLoad) return null;
 

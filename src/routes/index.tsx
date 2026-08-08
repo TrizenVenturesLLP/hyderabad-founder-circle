@@ -1,32 +1,33 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
-  BookOpen,
-  Briefcase,
+  ArrowUpRight,
   Calendar,
   Clock,
-  Code2,
-  Compass,
-  Handshake,
-  Lightbulb,
   MapPin,
-  Network,
-  Rocket,
-  Sparkles,
-  Sprout,
-  Users,
+  Ticket,
 } from "lucide-react";
-import heroImg from "@/assets/hero-rooftop.jpg";
-import eventImg from "@/assets/event-room.jpg";
-import tableImg from "@/assets/table-detail.jpg";
-import whyNetworkImg from "@/assets/why-network.jpg";
-import heroCityscape from "@/assets/hero-cityscape.png";
 import bestverseLogo from "@/assets/logo-Bestverse.jpeg";
 import draperLogo from "@/assets/draper_logo.svg";
+
+/** Real photos from Hyderabad Founders Network meetups */
+const eventPhotoHero = "/july-2026-1.jpeg";
+const eventPhotoMeetup = "/july-2026-2.jpeg";
+const eventPhotoMoment = "/july-2026-3.jpeg";
+const eventPhotoCommunity = "/july-2026-4.jpeg";
 import { useInView } from "@/hooks/use-in-view";
 import { cn } from "@/lib/utils";
-import { meetupVenueLine, getMeetups, getNextMeetup, nextMeetup as fallbackNext } from "@/lib/events";
+import {
+  meetupVenueLine,
+  getMeetups,
+  getNextMeetup,
+  nextMeetup as fallbackNext,
+  type Meetup,
+} from "@/lib/events";
 import { links } from "@/lib/links";
 import { RsvpButton } from "@/components/rsvp/RsvpButton";
+import { TrizenProductsSection } from "@/components/TrizenProductsSection";
+import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
@@ -58,32 +59,26 @@ const audiences = [
   {
     title: "Startup Founders",
     desc: "Building the next generation of startups.",
-    Icon: Sprout,
   },
   {
     title: "Co-founders",
     desc: "Looking to grow alongside fellow entrepreneurs.",
-    Icon: Users,
   },
   {
     title: "Builders",
     desc: "Developers, designers and engineers building innovative products.",
-    Icon: Code2,
   },
   {
     title: "Product & Startup Operators",
     desc: "Product managers, growth leaders, marketers and operators.",
-    Icon: Briefcase,
   },
   {
     title: "Investors & Mentors",
     desc: "Supporting founders through experience, guidance and connections.",
-    Icon: Handshake,
   },
   {
     title: "Aspiring Entrepreneurs",
     desc: "Learning from founders while preparing for their own journey.",
-    Icon: Compass,
   },
 ];
 
@@ -91,32 +86,26 @@ const gains = [
   {
     title: "Meaningful Founder Relationships",
     desc: "Build trusted relationships with founders and builders across Hyderabad.",
-    Icon: Network,
   },
   {
     title: "Learn From Real Experiences",
     desc: "Hear honest startup stories, challenges and lessons—not polished presentations.",
-    Icon: BookOpen,
   },
   {
     title: "Find Collaboration Opportunities",
     desc: "Meet potential co-founders, partners, customers and teammates.",
-    Icon: Handshake,
   },
   {
     title: "Expand Your Network",
     desc: "Connect with mentors, investors and startup ecosystem leaders.",
-    Icon: Rocket,
   },
   {
     title: "Continuous Learning",
     desc: "Learn from community discussions, founder stories and shared experiences.",
-    Icon: Lightbulb,
   },
   {
     title: "Grow Together",
     desc: "Become part of a community that continues long after every meetup.",
-    Icon: Sparkles,
   },
 ];
 
@@ -130,10 +119,10 @@ const meetupIncludes = [
 ];
 
 const storyTeasers = [
-  "How we found our first customer",
-  "Lessons from building an AI startup",
-  "What founders discussed this month",
-  "How collaboration led to a new partnership",
+  "Intros that turn into customers",
+  "Hiring conversations that start naturally",
+  "Honest advice on pricing and GTM",
+  "Partnerships that stick",
 ];
 
 const communityPartner = {
@@ -171,100 +160,186 @@ const faqs = [
 
 const gallery = [
   {
-    src: heroImg,
-    alt: "Founders gathered around a table at golden hour",
+    src: eventPhotoMeetup,
+    alt: "Founders at the Hyderabad Founders Network meetup",
   },
   {
-    src: eventImg,
-    alt: "Founders in conversation at a Hyderabad meetup",
+    src: eventPhotoMoment,
+    alt: "Speakers and hosts at a Hyderabad Founders Network session",
   },
   {
-    src: tableImg,
-    alt: "Notes, notebooks and chai on a meetup table",
+    src: eventPhotoCommunity,
+    alt: "Community moment from a Hyderabad Founders Network meetup",
   },
 ];
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--brand-accent)]">
+    <p className="text-[12px] font-medium tracking-[0.06em] text-[var(--brand-accent)]">
       {children}
     </p>
   );
 }
 
-function JoinButton({
-  className,
-  children = "Join the Community",
-}: {
-  className?: string;
-  children?: string;
-}) {
-  return (
-    <a
-      href={links.community}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={cn("btn-primary", className)}
-    >
-      {children}
-    </a>
-  );
-}
-
 const scrollRevealOpts = {
   once: true,
-  threshold: 0.12,
-  rootMargin: "0px 0px -8% 0px",
+  threshold: 0.28,
+  rootMargin: "0px 0px -22% 0px",
 } as const;
+
+/** Conversion path: Hero → Trust → Why → Who → Gains → Meetup → Gallery → Stories → FAQ → CTA */
+
+function HeroSection({ nextMeetup }: { nextMeetup: Meetup }) {
+  return (
+    <section
+      id="hero"
+      className="flex min-h-[calc(100dvh-64px)] flex-col md:min-h-[calc(100dvh-68px)]"
+    >
+      <div className="relative isolate min-h-0 flex-1 overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden" aria-hidden>
+          <div className="hero-slide absolute inset-0">
+            <img
+              src={eventPhotoHero}
+              alt=""
+              width={1920}
+              height={1080}
+              fetchPriority="high"
+              decoding="async"
+              className="h-full w-full object-cover object-[50%_58%] md:object-[50%_48%]"
+            />
+          </div>
+        </div>
+
+        <div
+          className="hero-overlay absolute inset-0 bg-[linear-gradient(180deg,rgba(8,10,24,0.78)_0%,rgba(8,10,24,0.45)_38%,rgba(8,10,24,0.18)_62%,rgba(8,10,24,0.4)_100%)]"
+          aria-hidden
+        />
+
+        <div className="page-container relative flex h-full items-start justify-center pt-14 md:pt-10 lg:pt-12">
+          <div className="mx-auto w-full max-w-2xl text-center">
+            <p className="hero-reveal text-[11px] font-medium tracking-[0.08em] text-white/70 md:text-[12px]">
+              Trizen Community
+            </p>
+            <h1 className="hero-reveal hero-reveal-delay-1 mx-auto mt-2 max-w-[16ch] font-display text-[clamp(1.75rem,6.5vw,3rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-white">
+              Hyderabad Founders Network
+            </h1>
+            <p className="hero-reveal hero-reveal-delay-2 mx-auto mt-2.5 max-w-[24rem] text-[14px] leading-relaxed text-white/78 md:mt-3 md:text-[15px]">
+              Where founders find their people—and grow together.
+            </p>
+            <p className="hero-reveal hero-reveal-delay-2 mt-2 text-[12px] text-white/55 md:text-[12.5px]">
+              Next meetup · {nextMeetup.dateLabel}
+            </p>
+            <div className="hero-reveal hero-reveal-delay-3 mt-4 flex flex-col items-center justify-center gap-2.5 sm:mt-6 sm:flex-row sm:gap-3">
+              <RsvpButton event={nextMeetup} className="btn-primary min-w-[10rem] gap-2">
+                <Ticket className="size-4" strokeWidth={1.75} aria-hidden />
+                Book your spot
+              </RsvpButton>
+              <a
+                href={links.community}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-[46px] min-w-[10rem] items-center justify-center gap-2 border border-white/28 bg-white/10 px-5 text-[14px] font-medium whitespace-nowrap text-white transition-colors duration-200 hover:border-white/45 hover:bg-white/16"
+              >
+                <WhatsAppIcon className="size-4" />
+                Join the Community
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        className="hero-reveal hero-reveal-delay-3 shrink-0 border-b border-[var(--color-border)] bg-[var(--color-surface)]"
+        aria-label="Community trust signals"
+      >
+        <div className="page-container flex flex-col items-center gap-3 py-2.5 md:flex-row md:justify-between md:gap-8 md:py-3.5">
+          <p className="text-center text-[12px] font-medium text-[var(--color-text-secondary)] md:text-left md:text-[13px]">
+            Every third Saturday · Hyderabad · Community-led
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-5 md:gap-8">
+            <a
+              href={communityPartner.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2.5 opacity-80 transition-opacity hover:opacity-100"
+            >
+              <img
+                src={draperLogo}
+                alt=""
+                width={192}
+                height={209}
+                className="h-6 w-6 object-contain md:h-7 md:w-7"
+              />
+              <span className="text-[12.5px] font-medium text-foreground md:text-[13px]">
+                {communityPartner.name}
+              </span>
+            </a>
+            <div className="inline-flex items-center gap-2.5 opacity-80">
+              <img
+                src={bestverseLogo}
+                alt=""
+                width={200}
+                height={200}
+                className="h-6 w-6 rounded-full object-cover md:h-7 md:w-7"
+              />
+              <span className="text-[12.5px] font-medium text-foreground md:text-[13px]">
+                {marketingPartner.name}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 function WhySection() {
   const { ref, inView } = useInView<HTMLElement>(scrollRevealOpts);
 
   return (
-    <section ref={ref} className="section-space bg-[var(--color-background)]">
+    <section ref={ref} id="why" className="section-space">
       <div className="page-container">
         <div className="grid items-center gap-8 lg:grid-cols-12 lg:gap-12">
           <div
-            className={cn(
-              "reveal-left lg:col-span-6",
-              inView && "is-visible",
-            )}
+            className={cn("reveal-left lg:col-span-5", inView && "is-visible")}
           >
-            <SectionLabel>Why this network</SectionLabel>
-            <h2 className="mt-4 max-w-[22ch] font-display text-[clamp(1.65rem,2.8vw,2.4rem)] leading-[1.08] tracking-[-0.035em] text-foreground">
-              Building a startup is hard. You shouldn't have to build it alone.
+            <SectionLabel>Why we exist</SectionLabel>
+            <h2 className="mt-3 max-w-[16ch] font-display text-[clamp(1.7rem,2.8vw,2.25rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
+              Building is better together.
             </h2>
-            <div className="mt-6 space-y-4 text-[14px] leading-[1.65] text-[var(--color-text-secondary)] md:text-[15px]">
+            <div className="mt-5 max-w-[40ch] space-y-3.5 text-[14.5px] leading-[1.7] text-[var(--color-text-secondary)]">
               <p>
-                Every startup journey comes with uncertainty—finding customers,
-                hiring the right people, validating ideas, raising capital, and
-                making difficult decisions. Most founders try to solve these in
-                isolation.
+                Startup life is full of hard calls. This network exists so you
+                don&apos;t have to face them alone—honest conversations, shared
+                lessons, and friendships that outlast any single meetup.
               </p>
               <p>
-                Hyderabad Founders Network brings together founders, builders, and
-                startup professionals who believe in learning together, supporting
-                one another, and building relationships that last beyond a single
-                event.
+                Every third Saturday, founders and builders gather in Hyderabad
+                to learn from each other and keep growing.
               </p>
+            </div>
+            <div className="mt-7">
+              <a href="#next-meetup" className="btn-secondary gap-2">
+                <Calendar className="size-4" strokeWidth={1.75} aria-hidden />
+                See upcoming meetup
+              </a>
             </div>
           </div>
           <div
-            className={cn(
-              "reveal-right lg:col-span-6",
-              inView && "is-visible",
-            )}
-            style={{ transitionDelay: inView ? "120ms" : undefined }}
+            className={cn("reveal-right lg:col-span-7", inView && "is-visible")}
+            style={{ transitionDelay: inView ? "90ms" : undefined }}
           >
-            <img
-              src={whyNetworkImg}
-              alt="Founders gathered around a table at golden hour"
-              width={1600}
-              height={1100}
-              loading="lazy"
-              decoding="async"
-              className="aspect-[16/11] w-full object-cover object-[58%_32%]"
-            />
+            <div className="overflow-hidden shadow-[var(--shadow-card)]">
+              <img
+                src={eventPhotoCommunity}
+                alt="Founders connecting at a Hyderabad Founders Network meetup"
+                width={1600}
+                height={1100}
+                loading="lazy"
+                decoding="async"
+                className="aspect-[16/11] w-full object-cover object-[50%_28%]"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -276,50 +351,44 @@ function WhoSection() {
   const { ref, inView } = useInView<HTMLElement>(scrollRevealOpts);
 
   return (
-    <section ref={ref} className="section-space bg-[var(--color-background-alt)]">
+    <section ref={ref} id="who" className="section-space">
       <div className="page-container">
-        <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
-          <div
-            className={cn(
-              "audience-copy lg:col-span-4",
-              inView && "is-visible",
-            )}
-          >
-            <SectionLabel>Who is this for</SectionLabel>
-            <h2 className="mt-4 font-display text-[clamp(1.65rem,2.8vw,2.35rem)] leading-[1.08] tracking-[-0.035em] text-foreground">
-              A place for everyone building the startup ecosystem.
-            </h2>
-            <span
-              className="mt-8 block h-1 w-12 rounded-full bg-[var(--brand-accent)]"
-              aria-hidden
-            />
-          </div>
-
-          <ul className="grid list-none gap-3 sm:grid-cols-2 sm:gap-3.5 lg:col-span-8 xl:grid-cols-3">
-            {audiences.map((a, i) => (
-              <li
-                key={a.title}
-                className={cn(
-                  "audience-card flex h-full flex-col rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-small)] md:p-5",
-                  inView && "is-visible",
-                )}
-                style={{ transitionDelay: inView ? `${70 + i * 45}ms` : "0ms" }}
-              >
-                <a.Icon
-                  className="h-4 w-4 text-[var(--brand-accent)]"
-                  strokeWidth={1.75}
-                  aria-hidden
-                />
-                <h3 className="mt-3 font-display text-[0.98rem] tracking-tight text-foreground md:text-[1.05rem]">
-                  {a.title}
-                </h3>
-                <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
-                  {a.desc}
-                </p>
-              </li>
-            ))}
-          </ul>
+        <div
+          className={cn(
+            "reveal-up mx-auto max-w-2xl text-center",
+            inView && "is-visible",
+          )}
+        >
+          <SectionLabel>Who belongs here</SectionLabel>
+          <h2 className="mt-3 font-display text-[clamp(1.7rem,2.8vw,2.25rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
+            Built for everyone shaping Hyderabad&apos;s startup future.
+          </h2>
+          <p className="mx-auto mt-3 max-w-[36ch] text-[14.5px] leading-relaxed text-[var(--color-text-secondary)]">
+            Whether you&apos;re shipping your first product or still figuring
+            out the idea—there&apos;s a seat for you.
+          </p>
         </div>
+
+        <ul
+          className={cn(
+            "stagger-in mt-10 grid list-none gap-x-8 gap-y-1 sm:grid-cols-2 lg:grid-cols-3",
+            inView && "is-visible",
+          )}
+        >
+          {audiences.map((a) => (
+            <li
+              key={a.title}
+              className="border-t border-[var(--color-border)] py-5"
+            >
+              <h3 className="font-display text-[1.02rem] tracking-tight text-foreground">
+                {a.title}
+              </h3>
+              <p className="mt-1.5 text-[13.5px] leading-relaxed text-[var(--color-text-secondary)]">
+                {a.desc}
+              </p>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );
@@ -329,111 +398,87 @@ function GainsSection() {
   const { ref, inView } = useInView<HTMLElement>(scrollRevealOpts);
 
   return (
-    <section ref={ref} className="section-space">
+    <section
+      ref={ref}
+      id="gains"
+      className="section-space bg-[var(--color-background-alt)]"
+    >
       <div className="page-container">
         <div
           className={cn(
-            "reveal-up mx-auto max-w-[760px] text-center",
+            "reveal-up mx-auto max-w-xl text-center",
             inView && "is-visible",
           )}
         >
-          <SectionLabel>Why join</SectionLabel>
-          <h2 className="mt-4 font-display text-[clamp(1.65rem,2.8vw,2.35rem)] leading-[1.08] tracking-[-0.035em] text-foreground">
-            What you'll gain
+          <SectionLabel>What you gain</SectionLabel>
+          <h2 className="mt-3 font-display text-[clamp(1.7rem,2.8vw,2.25rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
+            Relationships, clarity, and momentum.
           </h2>
         </div>
 
-        <ol className="relative mx-auto mt-14 max-w-[980px] list-none space-y-12 md:mt-16 md:space-y-16">
-          <div
-            className="pointer-events-none absolute top-3 bottom-3 left-[21px] w-px bg-[var(--color-border-strong)] md:left-1/2 md:-translate-x-1/2"
-            aria-hidden
-          />
-          {gains.map((g, i) => {
-            const left = i % 2 === 0;
-            return (
-              <li
-                key={g.title}
-                className={cn(
-                  "timeline-step relative grid md:grid-cols-2 md:gap-16",
-                  inView && "is-visible",
-                )}
-                style={{ transitionDelay: inView ? `${80 + i * 60}ms` : "0ms" }}
-              >
-                <span
-                  className="absolute top-1.5 left-[18px] z-[1] size-2 rounded-full bg-[var(--brand-accent)] md:left-1/2 md:-translate-x-1/2"
-                  aria-hidden
-                />
+        <ul
+          className={cn(
+            "stagger-in mt-10 grid list-none gap-x-10 gap-y-0 sm:grid-cols-2 lg:grid-cols-3",
+            inView && "is-visible",
+          )}
+        >
+          {gains.map((g) => (
+            <li
+              key={g.title}
+              className="border-t border-[var(--color-border)] py-6"
+            >
+              <h3 className="font-display text-[1.05rem] tracking-tight text-foreground">
+                {g.title}
+              </h3>
+              <p className="mt-2 max-w-[34ch] text-[13.5px] leading-relaxed text-[var(--color-text-secondary)]">
+                {g.desc}
+              </p>
+            </li>
+          ))}
+        </ul>
 
-                <div
-                  className={cn(
-                    "pl-10 md:pl-0",
-                    left
-                      ? "md:col-start-1 md:pr-10 md:text-right"
-                      : "md:col-start-2 md:pl-10",
-                  )}
-                >
-                  <g.Icon
-                    className={cn(
-                      "mb-3 h-4 w-4 text-[var(--brand-accent)]",
-                      left && "md:ml-auto",
-                    )}
-                    strokeWidth={1.75}
-                    aria-hidden
-                  />
-                  <h3 className="font-display text-[1.05rem] tracking-tight text-foreground md:text-[1.05rem]">
-                    {g.title}
-                  </h3>
-                  <p
-                    className={cn(
-                      "mt-2 max-w-[360px] text-[13.5px] leading-relaxed text-[var(--color-text-secondary)]",
-                      left ? "md:ml-auto" : "",
-                    )}
-                  >
-                    {g.desc}
-                  </p>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
+        <div
+          className={cn("reveal-up mt-8 text-center", inView && "is-visible")}
+          style={{ transitionDelay: inView ? "280ms" : undefined }}
+        >
+          <a
+            href="#next-meetup"
+            className="text-[14px] font-medium text-[var(--brand-accent)] underline-offset-4 hover:underline"
+          >
+            Book the next meetup
+          </a>
+        </div>
       </div>
     </section>
   );
 }
 
-function MeetupSection() {
-  const { nextMeetup } = Route.useLoaderData();
+function MeetupSection({ nextMeetup }: { nextMeetup: Meetup }) {
   const { ref, inView } = useInView<HTMLElement>(scrollRevealOpts);
 
   return (
-    <section
-      ref={ref}
-      className="section-space border-y border-[var(--color-border)] bg-[var(--color-background-warm)]"
-    >
+    <section ref={ref} id="next-meetup" className="section-space">
       <div className="page-container">
-        <div className="grid gap-12 lg:grid-cols-12 lg:items-center lg:gap-14">
+        <div className="grid gap-10 lg:grid-cols-12 lg:items-start lg:gap-12">
           <div
-            className={cn(
-              "reveal-left lg:col-span-5",
-              inView && "is-visible",
-            )}
+            className={cn("reveal-left lg:col-span-5", inView && "is-visible")}
           >
             <SectionLabel>Monthly meetups</SectionLabel>
-            <h2 className="mt-4 max-w-[18ch] font-display text-[clamp(1.55rem,2.6vw,2.05rem)] leading-[1.1] tracking-[-0.035em] text-foreground">
-              Every Third Saturday. Same Community. New Conversations.
+            <h2 className="mt-3 max-w-[14ch] font-display text-[clamp(1.7rem,2.8vw,2.25rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
+              Every third Saturday.
             </h2>
-            <p className="mt-5 max-w-md text-[14px] leading-[1.65] text-[var(--color-text-secondary)]">
-              No sales pitches. No long keynotes. Just genuine discussions,
-              founder stories, and meaningful networking.
+            <p className="mt-4 max-w-md text-[14.5px] leading-[1.7] text-[var(--color-text-secondary)]">
+              No sales pitches. No long keynotes. Just founder stories,
+              roundtables, and room to connect.
             </p>
-            <ul className="mt-7 space-y-3">
+            <ul className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2">
               {meetupIncludes.map((item) => (
                 <li
                   key={item}
-                  className="flex items-center gap-3 text-[14px] text-foreground"
+                  className="flex items-center gap-2.5 text-[13.5px] text-[var(--color-text-secondary)]"
                 >
                   <span
-                    className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--brand-accent)]"
+                    className="h-1 w-1 shrink-0 rounded-full bg-[var(--brand-accent)]"
                     aria-hidden
                   />
                   {item}
@@ -443,40 +488,34 @@ function MeetupSection() {
           </div>
 
           <div
-            className={cn("meetup-card lg:col-span-7", inView && "is-visible")}
+            className={cn(
+              "meetup-card lg:col-span-7",
+              inView && "is-visible",
+            )}
+            style={{ transitionDelay: inView ? "100ms" : undefined }}
           >
-            <div className="overflow-hidden rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-large)]">
+            <div className="overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)]">
               <div className="grid md:grid-cols-12 md:items-stretch">
-                <div
-                  className={cn(
-                    "meetup-media relative aspect-[16/10] md:col-span-5 md:aspect-auto md:min-h-[22rem]",
-                    inView && "is-visible",
-                  )}
-                >
+                <div className="relative aspect-[16/10] md:col-span-5 md:aspect-auto md:min-h-[20rem]">
                   <img
-                    src={tableImg}
-                    alt="Hands gesturing across a table with chai and notebooks"
+                    src={eventPhotoMeetup}
+                    alt="Founders at the Hyderabad Founders Network meetup"
                     loading="lazy"
                     decoding="async"
-                    className="absolute inset-0 h-full w-full object-cover"
+                    className="absolute inset-0 h-full w-full object-cover object-[50%_35%]"
                   />
                 </div>
 
-                <div
-                  className={cn(
-                    "meetup-copy flex flex-col justify-between gap-8 p-6 sm:p-8 md:col-span-7 md:p-10 lg:p-12",
-                    inView && "is-visible",
-                  )}
-                >
+                <div className="flex flex-col justify-between gap-7 p-6 sm:p-7 md:col-span-7 md:p-8">
                   <div>
-                    <p className="meetup-item text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--brand-accent)]">
+                    <p className="text-[12px] font-medium tracking-[0.06em] text-[var(--brand-accent)]">
                       Upcoming meetup
                     </p>
-                    <h3 className="meetup-item mt-3 font-display text-[1.15rem] leading-[1.15] tracking-tight text-foreground md:text-[1.3rem]">
+                    <h3 className="mt-2.5 font-display text-[1.2rem] leading-[1.25] tracking-tight text-foreground md:text-[1.3rem]">
                       {nextMeetup.title}
                     </h3>
 
-                    <ul className="meetup-item mt-6 space-y-4 border-t border-[var(--color-border)] pt-5 text-[14px] text-foreground">
+                    <ul className="mt-5 space-y-3 text-[14px] text-foreground">
                       <li className="flex items-start gap-3">
                         <Calendar
                           className="mt-0.5 size-4 shrink-0 text-[var(--brand-accent)]"
@@ -501,19 +540,22 @@ function MeetupSection() {
                     </ul>
                   </div>
 
-                  <div className="meetup-item flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-                    <RsvpButton
-                      event={nextMeetup}
-                      className="btn-primary"
-                    >
-                      RSVP for this meetup
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+                    <RsvpButton event={nextMeetup} className="btn-primary gap-2">
+                      <Ticket className="size-4" strokeWidth={1.75} aria-hidden />
+                      Book your spot
                     </RsvpButton>
                     <Link
                       to="/events/$slug"
                       params={{ slug: nextMeetup.slug }}
-                      className="inline-flex min-h-11 items-center text-[14px] font-semibold text-[var(--color-text-secondary)] underline-offset-4 transition-colors hover:text-foreground hover:underline"
+                      className="group inline-flex min-h-11 items-center gap-1.5 text-[14px] font-medium text-[var(--color-text-secondary)] underline-offset-4 transition-colors hover:text-foreground hover:underline"
                     >
-                      Full details →
+                      Full details
+                      <ArrowUpRight
+                        className="size-3.5 transition-transform duration-250 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                        strokeWidth={1.75}
+                        aria-hidden
+                      />
                     </Link>
                   </div>
                 </div>
@@ -526,79 +568,34 @@ function MeetupSection() {
   );
 }
 
-function HeroSection() {
-  return (
-    <section className="relative isolate min-h-[min(72dvh,620px)] overflow-hidden md:min-h-[min(70dvh,660px)]">
-      <img
-        src={heroCityscape}
-        alt=""
-        width={1920}
-        height={1080}
-        fetchPriority="high"
-        decoding="async"
-        className="hero-media absolute inset-0 h-full w-full object-cover object-[62%_45%] sm:object-[58%_42%] md:object-[55%_40%]"
-        aria-hidden
-      />
-      <div
-        className="absolute inset-0 bg-[linear-gradient(105deg,oklch(0.12_0.02_55_/_0.78)_0%,oklch(0.14_0.02_50_/_0.55)_38%,oklch(0.18_0.025_45_/_0.22)_62%,transparent_82%),linear-gradient(to_top,oklch(0.1_0.02_55_/_0.45)_0%,transparent_42%)]"
-        aria-hidden
-      />
-
-      <div className="page-container relative flex min-h-[min(72dvh,620px)] items-end pb-12 pt-16 md:min-h-[min(70dvh,660px)] md:items-center md:pb-16 md:pt-20">
-        <div className="w-full max-w-[36rem]">
-          <h1 className="hero-reveal font-display text-[clamp(2.2rem,4.1vw,3.15rem)] leading-[0.98] tracking-[-0.045em] text-white">
-            Hyderabad Founders Network
-          </h1>
-          <p className="hero-reveal hero-reveal-delay-1 mt-4 text-[clamp(0.98rem,1.25vw,1.1rem)] leading-snug text-white/92 md:mt-5">
-            Build meaningful relationships with founders, builders, operators
-            and aspiring entrepreneurs in Hyderabad.
-          </p>
-          <p className="hero-reveal hero-reveal-delay-2 mt-3.5 text-[14px] leading-[1.65] text-white/72 md:text-[15px]">
-            We're building a trusted community where founders connect beyond
-            business cards and pitch decks. Through monthly meetups, shared
-            experiences, and ongoing conversations, we help entrepreneurs
-            learn from each other, discover opportunities, and grow together.
-          </p>
-          <div className="hero-reveal hero-reveal-delay-3 mt-8 flex flex-col gap-3 sm:mt-9 sm:flex-row sm:items-center sm:gap-4">
-            <JoinButton />
-            <Link
-              to="/events"
-              className="inline-flex min-h-10 items-center justify-center rounded-full border border-white/40 bg-white/10 px-[18px] text-[12.5px] font-semibold whitespace-nowrap text-white backdrop-blur-sm transition-colors duration-200 hover:border-white/60 hover:bg-white/16"
-            >
-              Upcoming Meetup
-            </Link>
-          </div>
-          <p className="hero-reveal hero-reveal-delay-4 mt-7 text-[12px] font-medium tracking-wide text-white/55">
-            Community-led · Supported by Trizen Community
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function GallerySection() {
   const { ref, inView } = useInView<HTMLElement>(scrollRevealOpts);
 
   return (
-    <section ref={ref} className="section-space">
+    <section
+      ref={ref}
+      id="gallery"
+      className="section-space bg-[var(--color-background-alt)]"
+    >
       <div className="page-container">
         <div
-          className={cn("reveal-up max-w-xl", inView && "is-visible")}
+          className={cn(
+            "reveal-up mx-auto max-w-xl text-center",
+            inView && "is-visible",
+          )}
         >
-          <SectionLabel>Community in action</SectionLabel>
-          <h2 className="mt-4 font-display text-[clamp(1.65rem,2.8vw,2.25rem)] leading-[1.08] tracking-[-0.035em] text-foreground">
-            Real conversations. Real people. Real community.
+          <SectionLabel>In the room</SectionLabel>
+          <h2 className="mt-3 font-display text-[clamp(1.7rem,2.8vw,2.25rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
+            Real people. Real energy.
           </h2>
         </div>
-        <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-12 md:gap-5">
-          <div
-            className={cn(
-              "reveal-up relative min-h-[18rem] overflow-hidden rounded-[28px] shadow-[var(--shadow-card)] md:col-span-7 md:min-h-[24rem]",
-              inView && "is-visible",
-            )}
-            style={{ transitionDelay: inView ? "80ms" : undefined }}
-          >
+        <div
+          className={cn(
+            "stagger-in-fast mt-9 grid grid-cols-1 gap-2.5 md:h-[22rem] md:grid-cols-12 md:grid-rows-2",
+            inView && "is-visible",
+          )}
+        >
+          <div className="gallery-tile relative min-h-[16rem] overflow-hidden md:col-span-7 md:row-span-2 md:min-h-0">
             <img
               src={gallery[0].src}
               alt={gallery[0].alt}
@@ -606,35 +603,21 @@ function GallerySection() {
               className="absolute inset-0 h-full w-full object-cover"
             />
           </div>
-          <div className="grid gap-4 md:col-span-5 md:gap-5">
-            <div
-              className={cn(
-                "reveal-right relative min-h-[11rem] overflow-hidden rounded-[24px] shadow-[var(--shadow-small)] md:min-h-[11.5rem]",
-                inView && "is-visible",
-              )}
-              style={{ transitionDelay: inView ? "140ms" : undefined }}
-            >
-              <img
-                src={gallery[1].src}
-                alt={gallery[1].alt}
-                loading="lazy"
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-            </div>
-            <div
-              className={cn(
-                "reveal-right relative min-h-[11rem] overflow-hidden rounded-[24px] shadow-[var(--shadow-small)] md:min-h-[11.5rem]",
-                inView && "is-visible",
-              )}
-              style={{ transitionDelay: inView ? "200ms" : undefined }}
-            >
-              <img
-                src={gallery[2].src}
-                alt={gallery[2].alt}
-                loading="lazy"
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-            </div>
+          <div className="gallery-tile relative min-h-[10.5rem] overflow-hidden md:col-span-5 md:min-h-0">
+            <img
+              src={gallery[1].src}
+              alt={gallery[1].alt}
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          </div>
+          <div className="gallery-tile relative min-h-[10.5rem] overflow-hidden md:col-span-5 md:min-h-0">
+            <img
+              src={gallery[2].src}
+              alt={gallery[2].alt}
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
           </div>
         </div>
       </div>
@@ -646,48 +629,44 @@ function StoriesSection() {
   const { ref, inView } = useInView<HTMLElement>(scrollRevealOpts);
 
   return (
-    <section
-      ref={ref}
-      className="section-space border-y border-[var(--color-border)] bg-[var(--color-background-warm)]"
-    >
+    <section ref={ref} id="stories" className="section-space">
       <div className="page-container">
         <div
           className={cn(
-            "reveal-up flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between",
+            "reveal-up flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between",
             inView && "is-visible",
           )}
         >
           <div className="max-w-xl">
-            <SectionLabel>Founder stories</SectionLabel>
-            <h2 className="mt-4 font-display text-[clamp(1.65rem,2.8vw,2.25rem)] leading-[1.08] tracking-[-0.035em] text-foreground">
-              Stories from the Community
+            <SectionLabel>In the room</SectionLabel>
+            <h2 className="mt-3 font-display text-[clamp(1.7rem,2.8vw,2.25rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
+              What you can get from showing up
             </h2>
           </div>
           <Link
             to="/stories"
-            className="text-[14px] font-semibold text-[var(--brand-accent)] underline-offset-4 hover:underline"
+            className="text-[14px] font-medium text-[var(--brand-accent)] underline-offset-4 hover:underline"
           >
-            Read more stories →
+            See what people walk away with
           </Link>
         </div>
-        <ul className="mt-12 grid list-none sm:grid-cols-2 sm:gap-x-12">
-          {storyTeasers.map((title, i) => (
-            <li
-              key={title}
-              className={cn("reveal-up", inView && "is-visible")}
-              style={{
-                transitionDelay: inView ? `${100 + i * 70}ms` : undefined,
-              }}
-            >
+        <ul
+          className={cn(
+            "stagger-in-fast mt-7 grid list-none border-t border-[var(--color-border)] sm:grid-cols-2 sm:gap-x-10",
+            inView && "is-visible",
+          )}
+        >
+          {storyTeasers.map((title) => (
+            <li key={title}>
               <Link
                 to="/stories"
-                className="group flex items-baseline justify-between gap-4 border-b border-[var(--color-border)] py-6"
+                className="group flex items-baseline justify-between gap-6 border-b border-[var(--color-border)] py-[18px]"
               >
-                <span className="font-display text-[1.05rem] leading-snug tracking-tight text-foreground transition-colors group-hover:text-[var(--brand-accent)] md:text-lg">
+                <span className="font-display text-[1.02rem] leading-snug tracking-tight text-foreground transition-colors duration-200 group-hover:text-[var(--brand-accent)] md:text-[1.08rem]">
                   {title}
                 </span>
                 <span
-                  className="shrink-0 text-[var(--color-text-muted)] transition-colors group-hover:text-[var(--brand-accent)]"
+                  className="shrink-0 text-[var(--color-text-muted)] transition-transform duration-300 group-hover:translate-x-1 group-hover:text-[var(--brand-accent)]"
                   aria-hidden
                 >
                   →
@@ -701,193 +680,208 @@ function StoriesSection() {
   );
 }
 
-function PartnersSection() {
-  const { ref, inView } = useInView<HTMLElement>(scrollRevealOpts);
-
-  return (
-    <section
-      ref={ref}
-      className="border-b border-[var(--color-border)] bg-[var(--color-background-alt)] py-9 md:py-11"
-    >
-      <div className="page-container">
-        <div
-          className={cn(
-            "reveal-up flex flex-col gap-7 md:flex-row md:items-end md:justify-between md:gap-10",
-            inView && "is-visible",
-          )}
-        >
-          <div className="max-w-md">
-            <SectionLabel>Partners</SectionLabel>
-            <h2 className="mt-3 font-display text-[clamp(1.45rem,2.4vw,1.95rem)] tracking-tight text-foreground">
-              Growing Together
-            </h2>
-            <p className="mt-2.5 text-[13px] leading-relaxed text-[var(--color-text-secondary)] md:text-[14px]">
-              Ecosystem partners, coworking spaces, incubators and volunteers
-              supporting Hyderabad's startup community.
-            </p>
-          </div>
-
-          <div
-            className={cn(
-              "reveal-up grid w-full max-w-lg grid-cols-1 divide-y divide-[var(--color-border)] border border-[var(--color-border)] bg-[var(--color-surface)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 md:w-auto md:min-w-[26rem]",
-              inView && "is-visible",
-            )}
-            style={{ transitionDelay: inView ? "90ms" : undefined }}
-          >
-            <div className="flex flex-col justify-center px-5 py-4 text-left sm:px-6 sm:py-5">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--brand-accent)]">
-                Community partner
-              </p>
-              <a
-                href={communityPartner.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2.5 inline-flex items-center gap-3 transition-opacity hover:opacity-85"
-              >
-                <img
-                  src={draperLogo}
-                  alt=""
-                  width={192}
-                  height={209}
-                  className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10"
-                />
-                <span className="font-display text-[1.35rem] tracking-tight text-foreground">
-                  {communityPartner.name}
-                </span>
-              </a>
-            </div>
-            <div className="flex flex-col justify-center px-5 py-4 text-left sm:px-6 sm:py-5">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--brand-accent)]">
-                Marketing partner
-              </p>
-              {marketingPartner.href ? (
-                <a
-                  href={marketingPartner.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2.5 inline-flex items-center gap-3 transition-opacity hover:opacity-85"
-                >
-                  <img
-                    src={bestverseLogo}
-                    alt=""
-                    width={200}
-                    height={200}
-                    className="h-9 w-9 shrink-0 rounded-full object-cover object-center sm:h-10 sm:w-10"
-                  />
-                  <span className="font-display text-[1.35rem] tracking-tight text-foreground">
-                    {marketingPartner.name}
-                  </span>
-                </a>
-              ) : (
-                <div className="mt-2.5 inline-flex items-center gap-3">
-                  <img
-                    src={bestverseLogo}
-                    alt=""
-                    width={200}
-                    height={200}
-                    className="h-9 w-9 shrink-0 rounded-full object-cover object-center sm:h-10 sm:w-10"
-                  />
-                  <span className="font-display text-[1.35rem] tracking-tight text-foreground">
-                    {marketingPartner.name}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function FaqSection() {
   const { ref, inView } = useInView<HTMLElement>(scrollRevealOpts);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
     <section
       ref={ref}
+      id="faq"
       className="section-space bg-[var(--color-background-alt)]"
     >
       <div className="page-container">
-        <div className="mx-auto max-w-3xl">
-          <div className={cn("reveal-up", inView && "is-visible")}>
+        <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-12 lg:gap-12">
+          <div
+            className={cn("reveal-left lg:col-span-4", inView && "is-visible")}
+          >
             <SectionLabel>FAQ</SectionLabel>
-            <h2 className="mt-4 font-display text-[clamp(1.65rem,2.8vw,2.15rem)] tracking-tight text-foreground">
-              Questions, answered.
+            <h2 className="mt-3 font-display text-[clamp(1.7rem,2.8vw,2.25rem)] tracking-tight text-foreground">
+              Quick answers
             </h2>
+            <p className="mt-3 max-w-[30ch] text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
+              Still unsure? These cover what founders ask most before their
+              first meetup.
+            </p>
           </div>
-          <dl className="mt-10 divide-y divide-[var(--color-border)] border-y border-[var(--color-border)]">
-            {faqs.map((item, i) => (
-              <div
-                key={item.q}
-                className={cn("reveal-up py-6", inView && "is-visible")}
-                style={{
-                  transitionDelay: inView ? `${80 + i * 60}ms` : undefined,
-                }}
-              >
-                <dt className="font-display text-[1.05rem] tracking-tight text-foreground">
-                  {item.q}
-                </dt>
-                <dd className="mt-2.5 text-[14px] leading-[1.65] text-[var(--color-text-secondary)] md:text-[15px]">
-                  {item.a}
-                </dd>
-              </div>
-            ))}
-          </dl>
+          <div
+            className={cn(
+              "stagger-in-fast lg:col-span-8",
+              inView && "is-visible",
+            )}
+          >
+            {faqs.map((item, i) => {
+              const open = openIndex === i;
+              return (
+                <div
+                  key={item.q}
+                  className="border-t border-[var(--color-border)] last:border-b"
+                >
+                  <button
+                    type="button"
+                    aria-expanded={open}
+                    className="flex w-full items-center justify-between gap-4 py-[18px] text-left"
+                    onClick={() => setOpenIndex(open ? null : i)}
+                  >
+                    <span className="font-display text-[1.02rem] tracking-tight text-foreground">
+                      {item.q}
+                    </span>
+                    <span
+                      className={cn(
+                        "shrink-0 text-[1.2rem] leading-none text-[var(--brand-accent)] transition-transform duration-200",
+                        open && "rotate-45",
+                      )}
+                      aria-hidden
+                    >
+                      +
+                    </span>
+                  </button>
+                  <div
+                    className={cn(
+                      "grid transition-[grid-template-rows] duration-300 ease-out",
+                      open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                    )}
+                  >
+                    <div className="overflow-hidden">
+                      <p className="pb-[18px] pr-8 text-[14px] leading-[1.7] text-[var(--color-text-secondary)]">
+                        {item.a}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
-function FinalCtaSection() {
+function FinalCtaSection({ nextMeetup }: { nextMeetup: Meetup }) {
   const { ref, inView } = useInView<HTMLElement>(scrollRevealOpts);
 
   return (
-    <section ref={ref} className="relative overflow-hidden section-space">
+    <section ref={ref}>
       <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_20%,color-mix(in_oklab,var(--brand-accent)_10%,transparent),transparent_58%)]"
-        aria-hidden
-      />
-      <div className="page-container relative">
-        <div
-          className={cn(
-            "reveal-up mx-auto max-w-2xl text-center",
-            inView && "is-visible",
-          )}
-        >
-          <h2 className="font-display text-[clamp(1.65rem,2.8vw,2.35rem)] leading-[1.08] tracking-[-0.035em] text-foreground">
-            Build your startup network before you need it.
+        className={cn(
+          "trizen-mesh reveal-up px-5 py-10 text-center md:py-12",
+          inView && "is-visible",
+        )}
+      >
+          <h2 className="mx-auto max-w-[14ch] font-display text-[clamp(2.15rem,4vw,3.1rem)] leading-[1.08] tracking-[-0.03em] text-foreground">
+            Your people are already here.
           </h2>
-          <p className="mx-auto mt-5 max-w-md text-[14px] leading-[1.65] text-[var(--color-text-secondary)]">
-            Whether you're launching your first startup or looking for your
-            people—you're welcome here.
-          </p>
-          <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-            <JoinButton />
-            <Link to="/events" className="btn-secondary">
-              View upcoming meetup
-            </Link>
-          </div>
+        <p className="mx-auto mt-4 max-w-md text-[14.5px] leading-[1.65] text-[var(--color-text-secondary)]">
+          Whether you&apos;re launching or still figuring it out—you&apos;re
+          welcome in this circle.
+        </p>
+        <div className="mt-7 flex flex-col items-center justify-center gap-2.5 sm:flex-row sm:gap-3">
+          <RsvpButton event={nextMeetup} className="btn-primary gap-2">
+            <Ticket className="size-4" strokeWidth={1.75} aria-hidden />
+            Book your spot
+          </RsvpButton>
+          <a
+            href={links.community}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary gap-2"
+          >
+            <WhatsAppIcon className="size-4" />
+            Join the Community
+          </a>
         </div>
       </div>
     </section>
+  );
+}
+
+function StickyCtaBar({ nextMeetup }: { nextMeetup: Meetup }) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const hero = document.getElementById("hero");
+      const meetup = document.getElementById("next-meetup");
+      if (!hero) return;
+
+      const pastHero = window.scrollY > hero.offsetHeight * 0.7;
+      const meetupRect = meetup?.getBoundingClientRect();
+      const meetupInView =
+        meetupRect != null &&
+        meetupRect.top < window.innerHeight * 0.75 &&
+        meetupRect.bottom > window.innerHeight * 0.2;
+
+      setVisible(pastHero && !meetupInView);
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+
+  return (
+    <div
+      className={cn(
+        "pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] transition-[opacity,transform] duration-300 md:hidden",
+        visible
+          ? "translate-y-0 opacity-100"
+          : "translate-y-3 opacity-0",
+      )}
+      aria-hidden={!visible}
+    >
+      <div
+        className={cn(
+          "pointer-events-auto mx-auto flex max-w-md items-center gap-3 border border-[var(--color-border)] bg-white/92 px-3.5 py-2.5 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-md",
+          !visible && "pointer-events-none",
+        )}
+      >
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-medium tracking-[0.04em] text-[var(--color-text-muted)]">
+            Next meetup
+          </p>
+          <p className="truncate text-[13px] font-medium text-foreground">
+            {nextMeetup.dateLabel}
+          </p>
+        </div>
+        <RsvpButton
+          event={nextMeetup}
+          className="btn-primary shrink-0 gap-1.5 !min-h-10 !rounded-none !px-4 !text-[13px] !shadow-none"
+        >
+          <Ticket className="size-3.5" strokeWidth={1.75} aria-hidden />
+          Book spot
+        </RsvpButton>
+      </div>
+    </div>
   );
 }
 
 function Home() {
+  const { nextMeetup } = Route.useLoaderData();
+
   return (
-    <div className="relative bg-[var(--color-background)]">
-      <HeroSection />
+    <div className="relative bg-[var(--color-background)] pb-24 md:pb-0">
+      <HeroSection nextMeetup={nextMeetup} />
       <WhySection />
       <WhoSection />
       <GainsSection />
-      <MeetupSection />
+      <MeetupSection nextMeetup={nextMeetup} />
       <GallerySection />
+      <TrizenProductsSection
+        tone="quiet"
+        spacious
+        title="More from the Trizen ecosystem"
+        description="Explore products and initiatives built for founders, teams, and growing businesses."
+        showVisitCta={false}
+      />
       <StoriesSection />
-      <PartnersSection />
       <FaqSection />
-      <FinalCtaSection />
+      <FinalCtaSection nextMeetup={nextMeetup} />
+      <StickyCtaBar nextMeetup={nextMeetup} />
     </div>
   );
 }
