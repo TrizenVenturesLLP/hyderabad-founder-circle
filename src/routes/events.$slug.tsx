@@ -422,7 +422,7 @@ function EventDetail() {
   return (
     <article className="bg-[var(--color-background)]">
       {/* HERO — brand + title + one line + CTAs only */}
-      <header className="relative isolate flex min-h-[min(48dvh,420px)] flex-col overflow-hidden md:min-h-[min(50dvh,460px)]">
+      <header className="relative isolate flex min-h-[min(52dvh,460px)] flex-col overflow-hidden md:min-h-[min(56dvh,520px)]">
         <div className="absolute inset-0 overflow-hidden" aria-hidden>
           <div className="hero-slide absolute inset-0">
             <img
@@ -455,23 +455,26 @@ function EventDetail() {
             <span className="truncate text-white/80">{meetup.title}</span>
           </nav>
 
-          <div className="max-w-2xl">
-            <p className="hero-reveal text-[11px] font-medium tracking-[0.08em] text-white/70 md:text-[12px]">
+          <div className="max-w-3xl">
+            <p className="hero-reveal text-[11px] font-medium tracking-[0.14em] text-white/72 uppercase md:text-[12px]">
               Trizen Community
             </p>
             <p
-              className="hero-reveal hero-reveal-delay-1 mt-1.5 text-[clamp(1.45rem,3.6vw,2.15rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-white"
-              style={{ fontFamily: "var(--font-brand)" }}
+              className="hero-reveal hero-reveal-delay-1 mt-2 font-semibold leading-[1.02] tracking-[-0.035em] text-white md:mt-2.5"
+              style={{
+                fontFamily: "var(--font-brand)",
+                fontSize: "clamp(2rem, 5.5vw, 3.35rem)",
+              }}
             >
               Hyderabad Founders Network
             </p>
-            <h1 className="hero-reveal hero-reveal-delay-2 mt-2.5 max-w-[24ch] text-[clamp(1.05rem,2vw,1.3rem)] font-medium leading-snug tracking-tight text-white/92">
+            <h1 className="hero-reveal hero-reveal-delay-2 mt-3 max-w-[28ch] text-[clamp(1.15rem,2.4vw,1.45rem)] font-medium leading-snug tracking-tight text-white/92">
               {meetup.title}
             </h1>
-            <p className="hero-reveal hero-reveal-delay-2 mt-2.5 max-w-md text-[14px] leading-relaxed text-white/75 md:text-[14.5px]">
+            <p className="hero-reveal hero-reveal-delay-2 mt-3 max-w-lg text-[14px] leading-relaxed text-white/75 md:text-[15px]">
               {meetup.blurb}
             </p>
-            <div className="hero-reveal hero-reveal-delay-3 mt-5 flex flex-wrap items-center gap-2.5">
+            <div className="hero-reveal hero-reveal-delay-3 mt-6 flex flex-wrap items-center gap-2.5">
               <RsvpButton event={meetup} className="btn-primary gap-1.5">
                 <Ticket className="size-3.5" strokeWidth={1.75} aria-hidden />
                 {open ? "Book your spot" : completed ? "Event completed" : "Coming soon"}

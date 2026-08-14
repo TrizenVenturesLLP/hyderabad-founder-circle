@@ -127,8 +127,8 @@ export const fallbackMeetups: Meetup[] = [
   {
     slug: "hyderabad-founders-network-august",
     title: "Hyderabad Founders Network – August Community Meetup",
-    dateISO: "2026-08-18",
-    dateLabel: "Saturday, 18 August 2026",
+    dateISO: "2026-08-22",
+    dateLabel: "Saturday, 22 August 2026",
     ...venueDefaults,
     status: "open",
     blurb:

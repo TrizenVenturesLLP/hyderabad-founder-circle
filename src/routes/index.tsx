@@ -205,32 +205,38 @@ function HeroSection({ nextMeetup }: { nextMeetup: Meetup }) {
               height={1080}
               fetchPriority="high"
               decoding="async"
-              className="h-full w-full object-cover object-[50%_58%] md:object-[50%_48%]"
+              className="h-full w-full scale-[1.02] object-cover object-[50%_58%] md:object-[50%_48%]"
             />
           </div>
         </div>
 
         <div
-          className="hero-overlay absolute inset-0 bg-[linear-gradient(180deg,rgba(8,10,24,0.78)_0%,rgba(8,10,24,0.45)_38%,rgba(8,10,24,0.18)_62%,rgba(8,10,24,0.4)_100%)]"
+          className="hero-overlay absolute inset-0 bg-[linear-gradient(180deg,rgba(8,10,24,0.82)_0%,rgba(8,10,24,0.52)_34%,rgba(8,10,24,0.22)_58%,rgba(8,10,24,0.48)_100%)]"
           aria-hidden
         />
 
-        <div className="page-container relative flex h-full items-start justify-center pt-14 md:pt-10 lg:pt-12">
-          <div className="mx-auto w-full max-w-2xl text-center">
-            <p className="hero-reveal text-[11px] font-medium tracking-[0.08em] text-white/70 md:text-[12px]">
+        <div className="page-container relative flex h-full items-center justify-center pb-10 pt-10 md:pb-14 md:pt-8">
+          <div className="mx-auto w-full max-w-3xl text-center">
+            <p className="hero-reveal text-[11px] font-medium tracking-[0.14em] text-white/72 uppercase md:text-[12px]">
               Trizen Community
             </p>
-            <h1 className="hero-reveal hero-reveal-delay-1 mx-auto mt-2 max-w-[16ch] font-display text-[clamp(1.75rem,6.5vw,3rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-white">
+            <h1
+              className="hero-reveal hero-reveal-delay-1 mx-auto mt-3 max-w-[14ch] font-semibold leading-[1.02] tracking-[-0.035em] text-white md:mt-4"
+              style={{
+                fontFamily: "var(--font-brand)",
+                fontSize: "clamp(2.35rem, 7.5vw, 4.25rem)",
+              }}
+            >
               Hyderabad Founders Network
             </h1>
-            <p className="hero-reveal hero-reveal-delay-2 mx-auto mt-2.5 max-w-[24rem] text-[14px] leading-relaxed text-white/78 md:mt-3 md:text-[15px]">
+            <p className="hero-reveal hero-reveal-delay-2 mx-auto mt-4 max-w-[26rem] text-[15px] leading-relaxed text-white/82 md:mt-5 md:text-[16px]">
               Where founders find their people—and grow together.
             </p>
-            <p className="hero-reveal hero-reveal-delay-2 mt-2 text-[12px] text-white/55 md:text-[12.5px]">
+            <p className="hero-reveal hero-reveal-delay-2 mt-3 text-[13px] font-medium tracking-wide text-white/68 md:text-[14px]">
               Next meetup · {nextMeetup.dateLabel}
             </p>
-            <div className="hero-reveal hero-reveal-delay-3 mt-4 flex flex-col items-center justify-center gap-2.5 sm:mt-6 sm:flex-row sm:gap-3">
-              <RsvpButton event={nextMeetup} className="btn-primary min-w-[10rem] gap-2">
+            <div className="hero-reveal hero-reveal-delay-3 mt-6 flex flex-col items-center justify-center gap-2.5 sm:mt-8 sm:flex-row sm:gap-3">
+              <RsvpButton event={nextMeetup} className="btn-primary min-w-[10.5rem] gap-2">
                 <Ticket className="size-4" strokeWidth={1.75} aria-hidden />
                 Book your spot
               </RsvpButton>
@@ -238,7 +244,7 @@ function HeroSection({ nextMeetup }: { nextMeetup: Meetup }) {
                 href={links.community}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-[46px] min-w-[10rem] items-center justify-center gap-2 border border-white/28 bg-white/10 px-5 text-[14px] font-medium whitespace-nowrap text-white transition-colors duration-200 hover:border-white/45 hover:bg-white/16"
+                className="inline-flex min-h-[46px] min-w-[10.5rem] items-center justify-center gap-2 border border-white/28 bg-white/10 px-5 text-[14px] font-medium whitespace-nowrap text-white transition-colors duration-200 hover:border-white/45 hover:bg-white/16"
               >
                 <WhatsAppIcon className="size-4" />
                 Join the Community
