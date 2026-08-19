@@ -22,6 +22,7 @@ import {
   getMeetups,
   getNextMeetup,
   nextMeetup as fallbackNext,
+  meetupDateLabel,
   type Meetup,
 } from "@/lib/events";
 import { links } from "@/lib/links";
@@ -233,7 +234,7 @@ function HeroSection({ nextMeetup }: { nextMeetup: Meetup }) {
               Where founders find their people—and grow together.
             </p>
             <p className="hero-reveal hero-reveal-delay-2 mt-3 text-[13px] font-medium tracking-wide text-white/68 md:text-[14px]">
-              Next meetup · {nextMeetup.dateLabel}
+              Next meetup · {meetupDateLabel(nextMeetup)}
             </p>
             <div className="hero-reveal hero-reveal-delay-3 mt-6 flex flex-col items-center justify-center gap-2.5 sm:mt-8 sm:flex-row sm:gap-3">
               <RsvpButton event={nextMeetup} className="btn-primary min-w-[10.5rem] gap-2">
@@ -527,7 +528,7 @@ function MeetupSection({ nextMeetup }: { nextMeetup: Meetup }) {
                           className="mt-0.5 size-4 shrink-0 text-[var(--brand-accent)]"
                           aria-hidden
                         />
-                        <span>{nextMeetup.dateLabel}</span>
+                        <span>{meetupDateLabel(nextMeetup)}</span>
                       </li>
                       <li className="flex items-start gap-3">
                         <Clock
@@ -851,7 +852,7 @@ function StickyCtaBar({ nextMeetup }: { nextMeetup: Meetup }) {
             Next meetup
           </p>
           <p className="truncate text-[13px] font-medium text-foreground">
-            {nextMeetup.dateLabel}
+            {meetupDateLabel(nextMeetup)}
           </p>
         </div>
         <RsvpButton

@@ -19,7 +19,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
-import { meetupMapsUrl, type Meetup } from "@/lib/events";
+import { meetupMapsUrl, meetupDateLabel, isMeetupDateConfirmed, type Meetup } from "@/lib/events";
 import {
   createPaymentOrder,
   REGISTRATION_FEE_INR,
@@ -734,12 +734,13 @@ export function RsvpDialog() {
     window.setTimeout(resetAll, 200);
   }
 
-  const day = new Date(event.dateISO + "T12:00:00");
-  const dayNum = day.getDate();
+  const dateConfirmed = isMeetupDateConfirmed(event);
+  const day = dateConfirmed ? new Date(event.dateISO + "T12:00:00") : null;
+  const dayNum = day?.getDate();
   const monthShort = day
-    .toLocaleDateString("en-IN", { month: "short" })
+    ?.toLocaleDateString("en-IN", { month: "short" })
     .toUpperCase();
-  const weekday = day.toLocaleDateString("en-IN", { weekday: "long" });
+  const weekday = day?.toLocaleDateString("en-IN", { weekday: "long" });
 
   return (
     <Dialog
@@ -842,6 +843,7 @@ export function RsvpDialog() {
                     monthShort={monthShort}
                     dayNum={dayNum}
                     weekday={weekday}
+                    dateConfirmed={dateConfirmed}
                   />
 
                   <div
@@ -1536,13 +1538,21 @@ export function RsvpDialog() {
                     <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
                       Event summary
                     </p>
-                    <div className="mt-5 flex h-[4.75rem] w-[4.75rem] flex-col items-center justify-center rounded-none bg-card text-center shadow-sm ring-1 ring-border/80">
-                      <span className="text-[11px] font-medium uppercase tracking-wider text-primary">
-                        {monthShort}
-                      </span>
-                      <span className="font-display text-3xl leading-none text-foreground">
-                        {dayNum}
-                      </span>
+                    <div className="mt-5 flex h-[4.75rem] w-[4.75rem] flex-col items-center justify-center rounded-none bg-card px-1 text-center shadow-sm ring-1 ring-border/80">
+                      {dateConfirmed ? (
+                        <>
+                          <span className="text-[11px] font-medium uppercase tracking-wider text-primary">
+                            {monthShort}
+                          </span>
+                          <span className="font-display text-3xl leading-none text-foreground">
+                            {dayNum}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-[9px] font-semibold uppercase leading-[1.2] tracking-[0.06em] text-foreground">
+                          To be confirmed
+                        </span>
+                      )}
                     </div>
                     <span className="mt-5 inline-flex w-fit rounded-none bg-primary/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-primary">
                       Registration open
@@ -1557,7 +1567,7 @@ export function RsvpDialog() {
                           <span className="block text-[11px] uppercase tracking-[0.12em] text-muted-foreground/80">
                             Date
                           </span>
-                          <span className="font-medium text-foreground">{event.dateLabel}</span>
+                          <span className="font-medium text-foreground">{meetupDateLabel(event)}</span>
                         </span>
                       </li>
                       <li className="flex items-start gap-2.5">
@@ -1567,7 +1577,7 @@ export function RsvpDialog() {
                             Time
                           </span>
                           <span className="font-medium text-foreground">
-                            {weekday} · {event.time}
+                            {dateConfirmed && weekday ? `${weekday} · ${event.time}` : event.time}
                           </span>
                         </span>
                       </li>
@@ -1645,24 +1655,34 @@ function MobileEventSummary({
   monthShort,
   dayNum,
   weekday,
+  dateConfirmed,
 }: {
   event: Meetup;
-  monthShort: string;
-  dayNum: number;
-  weekday: string;
+  monthShort?: string;
+  dayNum?: number;
+  weekday?: string;
+  dateConfirmed: boolean;
 }) {
   return (
     <div className="mb-6 flex gap-3 rounded-none border border-border/80 bg-secondary/30 p-3 md:hidden">
       <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-none bg-card text-center ring-1 ring-border/80">
-        <span className="text-[9px] font-medium uppercase tracking-wider text-primary">
-          {monthShort}
-        </span>
-        <span className="font-display text-xl leading-none text-foreground">{dayNum}</span>
+        {dateConfirmed ? (
+          <>
+            <span className="text-[9px] font-medium uppercase tracking-wider text-primary">
+              {monthShort}
+            </span>
+            <span className="font-display text-xl leading-none text-foreground">{dayNum}</span>
+          </>
+        ) : (
+          <span className="px-1 text-center text-[8px] font-semibold uppercase leading-[1.15] tracking-[0.05em] text-foreground">
+            To be confirmed
+          </span>
+        )}
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-foreground">{event.title}</p>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          {weekday} · {event.time}
+          {dateConfirmed && weekday ? `${weekday} · ${event.time}` : event.time}
         </p>
         <p className="text-xs text-muted-foreground">
           {event.space ? `${event.venue} · ${event.space}` : `${event.venue}, ${event.city}`}
@@ -1808,10 +1828,11 @@ function SuccessView({
   registrantName: string;
 }) {
   const { closeRsvp } = useRsvp();
-  const day = new Date(event.dateISO + "T12:00:00");
-  const dayNum = day.getDate();
+  const dateConfirmed = isMeetupDateConfirmed(event);
+  const day = dateConfirmed ? new Date(event.dateISO + "T12:00:00") : null;
+  const dayNum = day?.getDate();
   const monthShort = day
-    .toLocaleDateString("en-IN", { month: "short" })
+    ?.toLocaleDateString("en-IN", { month: "short" })
     .toUpperCase();
 
   const badgeSearch = {
@@ -1824,17 +1845,25 @@ function SuccessView({
   const eventCard = (
     <div className="h-full w-full overflow-hidden rounded-none border border-border/70 bg-background/90 text-left shadow-[0_16px_36px_-26px_rgba(0,0,0,0.35)]">
       <div className="flex items-center justify-center gap-2 border-b border-border/70 bg-primary px-4 py-3 text-primary-foreground">
-        <span className="text-[11px] font-medium uppercase tracking-[0.14em]">
-          {monthShort}
-        </span>
-        <span className="font-display text-xl leading-none">{dayNum}</span>
+        {dateConfirmed ? (
+          <>
+            <span className="text-[11px] font-medium uppercase tracking-[0.14em]">
+              {monthShort}
+            </span>
+            <span className="font-display text-xl leading-none">{dayNum}</span>
+          </>
+        ) : (
+          <span className="text-[10px] font-medium uppercase tracking-[0.1em]">
+            To be confirmed
+          </span>
+        )}
       </div>
       <div className="divide-y divide-border/70">
         <SuccessMeta
           icon={CalendarDays}
           label="Event"
           value={event.title}
-          hint={event.dateLabel}
+          hint={meetupDateLabel(event)}
         />
         <SuccessMeta
           icon={MapPin}
@@ -1873,15 +1902,17 @@ function SuccessView({
         <MessageCircle className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" strokeWidth={1.75} />
         <span className="truncate">WhatsApp</span>
       </a>
-      <a
-        href={googleCalendarUrl(event)}
-        target="_blank"
-        rel="noreferrer"
-        className={cn(btnSecondaryClass, "gap-2 px-3.5 text-[13px] sm:px-4 sm:text-sm")}
-      >
-        <CalendarDays className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" strokeWidth={1.75} />
-        <span className="truncate">Calendar</span>
-      </a>
+      {dateConfirmed ? (
+        <a
+          href={googleCalendarUrl(event)}
+          target="_blank"
+          rel="noreferrer"
+          className={cn(btnSecondaryClass, "gap-2 px-3.5 text-[13px] sm:px-4 sm:text-sm")}
+        >
+          <CalendarDays className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" strokeWidth={1.75} />
+          <span className="truncate">Calendar</span>
+        </a>
+      ) : null}
     </div>
   );
 

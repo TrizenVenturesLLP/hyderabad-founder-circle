@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CalendarPlus, Check, Link2, Linkedin } from "lucide-react";
-import type { Meetup } from "@/lib/events";
+import { isMeetupDateConfirmed, type Meetup } from "@/lib/events";
 import { links } from "@/lib/links";
 import { cn } from "@/lib/utils";
 
@@ -145,15 +145,17 @@ export function EventShareBar({
       role="group"
       aria-label="Share and save event"
     >
-      <button
-        type="button"
-        onClick={downloadIcs}
-        className={iconBtnClass}
-        aria-label="Add to calendar"
-        title="Add to calendar"
-      >
-        <CalendarPlus className="size-3.5" strokeWidth={1.75} aria-hidden />
-      </button>
+      {isMeetupDateConfirmed(meetup) ? (
+        <button
+          type="button"
+          onClick={downloadIcs}
+          className={iconBtnClass}
+          aria-label="Add to calendar"
+          title="Add to calendar"
+        >
+          <CalendarPlus className="size-3.5" strokeWidth={1.75} aria-hidden />
+        </button>
+      ) : null}
       {share.map(({ label, href, Icon }) => (
         <a
           key={label}

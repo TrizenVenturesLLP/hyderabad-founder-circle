@@ -60,6 +60,7 @@ const emptyForm = (): AdminEvent => ({
   title: "",
   dateISO: "",
   dateLabel: "",
+  dateConfirmed: false,
   time: "11:00 AM – 1:00 PM",
   venue: "DraperU India",
   space: "5th floor event space",
@@ -242,11 +243,21 @@ function AdminEventsPage() {
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-display text-[2rem] leading-none tracking-tight text-foreground">
-                    {dayNum}
+                  <p
+                    className={
+                      item.dateConfirmed || item.status === "completed"
+                        ? "font-display text-[2rem] leading-none tracking-tight text-foreground"
+                        : "font-display text-[0.85rem] font-semibold uppercase leading-[1.15] tracking-[0.06em] text-foreground"
+                    }
+                  >
+                    {item.dateConfirmed || item.status === "completed"
+                      ? dayNum
+                      : "To be confirmed"}
                   </p>
                   <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
-                    {monthShort} {year}
+                    {item.dateConfirmed || item.status === "completed"
+                      ? `${monthShort} ${year}`
+                      : "Not confirmed"}
                   </p>
                 </div>
                 <StatusPill status={item.status} published={item.published} />
@@ -557,6 +568,25 @@ function EventEditorModal({
                       placeholder="Saturday, 18 July 2026"
                     />
                   </Field>
+                  <label className="flex items-start gap-3 sm:col-span-2">
+                    <input
+                      type="checkbox"
+                      className="mt-1 size-4 shrink-0 rounded-none border-[var(--color-border)] accent-[var(--brand-accent)]"
+                      checked={form.dateConfirmed === true}
+                      onChange={(e) =>
+                        updateField("dateConfirmed", e.target.checked)
+                      }
+                    />
+                    <span>
+                      <span className="block text-[13px] font-medium text-foreground">
+                        Date confirmed
+                      </span>
+                      <span className="mt-0.5 block text-[12px] leading-relaxed text-[var(--color-text-muted)]">
+                        Until this is checked, the public site shows “TO BE
+                        CONFIRMED” with “Date to be confirmed” underneath.
+                      </span>
+                    </span>
+                  </label>
                   <Field label="Time">
                     <input
                       value={form.time}

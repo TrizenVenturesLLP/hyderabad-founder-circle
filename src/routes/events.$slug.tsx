@@ -29,6 +29,8 @@ import {
   meetupMapsEmbedUrl,
   meetupMapsUrl,
   meetupVenueLine,
+  meetupDateLabel,
+  isMeetupDateConfirmed,
   type EventSpeaker,
 } from "@/lib/events";
 import { links } from "@/lib/links";
@@ -57,7 +59,7 @@ export const Route = createFileRoute("/events/$slug")({
       ? `${m.title} — Hyderabad Founders Network`
       : "Meetup — Hyderabad Founders Network";
     const desc = m
-      ? `${m.dateLabel} · ${m.time} · ${meetupVenueLine(m)}. Community-led monthly meetup.`
+      ? `${meetupDateLabel(m)} · ${m.time} · ${meetupVenueLine(m)}. Community-led monthly meetup.`
       : "Community-led meetup in Hyderabad.";
     const path = m ? `/events/${m.slug}` : "/events";
     return {
@@ -79,7 +81,7 @@ export const Route = createFileRoute("/events/$slug")({
                 "@type": "Event",
                 name: m.title,
                 description: m.blurb,
-                startDate: m.dateISO,
+                ...(isMeetupDateConfirmed(m) ? { startDate: m.dateISO } : {}),
                 eventAttendanceMode:
                   "https://schema.org/OfflineEventAttendanceMode",
                 eventStatus: "https://schema.org/EventScheduled",
@@ -527,7 +529,7 @@ function EventDetail() {
               )}
             >
               {[
-                { label: "Date", value: meetup.dateLabel, icon: Calendar },
+                { label: "Date", value: meetupDateLabel(meetup), icon: Calendar },
                 { label: "Time", value: meetup.time, icon: Clock },
                 { label: "Venue", value: meetup.venue, icon: MapPin },
                 { label: "Fee", value: "₹49", icon: Ticket },
@@ -1085,7 +1087,7 @@ function EventDetail() {
 
                 <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-3 border-t border-[var(--color-border)] pt-4">
                   {[
-                    { label: "Date", value: meetup.dateLabel },
+                    { label: "Date", value: meetupDateLabel(meetup) },
                     { label: "Time", value: meetup.time },
                     { label: "Venue", value: meetup.venue },
                     { label: "Fee", value: "₹49" },

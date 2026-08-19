@@ -35,6 +35,8 @@ export type Meetup = {
   title: string;
   dateISO: string;
   dateLabel: string;
+  /** When false, public pages hide the calendar date until it is locked in. */
+  dateConfirmed?: boolean;
   time: string;
   venue: string;
   space?: string;
@@ -91,6 +93,7 @@ export const fallbackMeetups: Meetup[] = [
     title: "Hyderabad Founders Network – July",
     dateISO: "2026-07-18",
     dateLabel: "Saturday, 18 July 2026",
+    dateConfirmed: true,
     ...venueDefaults,
     status: "completed",
     blurb:
@@ -129,6 +132,7 @@ export const fallbackMeetups: Meetup[] = [
     title: "Hyderabad Founders Network – August Community Meetup",
     dateISO: "2026-08-22",
     dateLabel: "Saturday, 22 August 2026",
+    dateConfirmed: false,
     ...venueDefaults,
     status: "open",
     blurb:
@@ -139,6 +143,7 @@ export const fallbackMeetups: Meetup[] = [
     title: "Hyderabad Founders Network – September Community Meetup",
     dateISO: "2026-09-19",
     dateLabel: "Saturday, 19 September 2026",
+    dateConfirmed: false,
     ...venueDefaults,
     status: "coming-soon",
     blurb: "Themed session: going from first 10 to first 100 customers.",
@@ -177,6 +182,7 @@ export function mapApiEventToMeetup(raw: Record<string, unknown>): Meetup {
     title: String(raw.title || ""),
     dateISO: String(raw.dateISO || ""),
     dateLabel: String(raw.dateLabel || ""),
+    dateConfirmed: raw.dateConfirmed === true,
     time: String(raw.time || ""),
     venue: String(raw.venue || ""),
     space: raw.space ? String(raw.space) : undefined,
@@ -255,9 +261,21 @@ export function getNextMeetup(list?: Meetup[]) {
 export const nextMeetup =
   fallbackMeetups.find((m) => m.status === "open") ?? fallbackMeetups[0];
 
+export const DATE_TBC_LABEL = "Date to be confirmed";
+export const DATE_TBC_HEADLINE = "TO BE CONFIRMED";
+
+export function isMeetupDateConfirmed(meetup: Pick<Meetup, "dateConfirmed" | "status">) {
+  if (meetup.status === "completed") return true;
+  return meetup.dateConfirmed === true;
+}
+
+export function meetupDateLabel(meetup: Meetup) {
+  return isMeetupDateConfirmed(meetup) ? meetup.dateLabel : DATE_TBC_LABEL;
+}
+
 /** True when the event date has ended (end of day, Asia/Kolkata). */
 export function isMeetupPast(meetup: Meetup) {
-  if (!meetup.dateISO) return false;
+  if (!isMeetupDateConfirmed(meetup) || !meetup.dateISO) return false;
   const end = new Date(`${meetup.dateISO}T23:59:59+05:30`);
   return Number.isFinite(end.getTime()) && Date.now() > end.getTime();
 }

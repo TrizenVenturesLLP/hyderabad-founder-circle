@@ -18,6 +18,9 @@ import {
   isRsvpOpen,
   meetupStatusLabel,
   meetupLocationLabel,
+  isMeetupDateConfirmed,
+  DATE_TBC_HEADLINE,
+  DATE_TBC_LABEL,
 } from "@/lib/events";
 import { RsvpButton } from "@/components/rsvp/RsvpButton";
 import { useInView } from "@/hooks/use-in-view";
@@ -331,13 +334,14 @@ function statusMeta(meetup: Meetup) {
 }
 
 function EventCard({ meetup }: { meetup: Meetup }) {
-  const day = new Date(meetup.dateISO + "T12:00:00");
-  const dayNum = day.getDate();
+  const confirmed = isMeetupDateConfirmed(meetup);
+  const day = confirmed ? new Date(meetup.dateISO + "T12:00:00") : null;
+  const dayNum = day?.getDate();
   const monthShort = day
-    .toLocaleDateString("en-IN", { month: "short" })
+    ?.toLocaleDateString("en-IN", { month: "short" })
     .toUpperCase();
-  const year = day.getFullYear();
-  const weekday = day.toLocaleDateString("en-IN", { weekday: "short" });
+  const year = day?.getFullYear();
+  const weekday = day?.toLocaleDateString("en-IN", { weekday: "short" });
   const { label, tone, Icon } = statusMeta(meetup);
 
   return (
@@ -352,12 +356,25 @@ function EventCard({ meetup }: { meetup: Meetup }) {
       <div className="flex flex-1 flex-col p-5 md:p-6">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="font-display text-[2.15rem] leading-none tracking-tight text-foreground">
-              {dayNum}
-            </p>
-            <p className="mt-1.5 text-[12px] font-medium tracking-[0.06em] text-[var(--color-text-secondary)]">
-              {monthShort} {year} · {weekday}
-            </p>
+            {confirmed ? (
+              <>
+                <p className="font-display text-[2.15rem] leading-none tracking-tight text-foreground">
+                  {dayNum}
+                </p>
+                <p className="mt-1.5 text-[12px] font-medium tracking-[0.06em] text-[var(--color-text-secondary)]">
+                  {monthShort} {year} · {weekday}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="max-w-[10.5rem] font-display text-[1.35rem] font-semibold uppercase leading-[1.08] tracking-[-0.02em] text-foreground">
+                  {DATE_TBC_HEADLINE}
+                </p>
+                <p className="mt-1.5 text-[12px] font-medium tracking-[0.06em] text-[var(--color-text-secondary)]">
+                  {DATE_TBC_LABEL}
+                </p>
+              </>
+            )}
           </div>
           <span
             className={cn(

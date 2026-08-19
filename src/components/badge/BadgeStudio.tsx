@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Meetup } from "@/lib/events";
+import { isMeetupDateConfirmed, meetupDateLabel } from "@/lib/events";
 import trizenLogo from "@/assets/trizen-mark.png";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import {
@@ -88,8 +89,8 @@ export function BadgeStudio({ meetup, initialName = "" }: Props) {
       templateId,
       name,
       eventTitle: meetup.title,
-      dateLabel: meetup.dateLabel,
-      dateISO: meetup.dateISO,
+      dateLabel: meetupDateLabel(meetup),
+      dateISO: isMeetupDateConfirmed(meetup) ? meetup.dateISO : "",
       city: meetup.city,
       photo,
       logo,
@@ -450,7 +451,7 @@ export function BadgeStudio({ meetup, initialName = "" }: Props) {
         </div>
 
         <p className="mt-3 text-[12px] text-[var(--color-text-muted)]">
-          Event · {meetup.title} · {meetup.dateLabel}
+          Event · {meetup.title} · {meetupDateLabel(meetup)}
         </p>
       </div>
     </div>

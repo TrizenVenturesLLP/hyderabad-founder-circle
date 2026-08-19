@@ -216,6 +216,7 @@ export type AdminEvent = {
   title: string;
   dateISO: string;
   dateLabel: string;
+  dateConfirmed?: boolean;
   time: string;
   venue: string;
   space?: string;
