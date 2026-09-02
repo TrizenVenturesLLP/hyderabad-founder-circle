@@ -145,7 +145,8 @@ const EVENT_OVERRIDES: Record<string, EventPageOverrides> = {
       },
       {
         name: "NanoSpace Coworking",
-        href: "https://www.instagram.com/nanospace_coworking",
+        href: "https://nanospace.in/",
+        logo: nanospaceLogo,
       },
     ],
     partnerTiers: [

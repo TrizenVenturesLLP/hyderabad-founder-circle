@@ -320,7 +320,35 @@ function PartnerTile({
   );
 }
 
-function PartnerTierPartners({ partners }: { partners: EventPartner[] }) {
+function PartnerTierPartners({
+  partners,
+  layout = "stack",
+}: {
+  partners: EventPartner[];
+  layout?: "stack" | "inline";
+}) {
+  if (layout === "inline") {
+    return (
+      <ul className="mt-3 flex flex-1 flex-col justify-center gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-2">
+        {partners.map((partner, index) => (
+          <Fragment key={partner.name}>
+            {index > 0 ? (
+              <li
+                className="flex justify-center py-0.5 text-[13px] text-[var(--color-text-muted)] sm:py-0"
+                aria-hidden
+              >
+                ×
+              </li>
+            ) : null}
+            <li className="min-w-0">
+              <PartnerTile partner={partner} />
+            </li>
+          </Fragment>
+        ))}
+      </ul>
+    );
+  }
+
   return (
     <ul className="mt-3 flex flex-1 flex-col justify-center gap-1">
       {partners.map((partner, index) => (
@@ -586,6 +614,21 @@ function EventDetail() {
   const supportedByPartners =
     pageContent.partnerTiers.find((tier) => tier.label === "Supported by")
       ?.partners ?? [];
+  const partnerGridTiers = [
+    ...(pageContent.collaborativeHosts.length > 0
+      ? [
+          {
+            label: "Collaboratively hosted by",
+            partners: pageContent.collaborativeHosts,
+            layout: "inline" as const,
+          },
+        ]
+      : []),
+    ...pageContent.partnerTiers.map((tier) => ({
+      ...tier,
+      layout: "stack" as const,
+    })),
+  ];
 
   return (
     <article className="bg-[var(--color-background)]">
@@ -1318,15 +1361,22 @@ function EventDetail() {
               <h2 className="mt-3 font-display text-[clamp(1.55rem,2.6vw,2rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
                 Supported by the ecosystem
               </h2>
+              <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
+                Collaboratively hosted and community supported — the people and
+                partners making this meetup happen.
+              </p>
             </div>
 
             <div
               className={cn(
-                "stagger-in mt-8 grid gap-px overflow-hidden border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-2 lg:grid-cols-4",
+                "stagger-in mt-8 grid gap-px overflow-hidden border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-2",
+                partnerGridTiers.length >= 5
+                  ? "lg:grid-cols-3 xl:grid-cols-5"
+                  : "lg:grid-cols-4",
                 partnersReveal.inView && "is-visible",
               )}
             >
-              {pageContent.partnerTiers.map((tier) => (
+              {partnerGridTiers.map((tier) => (
                 <div
                   key={tier.label}
                   className="flex min-h-[7.5rem] flex-col bg-[var(--color-surface)] p-4 md:p-5"
@@ -1334,7 +1384,10 @@ function EventDetail() {
                   <p className="text-[10px] font-medium tracking-[0.1em] text-[var(--color-text-muted)] uppercase">
                     {tier.label}
                   </p>
-                  <PartnerTierPartners partners={tier.partners} />
+                  <PartnerTierPartners
+                    partners={tier.partners}
+                    layout={tier.layout}
+                  />
                 </div>
               ))}
             </div>

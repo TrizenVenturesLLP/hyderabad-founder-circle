@@ -26,6 +26,8 @@ export type RsvpPayload = {
   joinWhatsapp?: boolean;
   subscribeUpdates?: boolean;
   questions?: string;
+  heardAboutEvent: string;
+  heardAboutEventOther?: string;
   event: Pick<
     Meetup,
     "slug" | "title" | "dateISO" | "dateLabel" | "time" | "venue" | "city" | "format"

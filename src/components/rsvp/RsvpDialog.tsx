@@ -22,6 +22,10 @@ import { toast } from "sonner";
 import { meetupMapsUrl, meetupDateLabel, isMeetupDateConfirmed, type Meetup } from "@/lib/events";
 import { getEventRoles } from "@/lib/event-page-content";
 import {
+  HEARD_ABOUT_EVENT_OPTIONS,
+  HEARD_ABOUT_OTHER_LABEL,
+} from "@/lib/heard-about-options";
+import {
   createPaymentOrder,
   REGISTRATION_FEE_INR,
   verifyPaymentAndRegister,
@@ -100,6 +104,8 @@ type FormState = {
   joinWhatsapp: boolean;
   subscribeUpdates: boolean;
   questions: string;
+  heardAboutEvent: string;
+  heardAboutEventOther: string;
 };
 
 const emptyForm: FormState = {
@@ -121,6 +127,8 @@ const emptyForm: FormState = {
   joinWhatsapp: false,
   subscribeUpdates: false,
   questions: "",
+  heardAboutEvent: "",
+  heardAboutEventOther: "",
 };
 
 const roles = [
@@ -226,6 +234,7 @@ const FIELD_LIMITS = {
   canHelpWith: 400,
   biggestChallenge: 400,
   questions: 400,
+  heardAboutEventOther: 120,
 } as const;
 
 const fieldClass =
@@ -268,6 +277,8 @@ const STEP1_FIELD_ORDER = [
 ] as const satisfies readonly FormErrorKey[];
 
 const STEP2_FIELD_ORDER = [
+  "heardAboutEvent",
+  "heardAboutEventOther",
   "lookingFor",
   "offerCommunity",
   "wantToMeet",
@@ -455,6 +466,11 @@ export function RsvpDialog() {
       joinWhatsapp: form.joinWhatsapp,
       subscribeUpdates: form.subscribeUpdates,
       questions: form.questions,
+      heardAboutEvent: form.heardAboutEvent,
+      heardAboutEventOther:
+        form.heardAboutEvent === HEARD_ABOUT_OTHER_LABEL
+          ? form.heardAboutEventOther.trim()
+          : "",
       event: eventPayload(event),
     };
   }
@@ -570,6 +586,15 @@ export function RsvpDialog() {
 
   function validateStep2() {
     const next: Partial<Record<FormErrorKey, string>> = {};
+    if (!form.heardAboutEvent) {
+      next.heardAboutEvent = "Please select how you heard about this event.";
+    }
+    if (
+      form.heardAboutEvent === HEARD_ABOUT_OTHER_LABEL &&
+      !form.heardAboutEventOther.trim()
+    ) {
+      next.heardAboutEventOther = "Please tell us how you heard about this event.";
+    }
     if (form.lookingFor.length === 0) {
       next.lookingFor = "Please select at least one option.";
     }
@@ -1065,6 +1090,80 @@ export function RsvpDialog() {
 
                   {panelStep === 2 ? (
                     <section className="space-y-6">
+                      <div data-rsvp-field="heardAboutEvent">
+                        <Label className="text-[13px] font-medium text-foreground/90">
+                          How did you hear about this event?{" "}
+                          <span className="text-primary">*</span>
+                        </Label>
+                        <div
+                          data-rsvp-control
+                          className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2"
+                        >
+                          {HEARD_ABOUT_EVENT_OPTIONS.map((option) => {
+                            const selected = form.heardAboutEvent === option;
+                            return (
+                              <button
+                                key={option}
+                                type="button"
+                                onClick={() => {
+                                  update("heardAboutEvent", option);
+                                  if (option !== HEARD_ABOUT_OTHER_LABEL) {
+                                    update("heardAboutEventOther", "");
+                                  }
+                                }}
+                                className={cn(
+                                  optionCardClass,
+                                  selected
+                                    ? "border-[var(--brand-accent)] bg-[color-mix(in_oklab,var(--brand-accent)_8%,transparent)] text-foreground"
+                                    : "border-[var(--color-border)] bg-[var(--color-surface)] text-foreground/85 hover:border-[var(--brand-accent)]/35",
+                                )}
+                              >
+                                <span
+                                  className={cn(
+                                    "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
+                                    selected
+                                      ? "border-[var(--brand-accent)]"
+                                      : "border-[var(--color-border)]",
+                                  )}
+                                  aria-hidden
+                                >
+                                  {selected ? (
+                                    <span className="h-2 w-2 rounded-full bg-[var(--brand-accent)]" />
+                                  ) : null}
+                                </span>
+                                <span className="min-w-0 text-left">{option}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {errors.heardAboutEvent ? (
+                          <p className="mt-1.5 text-xs text-destructive">
+                            {errors.heardAboutEvent}
+                          </p>
+                        ) : null}
+                      </div>
+
+                      {form.heardAboutEvent === HEARD_ABOUT_OTHER_LABEL ? (
+                        <Field
+                          fieldKey="heardAboutEventOther"
+                          label="Please specify"
+                          required
+                          error={errors.heardAboutEventOther}
+                          count={form.heardAboutEventOther.length}
+                          max={FIELD_LIMITS.heardAboutEventOther}
+                        >
+                          <input
+                            value={form.heardAboutEventOther}
+                            onChange={(e) =>
+                              update("heardAboutEventOther", e.target.value)
+                            }
+                            placeholder="Friend, newsletter, event page, etc."
+                            maxLength={FIELD_LIMITS.heardAboutEventOther}
+                            className={fieldClass}
+                          />
+                        </Field>
+                      ) : null}
+
                       <div data-rsvp-field="lookingFor">
                         <Label className="text-[13px] font-medium text-foreground/90">
                           What are you looking for today?{" "}

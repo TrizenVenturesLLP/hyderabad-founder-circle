@@ -88,6 +88,14 @@ function PaymentStatusCell({ payment }: { payment?: AdminRsvp["payment"] }) {
   );
 }
 
+function formatHeardAbout(rsvp: AdminRsvp) {
+  if (!rsvp.heardAboutEvent) return "—";
+  if (rsvp.heardAboutEvent === "Other" && rsvp.heardAboutEventOther?.trim()) {
+    return `Other · ${rsvp.heardAboutEventOther.trim()}`;
+  }
+  return rsvp.heardAboutEvent;
+}
+
 function CompactPagination({
   currentPage,
   totalPages,
@@ -317,7 +325,7 @@ function AdminRegistrationsPage() {
 
       <div className="min-h-0 flex-1 overflow-auto px-4 py-3 sm:px-5 sm:py-4 md:px-8">
         <div className="overflow-x-auto rounded-[16px] border border-[var(--color-border)] bg-white shadow-[0_1px_2px_rgba(59,35,24,0.04)]">
-          <table className="w-full min-w-[1040px] text-left text-sm">
+          <table className="w-full min-w-[1180px] text-left text-sm">
             <thead className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-[var(--color-background-alt)] text-[11px] uppercase tracking-wider text-[var(--color-text-muted)]">
               <tr>
                 <th className="px-4 py-3">
@@ -335,6 +343,7 @@ function AdminRegistrationsPage() {
                 <th className="px-4 py-3 font-semibold">Contact</th>
                 <th className="px-4 py-3 font-semibold">Phone</th>
                 <th className="px-4 py-3 font-semibold">Role</th>
+                <th className="px-4 py-3 font-semibold">Heard via</th>
                 <th className="px-4 py-3 font-semibold">Company</th>
                 <th className="px-4 py-3 font-semibold">Event</th>
                 <th className="px-4 py-3 font-semibold">Payment</th>
@@ -374,6 +383,12 @@ function AdminRegistrationsPage() {
                       {formatAdminPhone(row.countryCode, row.phone)}
                     </td>
                     <td className="px-4 py-3 text-xs">{row.role}</td>
+                    <td
+                      className="max-w-[9rem] px-4 py-3 text-xs text-[var(--color-text-secondary)]"
+                      title={formatHeardAbout(row)}
+                    >
+                      <span className="line-clamp-2">{formatHeardAbout(row)}</span>
+                    </td>
                     <td className="px-4 py-3 text-xs">{row.company}</td>
                     <td className="px-4 py-3 text-xs text-[var(--color-text-secondary)]">
                       {row.event?.title}

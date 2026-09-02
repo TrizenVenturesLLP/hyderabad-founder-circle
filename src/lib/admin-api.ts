@@ -146,6 +146,8 @@ export type AdminRsvp = {
   company: string;
   startupStage: string;
   industry: string;
+  heardAboutEvent: string;
+  heardAboutEventOther: string;
   createdAt: string;
   payment?: {
     status?: string;

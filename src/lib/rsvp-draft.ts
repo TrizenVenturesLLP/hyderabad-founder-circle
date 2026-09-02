@@ -21,6 +21,8 @@ export type RsvpDraftForm = {
   joinWhatsapp: boolean;
   subscribeUpdates: boolean;
   questions: string;
+  heardAboutEvent: string;
+  heardAboutEventOther: string;
 };
 
 export type RsvpDraft = {
@@ -57,7 +59,9 @@ export function hasRsvpDraftContent(form: RsvpDraftForm) {
       form.biggestChallenge.trim() ||
       form.joinWhatsapp ||
       form.subscribeUpdates ||
-      form.questions.trim(),
+      form.questions.trim() ||
+      form.heardAboutEvent ||
+      form.heardAboutEventOther.trim(),
   );
 }
 
@@ -109,6 +113,12 @@ export function loadRsvpDraft(eventSlug: string): RsvpDraft | null {
         joinWhatsapp: Boolean(form.joinWhatsapp),
         subscribeUpdates: Boolean(form.subscribeUpdates),
         questions: typeof form.questions === "string" ? form.questions : "",
+        heardAboutEvent:
+          typeof form.heardAboutEvent === "string" ? form.heardAboutEvent : "",
+        heardAboutEventOther:
+          typeof form.heardAboutEventOther === "string"
+            ? form.heardAboutEventOther
+            : "",
       },
       step,
       paymentMethod,
