@@ -760,6 +760,7 @@ export function RsvpDialog() {
         overlayClassName={
           checkoutOpen ? "pointer-events-none bg-black/40" : undefined
         }
+        data-rsvp-dialog
         onOpenAutoFocus={(e) => {
           // Keep focus in dialog; avoid jumping page scroll under the modal.
           if (step === "success" || step === "processing" || checkoutOpen) e.preventDefault();
@@ -776,21 +777,16 @@ export function RsvpDialog() {
         onWheel={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}
         className={cn(
-          "flex flex-col gap-0 overflow-hidden overscroll-contain !rounded-none border-border/80 bg-background p-0 shadow-[0_28px_70px_-30px_rgba(0,0,0,0.45)] sm:!rounded-none",
+          "rsvp-dialog-content flex flex-col gap-0 overflow-hidden overscroll-contain !rounded-none border-border/80 bg-background p-0 shadow-[0_28px_70px_-30px_rgba(0,0,0,0.45)] sm:!rounded-none",
           checkoutOpen && "pointer-events-none",
+          // Mobile bottom sheet — override dialog.tsx center + translate (causes left shift on iOS)
+          "max-sm:!fixed max-sm:!inset-x-0 max-sm:!bottom-0 max-sm:!top-auto max-sm:!left-0 max-sm:!right-0",
+          "max-sm:!w-full max-sm:!max-w-none max-sm:!translate-x-0 max-sm:!translate-y-0",
+          "max-sm:max-h-[92dvh] max-sm:pb-[env(safe-area-inset-bottom,0px)]",
+          "max-sm:data-[state=open]:!animate-none max-sm:data-[state=closed]:!animate-none",
           step === "success" || step === "processing"
-            ? [
-                "max-h-[min(92dvh,560px)] w-[calc(100%-1.25rem)] max-w-[680px] sm:max-w-[680px]",
-                "max-sm:!inset-x-0 max-sm:!bottom-0 max-sm:!left-0 max-sm:!right-0 max-sm:!top-auto",
-                "max-sm:!translate-x-0 max-sm:!translate-y-0",
-                "max-sm:!w-full max-sm:!max-w-none max-sm:!rounded-none max-sm:!max-h-[92dvh]",
-              ]
-            : [
-                "max-h-[min(92dvh,880px)] w-[calc(100%-1rem)] max-w-[1080px] sm:max-w-[1080px]",
-                "max-sm:!inset-x-0 max-sm:!bottom-0 max-sm:!left-0 max-sm:!right-0 max-sm:!top-auto",
-                "max-sm:!translate-x-0 max-sm:!translate-y-0",
-                "max-sm:!w-full max-sm:!max-w-none max-sm:!rounded-none max-sm:!max-h-[94dvh]",
-              ],
+            ? "max-h-[min(92dvh,560px)] max-sm:w-full w-[calc(100%-1.25rem)] max-w-[680px] sm:max-w-[680px]"
+            : "max-h-[min(92dvh,880px)] max-sm:w-full w-[calc(100%-1rem)] max-w-[1080px] sm:max-w-[1080px]",
         )}
       >
         <DialogTitle className="sr-only">Founders & Builders Meetup Registration</DialogTitle>
@@ -812,7 +808,7 @@ export function RsvpDialog() {
                     Registration
                   </p>
                 </div>
-                <h2 className="mt-3 font-display text-[1.45rem] tracking-tight text-foreground sm:text-[1.65rem]">
+                <h2 className="mt-3 break-words font-display text-[1.35rem] tracking-tight text-foreground sm:text-[1.65rem]">
                   Founders & Builders Meetup Registration
                 </h2>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
@@ -1360,7 +1356,7 @@ export function RsvpDialog() {
                                 <span className="block text-sm font-medium text-foreground">
                                   {option.label}
                                 </span>
-                                <span className="mt-0.5 block text-xs text-muted-foreground">
+                                <span className="mt-0.5 block break-words text-xs text-muted-foreground">
                                   {option.hint}
                                 </span>
                               </span>
@@ -1413,12 +1409,12 @@ export function RsvpDialog() {
                 </div>
 
                 <footer className="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3.5 sm:px-6">
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-stretch gap-2 sm:gap-3">
                     {step === 2 || step === 3 ? (
                       <button
                         type="button"
                         onClick={() => moveToStep(step === 3 ? 2 : 1)}
-                        className={btnSecondaryClass}
+                        className={cn(btnSecondaryClass, "shrink-0 px-3 sm:px-5")}
                       >
                         <ArrowLeft
                           className="size-3.5"
@@ -1434,11 +1430,11 @@ export function RsvpDialog() {
                       <button
                         type="button"
                         onClick={goNext}
-                        className={btnPrimaryClass}
+                        className={cn(btnPrimaryClass, "min-w-0 flex-1 px-3 sm:flex-none sm:px-6")}
                       >
                         Next step
                         <ArrowRight
-                          className="size-3.5"
+                          className="size-3.5 shrink-0"
                           strokeWidth={1.75}
                           aria-hidden
                         />
@@ -1447,11 +1443,11 @@ export function RsvpDialog() {
                       <button
                         type="button"
                         onClick={goToPayment}
-                        className={btnPrimaryClass}
+                        className={cn(btnPrimaryClass, "min-w-0 flex-1 px-3 sm:flex-none sm:px-6")}
                       >
                         Next step
                         <ArrowRight
-                          className="size-3.5"
+                          className="size-3.5 shrink-0"
                           strokeWidth={1.75}
                           aria-hidden
                         />
@@ -1461,25 +1457,28 @@ export function RsvpDialog() {
                         type="button"
                         onClick={() => void payAndRegister()}
                         disabled={submitting}
-                        className={btnPrimaryClass}
+                        className={cn(
+                          btnPrimaryClass,
+                          "min-w-0 flex-1 px-3 text-[13px] sm:flex-none sm:px-6 sm:text-sm",
+                        )}
                       >
                         {submitting ? (
                           <>
                             <Loader2
-                              className="size-3.5 animate-spin"
+                              className="size-3.5 shrink-0 animate-spin"
                               strokeWidth={1.75}
                               aria-hidden
                             />
-                            Opening checkout…
+                            <span className="truncate">Opening checkout…</span>
                           </>
                         ) : (
                           <>
                             <CreditCard
-                              className="size-3.5"
+                              className="size-3.5 shrink-0"
                               strokeWidth={1.75}
                               aria-hidden
                             />
-                            Proceed to payment
+                            <span className="truncate">Proceed to payment</span>
                           </>
                         )}
                       </button>
@@ -1696,7 +1695,7 @@ function MobileEventSummary({
 
 function Stepper({ step }: { step: 1 | 2 | 3 }) {
   return (
-    <ol className="mt-4 flex min-w-0 items-center gap-2 text-sm sm:mt-5 sm:gap-3">
+    <ol className="mt-4 flex min-w-0 items-center gap-1.5 overflow-x-auto text-sm sm:mt-5 sm:gap-3">
       <StepItem n={1} label="Your details" active={step === 1} done={step > 1} />
       <span className="h-px min-w-3 flex-1 bg-[var(--color-border)] sm:max-w-8" aria-hidden />
       <StepItem n={2} label="Your goals" active={step === 2} done={step > 2} />
@@ -1720,7 +1719,7 @@ function StepItem({
   return (
     <li
       className={cn(
-        "flex items-center gap-2",
+        "flex shrink-0 items-center gap-1.5 sm:gap-2",
         active || done ? "text-foreground" : "text-muted-foreground",
       )}
     >
@@ -1738,6 +1737,7 @@ function StepItem({
         className={cn(
           "text-xs font-medium transition-colors duration-300 sm:text-sm",
           active && "text-[var(--brand-accent)]",
+          !active && "max-sm:sr-only",
         )}
       >
         {label}
@@ -1886,36 +1886,36 @@ function SuccessView({
   );
 
   const actions = (
-    <div className="flex h-full w-full flex-col justify-center gap-2">
+    <div className="flex w-full flex-col gap-2">
       <Link
         to="/badge"
         search={badgeSearch}
         onClick={() => {
           closeRsvp();
         }}
-        className={cn(btnPrimaryClass, "gap-2 px-3.5 text-[13px] sm:px-4 sm:text-sm")}
+        className={cn(btnPrimaryClass, "w-full gap-2 px-3.5 text-[13px] sm:px-4 sm:text-sm")}
       >
         <ImagePlus className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" strokeWidth={1.75} />
-        <span className="truncate">Create badge</span>
+        Create badge
       </Link>
       <a
         href={links.community}
         target="_blank"
         rel="noreferrer"
-        className={cn(btnSecondaryClass, "gap-2 px-3.5 text-[13px] sm:px-4 sm:text-sm")}
+        className={cn(btnSecondaryClass, "w-full gap-2 px-3.5 text-[13px] sm:px-4 sm:text-sm")}
       >
         <MessageCircle className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" strokeWidth={1.75} />
-        <span className="truncate">WhatsApp</span>
+        WhatsApp
       </a>
       {dateConfirmed ? (
         <a
           href={googleCalendarUrl(event)}
           target="_blank"
           rel="noreferrer"
-          className={cn(btnSecondaryClass, "gap-2 px-3.5 text-[13px] sm:px-4 sm:text-sm")}
+          className={cn(btnSecondaryClass, "w-full gap-2 px-3.5 text-[13px] sm:px-4 sm:text-sm")}
         >
           <CalendarDays className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" strokeWidth={1.75} />
-          <span className="truncate">Calendar</span>
+          Calendar
         </a>
       ) : null}
     </div>
@@ -1963,8 +1963,8 @@ function SuccessView({
             </p>
           </div>
 
-          {/* Card column — on mobile shares row with actions */}
-          <div className="grid min-w-0 grid-cols-[minmax(0,1.2fr)_minmax(7.5rem,0.8fr)] items-stretch gap-2.5 sm:gap-3 md:block">
+          {/* Card + actions — stacked on mobile, side-by-side on desktop */}
+          <div className="flex min-w-0 flex-col gap-3 md:contents">
             <div className="min-w-0">{eventCard}</div>
             <div className="min-w-0 md:hidden">{actions}</div>
           </div>

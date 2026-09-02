@@ -72,6 +72,11 @@ export function BadgeStudio({ meetup, initialName = "" }: Props) {
   const dragStart = useRef<{ x: number; y: number; ox: number; oy: number } | null>(
     null,
   );
+  const dragPending = useRef(false);
+  const isDraggingRef = useRef(false);
+  const activePointerId = useRef<number | null>(null);
+
+  const DRAG_THRESHOLD_PX = 10;
 
   useEffect(() => {
     const img = new Image();
@@ -195,8 +200,10 @@ export function BadgeStudio({ meetup, initialName = "" }: Props) {
 
   function onPointerDown(e: React.PointerEvent<HTMLCanvasElement>) {
     if (locked || !photo) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    setDragging(true);
+    dragPending.current = true;
+    isDraggingRef.current = false;
+    activePointerId.current = e.pointerId;
+    setDragging(false);
     dragStart.current = {
       x: e.clientX,
       y: e.clientY,
@@ -206,21 +213,52 @@ export function BadgeStudio({ meetup, initialName = "" }: Props) {
   }
 
   function onPointerMove(e: React.PointerEvent<HTMLCanvasElement>) {
-    if (!dragging || !dragStart.current || locked) return;
-    const dx = (e.clientX - dragStart.current.x) / 140;
-    const dy = (e.clientY - dragStart.current.y) / 140;
-    setOffsetX(Math.max(-1, Math.min(1, dragStart.current.ox + dx)));
-    setOffsetY(Math.max(-1, Math.min(1, dragStart.current.oy + dy)));
+    if (locked || !photo || !dragStart.current) return;
+    if (activePointerId.current !== e.pointerId) return;
+
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+
+    if (!isDraggingRef.current && dragPending.current) {
+      if (absDx + absDy < DRAG_THRESHOLD_PX) return;
+
+      // Vertical swipe — scroll the page, don't reposition the photo.
+      if (absDy > absDx * 1.15) {
+        dragPending.current = false;
+        dragStart.current = null;
+        activePointerId.current = null;
+        return;
+      }
+
+      dragPending.current = false;
+      isDraggingRef.current = true;
+      setDragging(true);
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
+
+    if (!isDraggingRef.current) return;
+
+    setOffsetX(Math.max(-1, Math.min(1, dragStart.current.ox + dx / 140)));
+    setOffsetY(Math.max(-1, Math.min(1, dragStart.current.oy + dy / 140)));
   }
 
   function onPointerUp(e: React.PointerEvent<HTMLCanvasElement>) {
-    setDragging(false);
+    dragPending.current = false;
+    activePointerId.current = null;
     dragStart.current = null;
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {
-      // ignore
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false;
+      setDragging(false);
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        // ignore
+      }
+      return;
     }
+    setDragging(false);
   }
 
   return (
@@ -229,7 +267,7 @@ export function BadgeStudio({ meetup, initialName = "" }: Props) {
       <div className="lg:col-span-6">
         <SectionLabel>Preview</SectionLabel>
         <p className="mt-1 text-[13px] text-[var(--color-text-secondary)]">
-          Drag to reposition · use zoom below
+          Swipe vertically to scroll · drag photo to reposition · use zoom below
         </p>
 
         <div className="mx-auto mt-4 max-w-[300px] overflow-hidden border border-[var(--color-border)] bg-[var(--color-background-alt)] sm:max-w-[320px] lg:mx-0 lg:max-w-[340px]">
@@ -238,11 +276,13 @@ export function BadgeStudio({ meetup, initialName = "" }: Props) {
             width={BADGE_WIDTH}
             height={BADGE_HEIGHT}
             className={cn(
-              "block w-full touch-none",
+              "block w-full",
+              dragging && "touch-none",
               photo && !locked
                 ? "cursor-grab active:cursor-grabbing"
                 : "cursor-default",
             )}
+            style={{ touchAction: photo && !locked && !dragging ? "pan-y" : undefined }}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
