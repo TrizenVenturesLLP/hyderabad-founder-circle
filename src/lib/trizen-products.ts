@@ -31,7 +31,7 @@ export const trizenProducts: TrizenProduct[] = [
     category: "WhatsApp Ops",
     tagline: "Standalone console & API",
     desc: "Run WhatsApp notifications without the chaos — manage templates, sends, delivery status, and backend integrations in one console.",
-    href: "https://trizendialog.extrahand.in/",
+    href: "https://dialog.trizenventures.com/",
     cta: "Learn More",
     image: "https://trizenventures.com/products/trizen-dialog-card-v3.jpg",
     accent: "#5a6b4e",
