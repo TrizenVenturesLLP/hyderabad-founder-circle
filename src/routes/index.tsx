@@ -133,7 +133,7 @@ const communityPartner = {
 
 const marketingPartner = {
   name: "Bestverse",
-  href: null as string | null,
+  href: "https://bestverse.in/",
 };
 
 const faqs = [
@@ -281,7 +281,12 @@ function HeroSection({ nextMeetup }: { nextMeetup: Meetup }) {
                 {communityPartner.name}
               </span>
             </a>
-            <div className="inline-flex items-center gap-2.5 opacity-80">
+            <a
+              href={marketingPartner.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2.5 opacity-80 transition-opacity hover:opacity-100"
+            >
               <img
                 src={bestverseLogo}
                 alt=""
@@ -292,7 +297,7 @@ function HeroSection({ nextMeetup }: { nextMeetup: Meetup }) {
               <span className="text-[12.5px] font-medium text-foreground md:text-[13px]">
                 {marketingPartner.name}
               </span>
-            </div>
+            </a>
           </div>
         </div>
       </div>

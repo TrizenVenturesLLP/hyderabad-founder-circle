@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { meetupMapsUrl, meetupDateLabel, isMeetupDateConfirmed, type Meetup } from "@/lib/events";
+import { getEventRoles } from "@/lib/event-page-content";
 import {
   createPaymentOrder,
   REGISTRATION_FEE_INR,
@@ -274,6 +275,7 @@ const STEP2_FIELD_ORDER = [
 
 export function RsvpDialog() {
   const { open, event, closeRsvp } = useRsvp();
+  const roleOptions = event ? getEventRoles(roles, event) : [...roles];
   const [step, setStep] = useState<Step>(1);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [errors, setErrors] = useState<Partial<Record<FormErrorKey, string>>>({});
@@ -962,7 +964,7 @@ export function RsvpDialog() {
                           className={cn(selectClass, !form.role && "text-muted-foreground/65")}
                         >
                           <option value="">Select your role</option>
-                          {roles.map((role) => (
+                          {roleOptions.map((role) => (
                             <option key={role} value={role}>
                               {role}
                             </option>
@@ -1745,6 +1747,9 @@ function StepItem({
 }
 
 function eventHours(event: Meetup) {
+  if (/10\s*:\s*30\s*AM/i.test(event.time)) {
+    return { startHour: 10, startMin: 30, endHour: 13, endMin: 0 };
+  }
   if (/11\s*:\s*00\s*AM/i.test(event.time)) {
     return { startHour: 11, startMin: 0, endHour: 13, endMin: 0 };
   }

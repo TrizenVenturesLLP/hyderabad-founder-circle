@@ -81,7 +81,7 @@ function PrivacyPage() {
               <li>
                 <span className="font-medium text-foreground">RSVPs:</span> name,
                 email, phone, LinkedIn, and related registration details needed
-                to confirm your seat and process the ₹49 registration fee via
+                to confirm your seat and process the ₹99 registration fee via
                 Razorpay. Payment card details are handled by Razorpay — we do
                 not store them.
               </li>

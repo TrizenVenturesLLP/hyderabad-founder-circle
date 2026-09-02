@@ -4,7 +4,7 @@ const API_BASE =
   (import.meta as ImportMeta & { env: Record<string, string> }).env
     .VITE_API_URL || "http://localhost:4000";
 
-export const REGISTRATION_FEE_INR = 49;
+export const REGISTRATION_FEE_INR = 99;
 
 export type RsvpPayload = {
   name: string;

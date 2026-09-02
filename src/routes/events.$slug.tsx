@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-router";
 import {
   ArrowUpRight,
@@ -31,8 +31,11 @@ import {
   meetupVenueLine,
   meetupDateLabel,
   isMeetupDateConfirmed,
+  meetupSeatsLabel,
   type EventSpeaker,
 } from "@/lib/events";
+import { getEventPageContent, type EventPartner } from "@/lib/event-page-content";
+import { REGISTRATION_FEE_INR } from "@/lib/api";
 import { links } from "@/lib/links";
 import { EventShareBar } from "@/components/EventShareBar";
 import { RsvpButton } from "@/components/rsvp/RsvpButton";
@@ -97,7 +100,7 @@ export const Route = createFileRoute("/events/$slug")({
                 isAccessibleForFree: false,
                 offers: {
                   "@type": "Offer",
-                  price: "49",
+                  price: String(REGISTRATION_FEE_INR),
                   priceCurrency: "INR",
                   availability: "https://schema.org/InStock",
                   url: `https://community.trizenventures.com/events/${m.slug}`,
@@ -171,39 +174,6 @@ const takeaways = [
   },
 ];
 
-const agenda = [
-  {
-    time: "11:00 AM",
-    title: "Registration & Welcome",
-    desc: "Check in, grab a seat, and settle into the room.",
-  },
-  {
-    time: "11:20 AM",
-    title: "Founder Introductions",
-    desc: "Meet the people in the room — quick intros, no pitching.",
-  },
-  {
-    time: "11:40 AM",
-    title: "Founder Story",
-    desc: "A community member shares lessons from building a startup.",
-  },
-  {
-    time: "12:10 PM",
-    title: "Roundtable Discussions",
-    desc: "Small-group conversations around startup challenges and opportunities.",
-  },
-  {
-    time: "12:40 PM",
-    title: "Open Networking",
-    desc: "Continue conversations and make meaningful connections.",
-  },
-  {
-    time: "1:00 PM",
-    title: "Snacks & Community Conversations",
-    desc: "Light refreshments while conversations keep going.",
-  },
-];
-
 const venueAmenities = [
   { label: "Parking Available", icon: CircleParking },
   { label: "Metro Nearby", icon: TrainFront },
@@ -214,7 +184,7 @@ const venueAmenities = [
 const faqs = [
   {
     q: "Is this event free?",
-    a: "Registration is ₹49 per person and is required due to limited capacity.",
+    a: `Registration is ₹${REGISTRATION_FEE_INR} per person and is required due to limited capacity.`,
   },
   {
     q: "Can I attend if I'm not a founder?",
@@ -274,6 +244,192 @@ function SectionLabel({ children }: { children: ReactNode }) {
     <p className="text-[12px] font-medium tracking-[0.06em] text-[var(--brand-accent)]">
       {children}
     </p>
+  );
+}
+
+function PartnerTile({
+  partner,
+  compact = false,
+}: {
+  partner: EventPartner;
+  compact?: boolean;
+}) {
+  const arrow = compact ? null : (
+    <ArrowUpRight
+      className="ml-auto size-3.5 shrink-0 text-[var(--color-text-muted)] transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-[var(--brand-accent)]"
+      strokeWidth={1.75}
+      aria-hidden
+    />
+  );
+
+  const inner = (
+    <>
+      {partner.logo ? (
+        <img
+          src={partner.logo}
+          alt=""
+          className={cn(
+            compact ? "h-7" : "h-8",
+            "shrink-0 object-contain",
+            partner.logoSquare
+              ? "w-7 object-contain md:h-8 md:w-8"
+              : partner.logoRounded
+                ? "w-7 rounded-full object-cover md:h-8 md:w-8"
+                : "w-auto max-w-[5.5rem] md:max-w-[6.5rem]",
+          )}
+        />
+      ) : null}
+      {!compact ? (
+        <span className="min-w-0 text-[13.5px] font-medium leading-snug text-foreground transition-colors group-hover:text-[var(--brand-accent)]">
+          {partner.name}
+        </span>
+      ) : (
+        <span className="max-w-[5.5rem] truncate text-[11.5px] font-medium leading-snug text-foreground transition-colors group-hover:text-[var(--brand-accent)] md:max-w-none md:text-[12.5px]">
+          {partner.name}
+        </span>
+      )}
+    </>
+  );
+
+  const className = cn(
+    "group inline-flex items-center transition-colors duration-200",
+    compact ? "gap-1.5" : "w-full gap-2.5",
+  );
+
+  if (partner.href) {
+    return (
+      <a
+        href={partner.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={className}
+        title={compact ? partner.name : undefined}
+        aria-label={compact ? partner.name : undefined}
+      >
+        {inner}
+        {arrow}
+      </a>
+    );
+  }
+
+  return (
+    <span className={className}>
+      {inner}
+      {arrow}
+    </span>
+  );
+}
+
+function PartnerTierPartners({ partners }: { partners: EventPartner[] }) {
+  return (
+    <ul className="mt-3 flex flex-1 flex-col justify-center gap-1">
+      {partners.map((partner, index) => (
+        <Fragment key={partner.name}>
+          {index > 0 ? (
+            <li className="flex justify-center py-0.5">
+              <span
+                className="text-[13px] text-[var(--color-text-muted)]"
+                aria-hidden
+              >
+                ×
+              </span>
+            </li>
+          ) : null}
+          <li>
+            <PartnerTile partner={partner} />
+          </li>
+        </Fragment>
+      ))}
+    </ul>
+  );
+}
+
+function HeroCollaborativeHosts({
+  hosts,
+}: {
+  hosts: ReturnType<typeof getEventPageContent>["collaborativeHosts"];
+}) {
+  if (hosts.length === 0) return null;
+
+  return (
+    <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[12.5px] leading-relaxed text-white/88">
+      <span className="shrink-0 text-[10px] font-medium tracking-[0.1em] text-white/55 uppercase">
+        Collaboratively hosted by:
+      </span>
+      <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-0.5">
+        {hosts.map((host, index) => (
+          <span key={host.name} className="inline-flex items-center gap-2">
+            {index > 0 ? (
+              <span className="text-white/40" aria-hidden>
+                ×
+              </span>
+            ) : null}
+            {host.href ? (
+              <a
+                href={host.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-white underline decoration-white/30 underline-offset-[3px] transition-colors hover:text-[var(--brand-accent)] hover:decoration-[var(--brand-accent)]"
+              >
+                {host.name}
+              </a>
+            ) : (
+              <span className="font-medium text-white">{host.name}</span>
+            )}
+          </span>
+        ))}
+      </span>
+    </p>
+  );
+}
+
+function HeroSupportedBy({ partners }: { partners: EventPartner[] }) {
+  if (partners.length === 0) return null;
+
+  return (
+    <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[12.5px] leading-relaxed text-white/88">
+      <span className="shrink-0 text-[10px] font-medium tracking-[0.1em] text-white/55 uppercase">
+        Supported by:
+      </span>
+      <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-0.5">
+        {partners.map((partner, index) => (
+          <span key={partner.name} className="inline-flex items-center gap-2">
+            {index > 0 ? (
+              <span className="text-white/40" aria-hidden>
+                ×
+              </span>
+            ) : null}
+            {partner.href ? (
+              <a
+                href={partner.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-white underline decoration-white/30 underline-offset-[3px] transition-colors hover:text-[var(--brand-accent)] hover:decoration-[var(--brand-accent)]"
+              >
+                {partner.name}
+              </a>
+            ) : (
+              <span className="font-medium text-white">{partner.name}</span>
+            )}
+          </span>
+        ))}
+      </span>
+    </p>
+  );
+}
+
+function HeroPosterFooter({
+  hosts,
+  supportedBy,
+}: {
+  hosts: ReturnType<typeof getEventPageContent>["collaborativeHosts"];
+  supportedBy: EventPartner[];
+}) {
+  return (
+    <div className="space-y-2 border-t border-white/15 pt-4">
+      <HeroCollaborativeHosts hosts={hosts} />
+      <HeroSupportedBy partners={supportedBy} />
+    </div>
   );
 }
 
@@ -403,11 +559,13 @@ function EventStatusBadge({
 
 function EventDetail() {
   const { meetup } = Route.useLoaderData();
+  const pageContent = getEventPageContent(meetup);
   const mapsUrl = meetupMapsUrl(meetup);
   const mapsEmbed = meetupMapsEmbedUrl(meetup);
   const hosts = meetup.hosts ?? [];
   const speakers = meetup.speakers ?? [];
   const venueLine = meetupVenueLine(meetup);
+  const seatsLabel = meetupSeatsLabel(meetup);
   const detailsReveal = useInView<HTMLElement>(heroRevealOpts);
   const whyReveal = useInView<HTMLElement>(scrollRevealOpts);
   const whoReveal = useInView<HTMLElement>(scrollRevealOpts);
@@ -415,16 +573,24 @@ function EventDetail() {
   const speakersReveal = useInView<HTMLElement>(scrollRevealOpts);
   const hostsReveal = useInView<HTMLElement>(scrollRevealOpts);
   const venueReveal = useInView<HTMLElement>(scrollRevealOpts);
+  const partnersReveal = useInView<HTMLElement>(scrollRevealOpts);
   const faqReveal = useInView<HTMLElement>(scrollRevealOpts);
   const galleryReveal = useInView<HTMLElement>(scrollRevealOpts);
   const ctaReveal = useInView<HTMLElement>(scrollRevealOpts);
   const completed = isMeetupCompleted(meetup);
   const open = isRsvpOpen(meetup);
+  const hasPartners =
+    pageContent.collaborativeHosts.length > 0 ||
+    pageContent.partnerTiers.length > 0;
+  const heroContent = pageContent.hero;
+  const supportedByPartners =
+    pageContent.partnerTiers.find((tier) => tier.label === "Supported by")
+      ?.partners ?? [];
 
   return (
     <article className="bg-[var(--color-background)]">
-      {/* HERO — brand + title + one line + CTAs only */}
-      <header className="relative isolate flex min-h-[min(52dvh,460px)] flex-col overflow-hidden md:min-h-[min(56dvh,520px)]">
+      {/* HERO — poster hierarchy for September */}
+      <header className="relative isolate flex min-h-[min(58dvh,500px)] flex-col overflow-hidden md:min-h-[min(62dvh,540px)]">
         <div className="absolute inset-0 overflow-hidden" aria-hidden>
           <div className="hero-slide absolute inset-0">
             <img
@@ -434,16 +600,17 @@ function EventDetail() {
               height={1080}
               fetchPriority="high"
               decoding="async"
-              className="h-full w-full object-cover object-center"
+              className="h-full w-full object-cover object-[center_42%]"
             />
           </div>
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,10,24,0.72)_0%,rgba(8,10,24,0.42)_45%,rgba(8,10,24,0.58)_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,10,24,0.5)_0%,rgba(8,10,24,0.78)_42%,rgba(8,10,24,0.94)_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(105deg,rgba(8,10,24,0.88)_0%,rgba(8,10,24,0.55)_42%,transparent_72%)]" />
         </div>
 
-        <div className="page-container relative flex flex-1 flex-col justify-end pb-8 pt-16 md:pb-10 md:pt-20">
+        <div className="page-container relative flex flex-1 flex-col justify-end pb-8 pt-14 md:pb-10 md:pt-16">
           <nav
             aria-label="Breadcrumb"
-            className="hero-reveal mb-auto flex flex-wrap items-center gap-x-1.5 pb-6 text-[12px] text-white/60"
+            className="hero-reveal mb-auto flex flex-wrap items-center gap-x-1.5 pb-5 text-[12px] text-white/70 [text-shadow:0_1px_8px_rgba(0,0,0,0.5)]"
           >
             <Link
               to="/events"
@@ -457,44 +624,106 @@ function EventDetail() {
             <span className="truncate text-white/80">{meetup.title}</span>
           </nav>
 
-          <div className="max-w-3xl">
-            <p className="hero-reveal text-[11px] font-medium tracking-[0.14em] text-white/72 uppercase md:text-[12px]">
-              Trizen Community
-            </p>
-            <p
-              className="hero-reveal hero-reveal-delay-1 mt-2 font-semibold leading-[1.02] tracking-[-0.035em] text-white md:mt-2.5"
-              style={{
-                fontFamily: "var(--font-brand)",
-                fontSize: "clamp(2rem, 5.5vw, 3.35rem)",
-              }}
-            >
-              Hyderabad Founders Network
-            </p>
-            <h1 className="hero-reveal hero-reveal-delay-2 mt-3 max-w-[28ch] text-[clamp(1.15rem,2.4vw,1.45rem)] font-medium leading-snug tracking-tight text-white/92">
-              {meetup.title}
-            </h1>
-            <p className="hero-reveal hero-reveal-delay-2 mt-3 max-w-lg text-[14px] leading-relaxed text-white/75 md:text-[15px]">
-              {meetup.blurb}
-            </p>
-            <div className="hero-reveal hero-reveal-delay-3 mt-6 flex flex-wrap items-center gap-2.5">
-              <RsvpButton event={meetup} className="btn-primary gap-1.5">
-                <Ticket className="size-3.5" strokeWidth={1.75} aria-hidden />
-                {open ? "Book your spot" : completed ? "Event completed" : "Coming soon"}
-              </RsvpButton>
-              <a
-                href={mapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-[46px] items-center justify-center gap-1.5 border border-white/28 bg-white/10 px-5 text-[14px] font-medium text-white transition-colors duration-200 hover:border-white/45 hover:bg-white/16"
-              >
-                Get Directions
-                <ArrowUpRight
-                  className="size-3.5"
-                  strokeWidth={1.75}
-                  aria-hidden
+          <div className="max-w-2xl [text-shadow:0_1px_14px_rgba(0,0,0,0.55)]">
+            {heroContent ? (
+              <>
+                <h1
+                  className="hero-reveal font-semibold leading-[1.02] tracking-[-0.035em] text-white"
+                  style={{
+                    fontFamily: "var(--font-brand)",
+                    fontSize: "clamp(2.1rem, 5.8vw, 3.5rem)",
+                  }}
+                >
+                  {heroContent.brandTitle}
+                </h1>
+                <p className="hero-reveal hero-reveal-delay-1 mt-2.5 text-[13px] font-medium tracking-[0.14em] text-white/85 uppercase md:text-[14px]">
+                  {heroContent.subtitle}
+                </p>
+
+                <div className="hero-reveal hero-reveal-delay-2 mt-5 space-y-2 border-l-2 border-[var(--brand-accent)] pl-4 md:mt-6 md:pl-5">
+                  <p className="text-[14px] leading-snug text-white/95 md:text-[15px]">
+                    {meetupDateLabel(meetup)} · {meetup.time}
+                  </p>
+                  <p className="text-[13.5px] leading-snug text-white/90 md:text-[14px]">
+                    {meetupVenueLine(meetup)}
+                  </p>
+                  <p className="text-[12.5px] font-medium tracking-wide text-white/78 md:text-[13px]">
+                    {heroContent.audienceLine}
+                  </p>
+                  <p className="pt-1 text-[15px] font-semibold tracking-wide text-white md:text-[16px]">
+                    {heroContent.tagline}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="hero-reveal text-[11px] font-medium tracking-[0.14em] text-white/72 uppercase md:text-[12px]">
+                  Trizen Community
+                </p>
+                <p
+                  className="hero-reveal hero-reveal-delay-1 mt-2 font-semibold leading-[1.02] tracking-[-0.035em] text-white md:mt-2.5"
+                  style={{
+                    fontFamily: "var(--font-brand)",
+                    fontSize: "clamp(2rem, 5.5vw, 3.35rem)",
+                  }}
+                >
+                  Hyderabad Founders Network
+                </p>
+                <h1 className="hero-reveal hero-reveal-delay-2 mt-3 max-w-[28ch] text-[clamp(1.15rem,2.4vw,1.45rem)] font-medium leading-snug tracking-tight text-white/92">
+                  {meetup.title}
+                </h1>
+                <p className="hero-reveal hero-reveal-delay-2 mt-3 max-w-lg text-[14px] leading-relaxed text-white/75 md:text-[15px]">
+                  {meetup.blurb}
+                </p>
+              </>
+            )}
+            {heroContent ? (
+              <div className="hero-reveal hero-reveal-delay-3 mt-6 md:mt-7">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <RsvpButton event={meetup} className="btn-primary gap-1.5">
+                    <Ticket className="size-3.5" strokeWidth={1.75} aria-hidden />
+                    {open ? "Register Now" : completed ? "Event completed" : "Coming soon"}
+                  </RsvpButton>
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-[46px] items-center justify-center gap-1.5 border border-white/35 bg-white/12 px-5 text-[14px] font-medium text-white backdrop-blur-[2px] transition-colors duration-200 hover:border-white/50 hover:bg-white/18"
+                  >
+                    Get Directions
+                    <ArrowUpRight
+                      className="size-3.5"
+                      strokeWidth={1.75}
+                      aria-hidden
+                    />
+                  </a>
+                </div>
+                <HeroPosterFooter
+                  hosts={pageContent.collaborativeHosts}
+                  supportedBy={supportedByPartners}
                 />
-              </a>
-            </div>
+              </div>
+            ) : (
+              <div className="hero-reveal hero-reveal-delay-3 mt-6 flex flex-wrap items-center gap-2.5">
+                <RsvpButton event={meetup} className="btn-primary gap-1.5">
+                  <Ticket className="size-3.5" strokeWidth={1.75} aria-hidden />
+                  {open ? "Book your spot" : completed ? "Event completed" : "Coming soon"}
+                </RsvpButton>
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-[46px] items-center justify-center gap-1.5 border border-white/28 bg-white/10 px-5 text-[14px] font-medium text-white transition-colors duration-200 hover:border-white/45 hover:bg-white/16"
+                >
+                  Get Directions
+                  <ArrowUpRight
+                    className="size-3.5"
+                    strokeWidth={1.75}
+                    aria-hidden
+                  />
+                </a>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -516,7 +745,7 @@ function EventDetail() {
               <div className="flex flex-wrap items-center gap-2.5">
                 <EventStatusBadge completed={completed} open={open} />
                 <span className="text-[13px] text-[var(--color-text-secondary)]">
-                  {meetup.city} · Limited seats
+                  {meetup.city} · {seatsLabel} seats
                 </span>
               </div>
               <EventShareBar meetup={meetup} orientation="horizontal" />
@@ -532,7 +761,7 @@ function EventDetail() {
                 { label: "Date", value: meetupDateLabel(meetup), icon: Calendar },
                 { label: "Time", value: meetup.time, icon: Clock },
                 { label: "Venue", value: meetup.venue, icon: MapPin },
-                { label: "Fee", value: "₹49", icon: Ticket },
+                { label: "Fee", value: `₹${REGISTRATION_FEE_INR}`, icon: Ticket },
               ].map(({ label, value, icon: Icon }) => (
                 <div key={label} className="min-w-0">
                   <dt className="inline-flex items-center gap-1.5 text-[11px] font-medium tracking-[0.04em] text-[var(--color-text-muted)]">
@@ -568,20 +797,34 @@ function EventDetail() {
             <div className="lg:col-span-5">
               <SectionLabel>Why this meetup?</SectionLabel>
               <h2 className="mt-3 max-w-[18ch] font-display text-[clamp(1.5rem,2.5vw,2.05rem)] leading-[1.1] tracking-tight text-foreground">
-                More than networking. A community that grows together.
+                {pageContent.why?.headline ??
+                  "More than networking. A community that grows together."}
               </h2>
             </div>
             <div className="max-w-2xl space-y-3.5 text-[14px] leading-[1.7] text-[var(--color-text-secondary)] md:text-[15px] lg:col-span-7">
-              <p>Most startup events end when everyone leaves the room.</p>
-              <p>
-                At Hyderabad Founders Network, every meetup is an opportunity to
-                build relationships that continue beyond the event.
-              </p>
-              <p>
-                Whether you&apos;re building your first startup or scaling your
-                next venture, you&apos;ll meet people who understand the journey
-                and are willing to share their experiences, ideas and support.
-              </p>
+              {pageContent.why ? (
+                <>
+                  {pageContent.why.paragraphs.map((paragraph) => (
+                    <p key={paragraph}>{paragraph}</p>
+                  ))}
+                  <p className="font-medium text-foreground">
+                    {pageContent.why.closingLine}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p>Most startup events end when everyone leaves the room.</p>
+                  <p>
+                    At Hyderabad Founders Network, every meetup is an opportunity to
+                    build relationships that continue beyond the event.
+                  </p>
+                  <p>
+                    Whether you&apos;re building your first startup or scaling your
+                    next venture, you&apos;ll meet people who understand the journey
+                    and are willing to share their experiences, ideas and support.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -783,10 +1026,10 @@ function EventDetail() {
           >
             <SectionLabel>Agenda</SectionLabel>
             <h2 className="mt-3 font-display text-[clamp(1.55rem,2.6vw,2rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
-              About two hours
+              {pageContent.agendaHeading}
             </h2>
             <p className="mt-2.5 max-w-[34ch] text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
-              Structured enough to be useful — open enough to talk.
+              {pageContent.agendaSubheading}
             </p>
             <ol
               className={cn(
@@ -794,7 +1037,7 @@ function EventDetail() {
                 takeawaysReveal.inView && "is-visible",
               )}
             >
-              {agenda.map((step) => (
+              {pageContent.agenda.map((step) => (
                 <li
                   key={step.time + step.title}
                   className="grid gap-1 py-4 sm:grid-cols-[5.75rem_minmax(0,1fr)] sm:gap-4"
@@ -834,11 +1077,10 @@ function EventDetail() {
             >
               <SectionLabel>Speakers</SectionLabel>
               <h2 className="mt-3 font-display text-[clamp(1.55rem,2.6vw,2rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
-                Meet our speakers
+                {pageContent.speakersHeading}
               </h2>
               <p className="mt-2.5 text-[14.5px] leading-relaxed text-[var(--color-text-secondary)]">
-                Industry leaders, founders, and innovators sharing insights from
-                the work.
+                {pageContent.speakersSubheading}
               </p>
             </div>
 
@@ -1060,6 +1302,46 @@ function EventDetail() {
         </div>
       </section>
 
+      {hasPartners ? (
+        <section
+          ref={partnersReveal.ref}
+          className="border-b border-[var(--color-border)] section-space"
+        >
+          <div className="page-container">
+            <div
+              className={cn(
+                "reveal-up max-w-xl",
+                partnersReveal.inView && "is-visible",
+              )}
+            >
+              <SectionLabel>Partners</SectionLabel>
+              <h2 className="mt-3 font-display text-[clamp(1.55rem,2.6vw,2rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
+                Supported by the ecosystem
+              </h2>
+            </div>
+
+            <div
+              className={cn(
+                "stagger-in mt-8 grid gap-px overflow-hidden border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-2 lg:grid-cols-4",
+                partnersReveal.inView && "is-visible",
+              )}
+            >
+              {pageContent.partnerTiers.map((tier) => (
+                <div
+                  key={tier.label}
+                  className="flex min-h-[7.5rem] flex-col bg-[var(--color-surface)] p-4 md:p-5"
+                >
+                  <p className="text-[10px] font-medium tracking-[0.1em] text-[var(--color-text-muted)] uppercase">
+                    {tier.label}
+                  </p>
+                  <PartnerTierPartners partners={tier.partners} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       {completed ? (
         <TrizenProductsSection />
       ) : (
@@ -1081,7 +1363,7 @@ function EventDetail() {
                   Reserve your seat
                 </h2>
                 <p className="mt-2.5 max-w-[34ch] text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
-                  ₹49 · Limited seats. Confirmation, venue notes, and the
+                  ₹{REGISTRATION_FEE_INR} · {seatsLabel} seats. Confirmation, venue notes, and the
                   WhatsApp link land in your inbox after you register.
                 </p>
 
@@ -1090,7 +1372,7 @@ function EventDetail() {
                     { label: "Date", value: meetupDateLabel(meetup) },
                     { label: "Time", value: meetup.time },
                     { label: "Venue", value: meetup.venue },
-                    { label: "Fee", value: "₹49" },
+                    { label: "Fee", value: `₹${REGISTRATION_FEE_INR}` },
                   ].map((row) => (
                     <div key={row.label} className="min-w-0">
                       <dt className="text-[11px] font-medium tracking-[0.04em] text-[var(--color-text-muted)]">

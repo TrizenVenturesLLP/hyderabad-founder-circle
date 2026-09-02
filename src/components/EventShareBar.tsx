@@ -23,9 +23,16 @@ function toIcsDate(iso: string, hour: number, minute: number) {
 
 function buildIcs(m: Meetup, url: string) {
   const morning = /AM/i.test(m.time);
-  const startHour = /11\s*:\s*00/i.test(m.time) ? 11 : morning ? 10 : 17;
+  const startHour = /10\s*:\s*30/i.test(m.time)
+    ? 10
+    : /11\s*:\s*00/i.test(m.time)
+      ? 11
+      : morning
+        ? 10
+        : 17;
+  const startMin = /10\s*:\s*30/i.test(m.time) ? 30 : 0;
   const endHour = morning ? 13 : 20;
-  const start = toIcsDate(m.dateISO, startHour, 0);
+  const start = toIcsDate(m.dateISO, startHour, startMin);
   const end = toIcsDate(m.dateISO, endHour, 0);
   const now = new Date()
     .toISOString()

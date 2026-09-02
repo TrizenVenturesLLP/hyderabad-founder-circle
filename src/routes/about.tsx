@@ -82,7 +82,7 @@ const supportingPartners = [
     name: "Bestverse",
     role: "Marketing partner",
     desc: "Supports how the community shows up and shares its story.",
-    href: null as string | null,
+    href: "https://bestverse.in/",
     logo: bestverseLogo,
   },
 ];
