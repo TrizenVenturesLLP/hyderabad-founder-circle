@@ -597,6 +597,51 @@ function PaymentDetailsModal({
   );
 }
 
+const REMINDER_SUBJECT =
+  "Reminder: {{eventTitle}} — {{eventDate}}";
+
+const REMINDER_BODY = `Dear {{name}},
+
+⏳ Only 1 day to go!
+
+Thank you for registering for the **{{eventTitle}}**. We're excited to welcome you tomorrow for an evening of meaningful conversations, founder connections, and collaboration.
+
+Your seat is reserved, and we look forward to seeing you there.
+
+📅 **Event Details**
+
+**Event:** {{eventTitle}}
+**Date:** {{eventDate}}
+**Time:** {{eventTime}}
+**Venue:** {{venue}}
+**Address:** {{address}}
+
+🔗 **Helpful Links**
+
+📍 **Get Directions:**
+{{mapsUrl}}
+
+🎟 **View Event Details:**
+{{eventUrl}}
+
+💬 **Join WhatsApp Group:**
+{{whatsappUrl}}
+
+📅 **Add to Calendar:**
+We recommend adding the event to your calendar so you don't miss it.
+
+We recommend arriving **10–15 minutes early** for a smooth check-in experience.
+
+See you tomorrow at **{{venue}}!** 🚀
+
+Warm regards,
+**Trizen Community**
+**Hyderabad Founders Network**
+Supported by Trizen Ventures
+
+📧 {{supportEmail}}
+📞 {{supportPhone}}`;
+
 function ReminderComposeModal({
   rsvpIds,
   eventSlug,
@@ -608,12 +653,8 @@ function ReminderComposeModal({
   onClose: () => void;
   onSent: () => void;
 }) {
-  const [subject, setSubject] = useState(
-    "Reminder: {{eventTitle}} — {{eventDate}}",
-  );
-  const [body, setBody] = useState(
-    "Hi {{name}},\n\nThis is a friendly reminder about {{eventTitle}} on {{eventDate}}, {{eventTime}} at {{venue}}.\n\nYour seat is reserved — we look forward to seeing you there.\n\n— Trizen Community",
-  );
+  const [subject, setSubject] = useState(REMINDER_SUBJECT);
+  const [body, setBody] = useState(REMINDER_BODY);
   const [attachments, setAttachments] = useState<
     { filename: string; contentType: string; content: string }[]
   >([]);
@@ -690,31 +731,20 @@ function ReminderComposeModal({
           <div>
             <h2 className="font-display text-xl tracking-tight">Write email</h2>
             <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-              Sending to {rsvpIds.length} selected registration(s). Use{" "}
-              <code className="rounded bg-[var(--color-background-alt)] px-1 text-xs">
-                {"{{name}}"}
-              </code>
-              ,{" "}
-              <code className="rounded bg-[var(--color-background-alt)] px-1 text-xs">
-                {"{{eventTitle}}"}
-              </code>
-              ,{" "}
-              <code className="rounded bg-[var(--color-background-alt)] px-1 text-xs">
-                {"{{eventDate}}"}
-              </code>
-              ,{" "}
-              <code className="rounded bg-[var(--color-background-alt)] px-1 text-xs">
-                {"{{eventTime}}"}
-              </code>
-              ,{" "}
-              <code className="rounded bg-[var(--color-background-alt)] px-1 text-xs">
-                {"{{venue}}"}
-              </code>
-              ,{" "}
-              <code className="rounded bg-[var(--color-background-alt)] px-1 text-xs">
-                {"{{company}}"}
-              </code>
-              .
+              Sending to {rsvpIds.length} selected registration(s). Line breaks,
+              blank lines, <code className="rounded bg-[var(--color-background-alt)] px-1 text-xs">**bold**</code>, and links are preserved in the sent email.
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-[var(--color-text-muted)]">
+              Placeholders:{" "}
+              <code className="rounded bg-[var(--color-background-alt)] px-1">{"{{name}}"}</code>{" "}
+              <code className="rounded bg-[var(--color-background-alt)] px-1">{"{{eventTitle}}"}</code>{" "}
+              <code className="rounded bg-[var(--color-background-alt)] px-1">{"{{eventDate}}"}</code>{" "}
+              <code className="rounded bg-[var(--color-background-alt)] px-1">{"{{eventTime}}"}</code>{" "}
+              <code className="rounded bg-[var(--color-background-alt)] px-1">{"{{venue}}"}</code>{" "}
+              <code className="rounded bg-[var(--color-background-alt)] px-1">{"{{address}}"}</code>{" "}
+              <code className="rounded bg-[var(--color-background-alt)] px-1">{"{{mapsUrl}}"}</code>{" "}
+              <code className="rounded bg-[var(--color-background-alt)] px-1">{"{{eventUrl}}"}</code>{" "}
+              <code className="rounded bg-[var(--color-background-alt)] px-1">{"{{whatsappUrl}}"}</code>
             </p>
           </div>
           <button
@@ -723,6 +753,19 @@ function ReminderComposeModal({
             className="text-sm text-[var(--color-text-muted)] hover:text-foreground"
           >
             Close
+          </button>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="rounded-full border border-[var(--color-border)] px-3 py-1.5 text-xs font-medium text-foreground hover:bg-[var(--color-background-alt)]"
+            onClick={() => {
+              setSubject(REMINDER_SUBJECT);
+              setBody(REMINDER_BODY);
+            }}
+          >
+            Load reminder template
           </button>
         </div>
 
@@ -744,8 +787,9 @@ function ReminderComposeModal({
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            rows={10}
-            className="mt-1.5 w-full rounded-xl border border-[var(--color-border)] px-3 py-2.5 text-sm"
+            rows={18}
+            spellCheck={false}
+            className="mt-1.5 w-full rounded-xl border border-[var(--color-border)] px-3 py-2.5 font-mono text-[13px] leading-relaxed"
           />
         </label>
 

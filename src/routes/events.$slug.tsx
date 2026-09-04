@@ -1369,17 +1369,18 @@ function EventDetail() {
 
             <div
               className={cn(
-                "stagger-in mt-8 grid gap-px overflow-hidden border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-2",
-                partnerGridTiers.length >= 5
-                  ? "lg:grid-cols-3 xl:grid-cols-5"
-                  : "lg:grid-cols-4",
+                "stagger-in mx-auto mt-8 grid w-full max-w-4xl gap-px overflow-hidden border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-2 lg:grid-cols-4",
                 partnersReveal.inView && "is-visible",
               )}
             >
               {partnerGridTiers.map((tier) => (
                 <div
                   key={tier.label}
-                  className="flex min-h-[7.5rem] flex-col bg-[var(--color-surface)] p-4 md:p-5"
+                  className={cn(
+                    "flex min-h-[7.5rem] flex-col bg-[var(--color-surface)] p-4 md:p-5",
+                    (tier.layout === "inline" || tier.label === "Supported by") &&
+                      "sm:col-span-2",
+                  )}
                 >
                   <p className="text-[10px] font-medium tracking-[0.1em] text-[var(--color-text-muted)] uppercase">
                     {tier.label}
