@@ -8,7 +8,6 @@ const navLinks = [
   { to: "/events", label: "Upcoming Events" },
   { to: "/about", label: "Partners" },
   { to: "/contact", label: "Contact" },
-  { to: "/org-login", label: "Organization login" },
 ] as const;
 
 const linkClassName =
@@ -50,6 +49,16 @@ export function SiteFooter() {
               </a>
               . No public signup — register only for the events you want to
               attend.
+            </p>
+            <p className="mt-3 max-w-[36ch] text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
+              Want to create a new event?{" "}
+              <Link
+                to="/host"
+                className="font-medium text-foreground underline-offset-4 transition-colors duration-200 hover:text-[var(--brand-accent)] hover:underline"
+              >
+                Create an organization account
+              </Link>
+              . Already registered organizations can sign in from that page.
             </p>
           </div>
 

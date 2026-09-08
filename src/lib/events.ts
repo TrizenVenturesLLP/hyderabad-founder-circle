@@ -238,7 +238,7 @@ export const fallbackMeetups: Meetup[] = [
     ],
     organization: {
       id: "nanospace",
-      name: "NanoSpace",
+      name: "NanoSpace Coworking",
       slug: "nanospace",
     },
     payment: {
