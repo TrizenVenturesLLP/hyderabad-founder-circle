@@ -204,6 +204,83 @@ const EVENT_OVERRIDES: Record<string, EventPageOverrides> = {
       "Featured Speaker — AI, Talent & the Future of Work · Behind the Build — Founder Story",
     excludeRoles: ["Student"],
   },
+  "band-explorers-vybe": {
+    hero: {
+      brandTitle: "Band Explorers Vybe",
+      subtitle: "The Corporate Music Break",
+      headline: "Live music. Unwind. Connect.",
+      tagline: "Same professionals. New connections.",
+      audienceLine:
+        "Professionals · Founders · Builders · Community members",
+      positioning: "Hosted at NanoSpace Coworking · Nanakramguda",
+    },
+    why: {
+      headline: "A corporate music break with room to pitch and connect.",
+      paragraphs: [
+        "Band Explorers Vybe brings live music, unwinding, and real conversations into one evening at NanoSpace. Meet people beyond your usual circle — work, unwind, connect, create.",
+        "Up to 10 members can pitch their problem statements in 2 minutes each. Entry is ₹599. Please note: no snacks are provided. Marketing partner: Trizen Community.",
+      ],
+      closingLine: "See you there — powered by NanoSpace Co-Working.",
+    },
+    agenda: [
+      {
+        time: "6:00 PM",
+        title: "Doors open & welcome",
+        desc: "Check in at Vijaya Krishna Towers, Nanakramguda.",
+      },
+      {
+        time: "6:15 – 7:30 PM",
+        title: "Live music & unwind",
+        desc: "Settle in with the Band Explorers set — music, people, ideas.",
+      },
+      {
+        time: "7:30 – 8:15 PM",
+        title: "Problem statement pitches",
+        desc: "Up to 10 members pitch their problem statements — 2 minutes each.",
+      },
+      {
+        time: "8:15 – 9:00 PM",
+        title: "Connect & close",
+        desc: "Open networking. No snacks — conversations only.",
+      },
+    ],
+    agendaHeading: "6:00 PM – 9:00 PM",
+    agendaSubheading:
+      "Live music, short pitches, and new connections — no snacks.",
+    collaborativeHosts: [
+      {
+        name: "NanoSpace Coworking",
+        href: "https://nanospace.in/",
+        logo: nanospaceLogo,
+      },
+    ],
+    partnerTiers: [
+      {
+        label: "Hosted by",
+        partners: [
+          {
+            name: "NanoSpace Coworking",
+            logo: nanospaceLogo,
+            href: "https://nanospace.in/",
+          },
+        ],
+      },
+      {
+        label: "Marketing partner",
+        partners: [
+          {
+            name: "Trizen Community",
+            logo: trizenLogo,
+            logoSquare: true,
+            href: "https://trizenventures.com/",
+          },
+        ],
+      },
+    ],
+    speakersHeading: "The evening",
+    speakersSubheading:
+      "Live Music · Unwind · Connect — plus 2-minute problem pitches",
+  },
 };
 
 export function getEventPageContent(meetup: Meetup) {

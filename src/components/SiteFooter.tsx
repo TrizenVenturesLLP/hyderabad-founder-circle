@@ -8,6 +8,7 @@ const navLinks = [
   { to: "/events", label: "Upcoming Events" },
   { to: "/about", label: "Partners" },
   { to: "/contact", label: "Contact" },
+  { to: "/org-login", label: "Organization login" },
 ] as const;
 
 const linkClassName =
@@ -32,12 +33,13 @@ export function SiteFooter() {
                   Trizen Community
                 </span>
                 <span className="text-[10.5px] font-medium text-[var(--color-text-muted)]">
-                  Hyderabad Founders Network
+                  Community events platform
                 </span>
               </span>
             </Link>
             <p className="mt-3 max-w-[36ch] text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
-              An initiative of{" "}
+              Event registration for community meetups hosted by organizations
+              like{" "}
               <a
                 href={links.sponsor.url}
                 target="_blank"
@@ -46,7 +48,8 @@ export function SiteFooter() {
               >
                 Trizen Ventures
               </a>
-              .
+              . No public signup — register only for the events you want to
+              attend.
             </p>
           </div>
 

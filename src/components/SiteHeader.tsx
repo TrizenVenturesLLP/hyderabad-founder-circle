@@ -46,7 +46,7 @@ function BrandMark({ compact = false }: { compact?: boolean }) {
             compact ? "text-[9.5px]" : "text-[9.5px] md:text-[10.5px]",
           )}
         >
-          Hyderabad Founders Network
+          Community events platform
         </span>
       </span>
     </>

@@ -5,6 +5,7 @@ import {
   Calendar,
   CalendarCheck,
   CheckCircle2,
+  ChevronDown,
   Clock,
   Hourglass,
   MapPin,
@@ -13,6 +14,7 @@ import {
 import {
   getMeetups,
   getNextMeetup,
+  getEventOrganizations,
   type Meetup,
   isMeetupCompleted,
   isRsvpOpen,
@@ -27,20 +29,26 @@ import { useInView } from "@/hooks/use-in-view";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/events/")({
-  loader: async () => ({ meetups: await getMeetups() }),
+  loader: async () => {
+    const [meetups, organizations] = await Promise.all([
+      getMeetups(),
+      getEventOrganizations(),
+    ]);
+    return { meetups, organizations };
+  },
   head: () => ({
     meta: [
-      { title: "Events — Hyderabad Founders Network" },
+      { title: "Events — Trizen Community" },
       {
         name: "description",
         content:
-          "Upcoming Hyderabad Founders Network meetups — every 3rd Saturday in Hyderabad. Plus occasional demo days and themed sessions.",
+          "Browse community events on Trizen Community — including Hyderabad Founders Network and partner-hosted meetups. Register per event; no public signup.",
       },
-      { property: "og:title", content: "Events — Hyderabad Founders Network" },
+      { property: "og:title", content: "Events — Trizen Community" },
       {
         property: "og:description",
         content:
-          "Current and upcoming meetups for the Hyderabad founder community.",
+          "Upcoming and past community events from Trizen Ventures, NanoSpace, and other organizers.",
       },
       { property: "og:url", content: "/events" },
     ],
@@ -58,22 +66,22 @@ const filterCopy: Record<
 > = {
   Upcoming: {
     title: "Current & upcoming",
-    sub: "Open RSVPs and dates on the calendar — show up, meet founders, keep the room going.",
-    emptyTitle: "No upcoming meetups right now",
+    sub: "Open registrations across organizers — filter by organization or browse everything.",
+    emptyTitle: "No upcoming events right now",
     emptyBody:
       "Check past events, or join WhatsApp for the next date announcement.",
   },
   Past: {
-    title: "Past meetups",
+    title: "Past events",
     sub: "Sessions that already happened — useful if you want a sense of what the room feels like.",
-    emptyTitle: "No past meetups yet",
-    emptyBody: "Once we wrap a meetup, it will show up here.",
+    emptyTitle: "No past events yet",
+    emptyBody: "Once an event wraps, it will show up here.",
   },
   All: {
-    title: "All meetups",
-    sub: "Everything in one place — upcoming dates and completed sessions, newest flow first.",
-    emptyTitle: "No meetups listed yet",
-    emptyBody: "Check back soon for the next Hyderabad Founders Network date.",
+    title: "All events",
+    sub: "Everything in one place — upcoming dates and completed sessions from every organizer.",
+    emptyTitle: "No events listed yet",
+    emptyBody: "Check back soon for the next community meetup.",
   },
 };
 
@@ -92,14 +100,20 @@ function SectionLabel({ children }: { children: string }) {
 }
 
 function EventsIndex() {
-  const { meetups } = Route.useLoaderData();
+  const { meetups, organizations } = Route.useLoaderData();
   const [filter, setFilter] = useState<Filter>("Upcoming");
+  const [orgFilter, setOrgFilter] = useState<string>("all");
   const nextMeetup = useMemo(() => getNextMeetup(meetups), [meetups]);
   const listReveal = useInView<HTMLElement>(scrollRevealOpts);
   const activeIndex = filters.indexOf(filter);
 
+  const orgScoped = useMemo(() => {
+    if (orgFilter === "all") return meetups;
+    return meetups.filter((m) => m.organization?.slug === orgFilter);
+  }, [meetups, orgFilter]);
+
   const panels = useMemo(() => {
-    const sortedAsc = [...meetups].sort((a, b) =>
+    const sortedAsc = [...orgScoped].sort((a, b) =>
       a.dateISO.localeCompare(b.dateISO),
     );
     const upcoming = sortedAsc.filter((m) => !isMeetupCompleted(m));
@@ -113,10 +127,19 @@ function EventsIndex() {
       Past: past,
       All: all,
     } satisfies Record<Filter, Meetup[]>;
-  }, [meetups]);
+  }, [orgScoped]);
 
   const copy = filterCopy[filter];
   const visibleCount = panels[filter].length;
+  const featuredEventLabel = nextMeetup
+    ? nextMeetup.title.length > 28
+      ? `${nextMeetup.title.slice(0, 28)}…`
+      : nextMeetup.title
+    : "Coming soon";
+  const orgFilterLabel =
+    orgFilter === "all"
+      ? "All organizers"
+      : organizations.find((o) => o.slug === orgFilter)?.name || "Organization";
 
   return (
     <div className="bg-[var(--color-background)] pb-10 md:pb-12">
@@ -137,25 +160,24 @@ function EventsIndex() {
           aria-hidden
         />
 
-        <div className="relative mx-auto flex min-h-[min(48dvh,440px)] max-w-6xl items-end px-5 pb-8 pt-14 md:min-h-[min(46dvh,480px)] md:px-8 md:pb-10 md:pt-16">
+        <div className="relative mx-auto flex min-h-[min(48dvh,440px)] max-w-6xl items-end px-4 pb-8 pt-14 md:min-h-[min(46dvh,480px)] md:px-6 md:pb-10 md:pt-16">
           <div className="w-full max-w-2xl">
             <p className="text-[11px] font-medium tracking-[0.08em] text-[color-mix(in_oklab,var(--brand-accent)_70%,white)]">
-              Events
+              Trizen Community
             </p>
             <h1 className="mt-2 font-display text-[clamp(1.85rem,3.5vw,2.55rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-white">
-              The 3rd Saturday, every month.
+              Community events, one place.
             </h1>
             <p className="mt-2.5 max-w-xl text-[14px] leading-relaxed text-white/78 md:text-[14.5px]">
-              Flagship meetups for founders and operators in Hyderabad — plus
-              occasional demo days and themed sessions.
+              Browse meetups from Trizen Ventures, NanoSpace, and other
+              organizers. Register for an event — no account required.
             </p>
 
             <dl className="mt-5 flex flex-wrap gap-x-6 gap-y-2.5 border-t border-white/18 pt-4">
               {[
-                { label: "Rhythm", value: "3rd Saturday" },
-                { label: "Time", value: "11 AM – 1 PM" },
-                { label: "Venue", value: "DraperU India" },
-                { label: "Seats", value: "40" },
+                { label: "Platform", value: "Trizen Community" },
+                { label: "Featured events", value: featuredEventLabel },
+                { label: "Access", value: "Event RSVP only" },
               ].map((item) => (
                 <div key={item.label} className="min-w-0">
                   <dt className="text-[10px] font-medium tracking-[0.06em] text-white/50">
@@ -171,141 +193,223 @@ function EventsIndex() {
         </div>
       </section>
 
-      {/* Listings */}
-      <section ref={listReveal.ref} className="page-container pt-8 md:pt-10">
+      {/* Listings — tighter side padding */}
+      <section
+        ref={listReveal.ref}
+        className="mx-auto w-full max-w-[1400px] px-3 pt-8 md:px-5 md:pt-10"
+      >
         <div
           className={cn(
-            "reveal-up flex flex-col gap-5 md:flex-row md:items-end md:justify-between",
+            "reveal-up lg:grid lg:grid-cols-[minmax(0,1fr)_240px] lg:items-start lg:gap-6",
             listReveal.inView && "is-visible",
           )}
         >
-          <div className="max-w-xl">
-            <SectionLabel>Meetups</SectionLabel>
-            <h2 className="mt-2 font-display text-[clamp(1.35rem,2.4vw,1.7rem)] tracking-tight text-foreground">
-              {copy.title}
-            </h2>
-            <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
-              {copy.sub}
-            </p>
-            <p className="mt-2 text-[12.5px] text-[var(--color-text-muted)]">
-              {visibleCount === 0
-                ? "Nothing in this view yet"
-                : `${visibleCount} meetup${visibleCount === 1 ? "" : "s"}`}
-            </p>
+          <div className="min-w-0">
+            <div className="max-w-xl">
+              <SectionLabel>Events</SectionLabel>
+              <h2 className="mt-2 font-display text-[clamp(1.35rem,2.4vw,1.7rem)] tracking-tight text-foreground">
+                {copy.title}
+              </h2>
+              <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
+                {copy.sub}
+              </p>
+              <p className="mt-2 text-[12.5px] text-[var(--color-text-muted)]">
+                {visibleCount === 0
+                  ? "Nothing in this view yet"
+                  : `${visibleCount} meetup${visibleCount === 1 ? "" : "s"}`}
+              </p>
+            </div>
+
+            <div className="relative mt-7 overflow-hidden">
+              {filters.map((panel, i) => {
+                const items = panels[panel];
+                const panelCopy = filterCopy[panel];
+                const offset = i - activeIndex;
+                const isActive = offset === 0;
+
+                return (
+                  <div
+                    key={panel}
+                    className={cn(
+                      "w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
+                      isActive
+                        ? "relative z-[1]"
+                        : "pointer-events-none absolute inset-x-0 top-0 z-0",
+                    )}
+                    style={{ transform: `translate3d(${offset * 100}%, 0, 0)` }}
+                    aria-hidden={!isActive}
+                  >
+                    {items.length > 0 ? (
+                      <ul className="grid list-none gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                        {items.map((m) => (
+                          <li key={`${panel}-${m.slug}`} className="min-h-0">
+                            <EventCard meetup={m} />
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-10 text-center shadow-[var(--shadow-card)]">
+                        <Calendar
+                          className="mx-auto size-5 text-[var(--brand-accent)]"
+                          strokeWidth={1.75}
+                          aria-hidden
+                        />
+                        <p className="mt-3 font-display text-[1.05rem] tracking-tight text-foreground">
+                          {panelCopy.emptyTitle}
+                        </p>
+                        <p className="mx-auto mt-1.5 max-w-sm text-[13.5px] leading-relaxed text-[var(--color-text-secondary)]">
+                          {panelCopy.emptyBody}
+                        </p>
+                        {panel === "Upcoming" ? (
+                          <button
+                            type="button"
+                            onClick={() => setFilter("Past")}
+                            className="btn-secondary mt-5"
+                          >
+                            View past meetups
+                          </button>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {nextMeetup && filter === "Upcoming" ? (
+              <div className="mt-9 flex flex-col gap-4 border-t border-[var(--color-border)] pt-7 md:flex-row md:items-center md:justify-between md:gap-6">
+                <p className="max-w-xl text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
+                  New here? Start with the{" "}
+                  <Link
+                    to="/events/$slug"
+                    params={{ slug: nextMeetup.slug }}
+                    className="font-medium text-foreground underline-offset-4 hover:text-[var(--brand-accent)] hover:underline"
+                  >
+                    next community event
+                  </Link>
+                  .
+                </p>
+                <div className="flex flex-wrap gap-2.5 md:shrink-0">
+                  <Link
+                    to="/events/$slug"
+                    params={{ slug: nextMeetup.slug }}
+                    className="btn-secondary gap-1.5"
+                  >
+                    What to expect
+                    <ArrowRight className="size-3.5" strokeWidth={1.75} />
+                  </Link>
+                  <RsvpButton event={nextMeetup} className="btn-primary">
+                    RSVP
+                  </RsvpButton>
+                </div>
+              </div>
+            ) : null}
           </div>
 
-          <div
-            className="flex gap-1 border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5 shadow-[var(--shadow-card)]"
-            role="tablist"
-            aria-label="Filter meetups"
+          <aside
+            aria-label="Event filters"
+            className="mt-8 border-t border-[var(--color-border)] pt-5 lg:sticky lg:top-24 lg:mt-0 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-5"
           >
-            {filters.map((f) => {
-              const active = filter === f;
-              return (
+            <p className="text-[12px] font-medium tracking-[0.06em] text-[var(--brand-accent)]">
+              Filters
+            </p>
+
+            <div className="mt-4">
+              <h3 className="text-[13px] font-semibold text-foreground">
+                Report filters
+              </h3>
+              <p className="mt-1 text-[12px] leading-relaxed text-[var(--color-text-muted)]">
+                Choose which events to list.
+              </p>
+              <div
+                className="mt-3 flex flex-col gap-1"
+                role="tablist"
+                aria-label="Report filters"
+              >
+                {filters.map((f) => {
+                  const active = filter === f;
+                  const count = panels[f].length;
+                  return (
+                    <button
+                      key={f}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setFilter(f)}
+                      className={cn(
+                        "flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[13px] font-medium transition-colors",
+                        active
+                          ? "bg-[var(--brand-accent)] text-white"
+                          : "text-[var(--color-text-secondary)] hover:bg-[var(--color-background-alt)] hover:text-foreground",
+                      )}
+                    >
+                      <span>{f}</span>
+                      <span
+                        className={cn(
+                          "text-[11px] tabular-nums",
+                          active
+                            ? "text-white/80"
+                            : "text-[var(--color-text-muted)]",
+                        )}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <details className="mt-5 border-t border-[var(--color-border)] pt-5 group">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-[13px] font-semibold text-foreground [&::-webkit-details-marker]:hidden">
+                <span>
+                  Narrow by organization
+                  <span className="mt-0.5 block text-[11px] font-normal text-[var(--color-text-muted)]">
+                    {orgFilterLabel}
+                  </span>
+                </span>
+                <ChevronDown
+                  className="size-4 shrink-0 text-[var(--color-text-muted)] transition-transform group-open:rotate-180"
+                  strokeWidth={1.75}
+                  aria-hidden
+                />
+              </summary>
+              <div
+                className="mt-3 flex flex-col gap-1"
+                role="group"
+                aria-label="Filter by organizer"
+              >
                 <button
-                  key={f}
                   type="button"
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => setFilter(f)}
+                  onClick={() => setOrgFilter("all")}
                   className={cn(
-                    "min-h-10 shrink-0 px-4 py-2 text-[13px] font-medium transition-colors duration-200",
-                    active
-                      ? "bg-[var(--brand-accent)] text-white"
-                      : "text-[var(--color-text-secondary)] hover:text-foreground",
+                    "w-full px-3 py-2 text-left text-[13px] font-medium transition-colors",
+                    orgFilter === "all"
+                      ? "bg-[var(--brand-primary)] text-white"
+                      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-background-alt)] hover:text-foreground",
                   )}
                 >
-                  {f}
+                  All organizers
                 </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="relative mt-7 overflow-hidden">
-          {filters.map((panel, i) => {
-            const items = panels[panel];
-            const panelCopy = filterCopy[panel];
-            const offset = i - activeIndex;
-            const isActive = offset === 0;
-
-            return (
-              <div
-                key={panel}
-                className={cn(
-                  "w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
-                  isActive
-                    ? "relative z-[1]"
-                    : "pointer-events-none absolute inset-x-0 top-0 z-0",
-                )}
-                style={{ transform: `translate3d(${offset * 100}%, 0, 0)` }}
-                aria-hidden={!isActive}
-              >
-                {items.length > 0 ? (
-                  <ul className="grid list-none gap-4 sm:grid-cols-2">
-                    {items.map((m) => (
-                      <li key={`${panel}-${m.slug}`} className="min-h-0">
-                        <EventCard meetup={m} />
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-10 text-center shadow-[var(--shadow-card)]">
-                    <Calendar
-                      className="mx-auto size-5 text-[var(--brand-accent)]"
-                      strokeWidth={1.75}
-                      aria-hidden
-                    />
-                    <p className="mt-3 font-display text-[1.05rem] tracking-tight text-foreground">
-                      {panelCopy.emptyTitle}
-                    </p>
-                    <p className="mx-auto mt-1.5 max-w-sm text-[13.5px] leading-relaxed text-[var(--color-text-secondary)]">
-                      {panelCopy.emptyBody}
-                    </p>
-                    {panel === "Upcoming" ? (
-                      <button
-                        type="button"
-                        onClick={() => setFilter("Past")}
-                        className="btn-secondary mt-5"
-                      >
-                        View past meetups
-                      </button>
-                    ) : null}
-                  </div>
-                )}
+                {organizations.map((org) => (
+                  <button
+                    key={org.id}
+                    type="button"
+                    onClick={() => setOrgFilter(org.slug)}
+                    className={cn(
+                      "w-full px-3 py-2 text-left text-[13px] font-medium transition-colors",
+                      orgFilter === org.slug
+                        ? "bg-[var(--brand-primary)] text-white"
+                        : "text-[var(--color-text-secondary)] hover:bg-[var(--color-background-alt)] hover:text-foreground",
+                    )}
+                  >
+                    {org.name}
+                  </button>
+                ))}
               </div>
-            );
-          })}
+            </details>
+          </aside>
         </div>
-
-        {nextMeetup && filter === "Upcoming" ? (
-          <div className="mt-9 flex flex-col gap-4 border-t border-[var(--color-border)] pt-7 md:flex-row md:items-center md:justify-between md:gap-6">
-            <p className="max-w-xl text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
-              New here? Start with the{" "}
-              <Link
-                to="/events/$slug"
-                params={{ slug: nextMeetup.slug }}
-                className="font-medium text-foreground underline-offset-4 hover:text-[var(--brand-accent)] hover:underline"
-              >
-                next Hyderabad Founders Network meetup
-              </Link>
-              .
-            </p>
-            <div className="flex flex-wrap gap-2.5 md:shrink-0">
-              <Link
-                to="/events/$slug"
-                params={{ slug: nextMeetup.slug }}
-                className="btn-secondary gap-1.5"
-              >
-                What to expect
-                <ArrowRight className="size-3.5" strokeWidth={1.75} />
-              </Link>
-              <RsvpButton event={nextMeetup} className="btn-primary">
-                RSVP
-              </RsvpButton>
-            </div>
-          </div>
-        ) : null}
       </section>
     </div>
   );
@@ -389,6 +493,9 @@ function EventCard({ meetup }: { meetup: Meetup }) {
 
         <p className="mt-5 text-[11px] font-medium tracking-[0.06em] text-[var(--brand-accent)]">
           {meetup.format}
+          {meetup.organization?.name
+            ? ` · ${meetup.organization.name}`
+            : ""}
         </p>
         <h3 className="mt-1.5 line-clamp-2 min-h-[2.5rem] font-display text-[1.08rem] leading-snug tracking-tight text-foreground md:text-[1.12rem]">
           {meetup.title}

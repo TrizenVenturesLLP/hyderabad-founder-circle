@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Lock, Shield } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { adminLogin } from "@/lib/admin-api";
@@ -49,13 +49,6 @@ function AdminLoginPage() {
             "radial-gradient(ellipse 80% 60% at 20% 10%, #f6ded3 0%, transparent 55%), radial-gradient(ellipse 70% 50% at 90% 90%, #efe5de 0%, transparent 50%), linear-gradient(165deg, #fcfaf7 0%, #f3ece5 100%)",
         }}
       />
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.35]"
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%233b2318' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
-        }}
-      />
 
       <div className="relative w-full max-w-[420px]">
         <div className="mb-8 text-center">
@@ -69,7 +62,14 @@ function AdminLoginPage() {
             Admin sign in
           </h1>
           <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-            Registrations, contact requests, and events.
+            Platform administrators only. Organizations use{" "}
+            <Link
+              to="/org-login"
+              className="font-medium text-[var(--brand-accent)] underline-offset-2 hover:underline"
+            >
+              Organization login
+            </Link>
+            .
           </p>
         </div>
 
@@ -87,7 +87,7 @@ function AdminLoginPage() {
               autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@trizenventures.com"
+              placeholder="admin@trizenventures.com"
               className="mt-1.5 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background-alt)] px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-[var(--brand-accent)] focus:bg-white"
             />
           </label>

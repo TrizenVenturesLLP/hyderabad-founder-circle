@@ -162,10 +162,13 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isAdminShell =
-    pathname.startsWith("/admin") || pathname.startsWith("/admin-login");
+  const isAuthShell =
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/admin-login") ||
+    pathname === "/org-login" ||
+    pathname === "/host";
 
-  if (isAdminShell) {
+  if (isAuthShell) {
     return (
       <>
         <Outlet />

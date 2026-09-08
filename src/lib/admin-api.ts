@@ -33,24 +33,97 @@ export async function adminLogin(email: string, password: string) {
   if (!res.ok) throw new Error(data.error || "Login failed");
   return data as {
     token: string;
-    admin: { id: string; email: string; name: string };
+    admin: AdminSessionUser;
   };
 }
 
+export async function orgLogin(email: string, password: string) {
+  const res = await fetch(`${API_BASE}/api/admin/auth/org-login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Login failed");
+  return data as {
+    token: string;
+    admin: AdminSessionUser;
+  };
+}
+
+export async function submitOrgApplication(payload: {
+  organizationName: string;
+  email: string;
+  contactName?: string;
+  phone?: string;
+  website?: string;
+  message?: string;
+}) {
+  const res = await fetch(`${API_BASE}/api/org-applications`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Could not submit application");
+  return data as { ok: boolean; id: string; message?: string };
+}
+
+export async function fetchOrgApplications(status?: string) {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
+  return adminFetch<{ items: OrgApplicationItem[]; total: number }>(
+    `/api/admin/org-applications${qs}`,
+  );
+}
+
+export async function approveOrgApplication(id: string) {
+  return adminFetch<{
+    ok: boolean;
+    credentials: {
+      email: string;
+      temporaryPassword: string;
+      loginPath: string;
+    };
+  }>(`/api/admin/org-applications/${id}/approve`, { method: "POST" });
+}
+
+export async function rejectOrgApplication(id: string, reason?: string) {
+  return adminFetch<{ ok: boolean }>(
+    `/api/admin/org-applications/${id}/reject`,
+    {
+      method: "POST",
+      body: JSON.stringify({ reason: reason || "" }),
+    },
+  );
+}
+
+export type OrgApplicationItem = {
+  _id: string;
+  organizationName: string;
+  contactName: string;
+  email: string;
+  phone?: string;
+  website?: string;
+  message?: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt: string;
+  rejectionReason?: string;
+};
+
 export async function adminMe() {
   if (!getAdminToken()) throw new Error("UNAUTHORIZED");
-  return adminFetch<{ admin: { id: string; email: string; name: string } }>(
-    "/api/admin/auth/me",
-  );
+  return adminFetch<{ admin: AdminSessionUser }>("/api/admin/auth/me");
 }
 
 export async function fetchAdminRsvps(params?: {
   eventSlug?: string;
   q?: string;
+  organizationId?: string;
 }) {
   const search = new URLSearchParams();
   if (params?.eventSlug) search.set("eventSlug", params.eventSlug);
   if (params?.q) search.set("q", params.q);
+  if (params?.organizationId) search.set("organizationId", params.organizationId);
   const qs = search.toString();
   return adminFetch<{
     items: AdminRsvp[];
@@ -66,9 +139,18 @@ export async function fetchAdminContacts(q?: string) {
   );
 }
 
-export async function fetchAdminEvents() {
+export async function fetchAdminOrganizations() {
+  return adminFetch<{ items: AdminOrganization[] }>(
+    "/api/admin/events/organizations",
+  );
+}
+
+export async function fetchAdminEvents(organizationId?: string) {
+  const qs = organizationId
+    ? `?organizationId=${encodeURIComponent(organizationId)}`
+    : "";
   return adminFetch<{ items: AdminEvent[]; total: number }>(
-    "/api/admin/events",
+    `/api/admin/events${qs}`,
   );
 }
 
@@ -101,6 +183,19 @@ export async function deleteAdminRsvp(id: string) {
   });
 }
 
+export async function updateAdminRsvpPaymentStatus(
+  id: string,
+  status: "paid" | "unpaid" | "failed" | "pending_review",
+) {
+  return adminFetch<{ item: AdminRsvp }>(
+    `/api/admin/rsvps/${id}/payment-status`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    },
+  );
+}
+
 export async function sendReminderEmails(payload: {
   subject: string;
   body: string;
@@ -122,6 +217,49 @@ export async function sendReminderEmails(payload: {
     body: JSON.stringify(payload),
   });
 }
+
+export type AdminSessionUser = {
+  id: string;
+  email: string;
+  name: string;
+  role: "platform_admin" | "org_admin";
+  organizationId?: string | null;
+  organization?: AdminOrganization | null;
+};
+
+export type AdminOrganization = {
+  id: string;
+  name: string;
+  slug: string;
+  type?: string;
+};
+
+export type AdminPaymentMethod = {
+  type:
+    | "razorpay"
+    | "upi_qr"
+    | "upi_id"
+    | "payment_link"
+    | "qiyu"
+    | "other";
+  enabled?: boolean;
+  label?: string;
+  upiId?: string;
+  paymentNumber?: string;
+  paymentLink?: string;
+  qrImageUrl?: string;
+  razorpayKeyId?: string;
+  qiyuMerchantId?: string;
+  qiyuApiKey?: string;
+  instructions?: string;
+};
+
+export type AdminPaymentConfig = {
+  enabled?: boolean;
+  amountInr?: number;
+  currency?: string;
+  methods?: AdminPaymentMethod[];
+};
 
 export type ReminderSendResult = {
   email: string;
@@ -155,6 +293,9 @@ export type AdminRsvp = {
     amountPaise?: number;
     currency?: string;
     method?: string;
+    provider?: string;
+    proofUrl?: string;
+    note?: string;
     razorpayOrderId?: string;
     razorpayPaymentId?: string;
     paidAt?: string;
@@ -236,6 +377,9 @@ export type AdminEvent = {
   guestFounder?: AdminGuestFounder;
   published?: boolean;
   sortOrder?: number;
+  organizationId?: string;
+  organization?: AdminOrganization | null;
+  payment?: AdminPaymentConfig;
 };
 
 export type EmailHistoryItem = {

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   ChevronLeft,
   ChevronRight,
+  CheckCircle2,
   CreditCard,
   Mail,
   MoreHorizontal,
@@ -13,6 +14,7 @@ import {
   deleteAdminRsvp,
   fetchAdminRsvps,
   sendReminderEmails,
+  updateAdminRsvpPaymentStatus,
   type AdminRsvp,
   type ReminderSendResult,
 } from "@/lib/admin-api";
@@ -24,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { AdminPageHeader } from "@/components/admin/AdminPageChrome";
 
 export const Route = createFileRoute("/admin/registrations")({
   component: AdminRegistrationsPage,
@@ -40,6 +43,12 @@ function paymentMethodLabel(method?: string) {
     card: "Card",
     netbanking: "Net Banking",
     wallet: "Wallet",
+    upi_qr: "UPI QR",
+    upi_id: "UPI ID",
+    payment_link: "Payment link",
+    qiyu: "QIYU",
+    razorpay: "Razorpay",
+    manual: "Manual",
   };
   const key = String(method || "").toLowerCase();
   return labels[key] || (method ? String(method) : "—");
@@ -48,6 +57,7 @@ function paymentMethodLabel(method?: string) {
 function PaymentStatusCell({ payment }: { payment?: AdminRsvp["payment"] }) {
   const status = payment?.status || "unpaid";
   const paid = status === "paid";
+  const pending = status === "pending_review";
   const amount = Number(payment?.amountInr) || 0;
 
   return (
@@ -59,18 +69,26 @@ function PaymentStatusCell({ payment }: { payment?: AdminRsvp["payment"] }) {
             ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
             : status === "failed"
               ? "bg-red-50 text-red-700 ring-1 ring-red-200"
-              : "bg-[var(--color-background-alt)] text-[var(--color-text-muted)] ring-1 ring-[var(--color-border)]",
+              : pending
+                ? "bg-amber-50 text-amber-800 ring-1 ring-amber-200"
+                : "bg-[var(--color-background-alt)] text-[var(--color-text-muted)] ring-1 ring-[var(--color-border)]",
         )}
       >
-        {paid ? "Paid" : status === "failed" ? "Failed" : "Unpaid"}
+        {paid
+          ? "Paid"
+          : status === "failed"
+            ? "Failed"
+            : pending
+              ? "Pending review"
+              : "Unpaid"}
       </span>
-      {paid ? (
+      {paid || pending ? (
         <>
           <p className="mt-1 text-xs font-medium text-foreground">
             ₹{amount}
-            {payment?.method ? (
+            {payment?.method || payment?.provider ? (
               <span className="ml-1 font-normal text-[var(--color-text-muted)]">
-                · {paymentMethodLabel(payment.method)}
+                · {paymentMethodLabel(payment.provider || payment.method)}
               </span>
             ) : null}
           </p>
@@ -226,6 +244,17 @@ function AdminRegistrationsPage() {
     }
   }
 
+  async function onMarkPaid(id: string, name: string) {
+    if (!confirm(`Mark payment as paid for ${name}?`)) return;
+    try {
+      await updateAdminRsvpPaymentStatus(id, "paid");
+      toast.success(`Marked ${name} as paid`);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update payment");
+    }
+  }
+
   function onSendMailOne(id: string) {
     setSelected(new Set([id]));
     setComposeOpen(true);
@@ -235,16 +264,11 @@ function AdminRegistrationsPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 space-y-3 border-b border-[var(--color-border)] bg-[var(--color-background-alt)] px-4 pb-3 pt-4 sm:px-5 sm:pb-4 sm:pt-5 md:px-8 md:pt-6">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div className="min-w-0">
-            <p className="hidden text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--brand-accent)] lg:block">
-              Admin
-            </p>
-            <h1 className="mt-1 font-display text-xl tracking-tight text-foreground sm:text-2xl md:text-[1.75rem]">
-              Registrations
-            </h1>
-            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+      <div className="shrink-0 space-y-3 border-b border-[var(--color-border)] bg-white px-4 pb-3 pt-4 sm:px-5 sm:pb-4 sm:pt-5 md:px-6 md:pt-5">
+        <AdminPageHeader
+          title="Registrations"
+          description={
+            <>
               {loading ? "Loading…" : `${items.length} registration(s)`}
               {selectedCount > 0 ? (
                 <span className="text-[var(--brand-accent)]">
@@ -252,21 +276,22 @@ function AdminRegistrationsPage() {
                   · {selectedCount} selected
                 </span>
               ) : null}
-            </p>
-          </div>
+            </>
+          }
+          actions={
+            selectedCount > 0 ? (
+              <button
+                type="button"
+                className="btn-primary w-full sm:w-auto"
+                onClick={() => setComposeOpen(true)}
+              >
+                Send Reminder ({selectedCount})
+              </button>
+            ) : null
+          }
+        />
 
-          {selectedCount > 0 ? (
-            <button
-              type="button"
-              className="btn-primary w-full sm:w-auto"
-              onClick={() => setComposeOpen(true)}
-            >
-              Send Reminder ({selectedCount})
-            </button>
-          ) : null}
-        </div>
-
-        <div className="flex flex-col gap-2.5 rounded-2xl border border-[var(--color-border)] bg-white p-2.5 shadow-[0_1px_2px_rgba(59,35,24,0.04)] sm:flex-row sm:items-center sm:gap-2">
+        <div className="flex flex-col gap-2.5 border border-[var(--color-border)] bg-[var(--color-background-alt)] p-2.5 sm:flex-row sm:items-center sm:gap-2">
           <select
             value={eventSlug}
             onChange={(e) => setEventSlug(e.target.value)}
@@ -426,6 +451,15 @@ function AdminRegistrationsPage() {
                             <CreditCard className="size-4" strokeWidth={1.75} />
                             Payment details
                           </DropdownMenuItem>
+                          {row.payment?.status !== "paid" ? (
+                            <DropdownMenuItem
+                              onClick={() => void onMarkPaid(row._id, row.name)}
+                              className="cursor-pointer gap-2"
+                            >
+                              <CheckCircle2 className="size-4" strokeWidth={1.75} />
+                              Mark as paid
+                            </DropdownMenuItem>
+                          ) : null}
                           <DropdownMenuItem
                             onClick={() => onSendMailOne(row._id)}
                             className="cursor-pointer gap-2"

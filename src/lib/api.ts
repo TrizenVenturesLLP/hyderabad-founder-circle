@@ -6,6 +6,69 @@ const API_BASE =
 
 export const REGISTRATION_FEE_INR = 99;
 
+export function eventFeeInr(event?: { payment?: { amountInr?: number } } | null) {
+  const amount = Number(event?.payment?.amountInr);
+  return Number.isFinite(amount) && amount > 0 ? amount : REGISTRATION_FEE_INR;
+}
+
+export type EventPaymentConfig = {
+  keyId?: string;
+  amountInr: number;
+  amountPaise: number;
+  currency: string;
+  ticketName: string;
+  checkoutMode: "razorpay" | "manual";
+  methods: {
+    type: string;
+    label?: string;
+    upiId?: string;
+    paymentNumber?: string;
+    paymentLink?: string;
+    qrImageUrl?: string;
+    instructions?: string;
+  }[];
+  hasRazorpay: boolean;
+  hasManualMethods: boolean;
+  enabled: boolean;
+};
+
+export async function fetchPaymentConfig(eventSlug: string) {
+  const res = await fetch(
+    `${API_BASE}/api/payments/config?eventSlug=${encodeURIComponent(eventSlug)}`,
+  );
+  const data = (await res.json().catch(() => ({}))) as EventPaymentConfig & {
+    error?: string;
+  };
+  if (!res.ok) {
+    throw new Error(data.error || "Could not load payment options.");
+  }
+  return data;
+}
+
+export async function submitManualPaymentRegistration(
+  payload: RsvpPayload & {
+    provider: string;
+    proofUrl?: string;
+    note?: string;
+  },
+) {
+  const res = await fetch(`${API_BASE}/api/payments/manual-confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    message?: string;
+    id?: string;
+    paymentStatus?: string;
+  };
+  if (!res.ok) {
+    throw new Error(data.error || "Could not submit registration.");
+  }
+  return data;
+}
+
 export type RsvpPayload = {
   name: string;
   email: string;

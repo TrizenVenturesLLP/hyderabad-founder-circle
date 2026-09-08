@@ -53,6 +53,29 @@ export type Meetup = {
   hosts?: CommunityHost[];
   guestFounder?: GuestFounder;
   speakers?: EventSpeaker[];
+  organization?: {
+    id: string;
+    name: string;
+    slug: string;
+    type?: string;
+  } | null;
+  payment?: {
+    enabled?: boolean;
+    amountInr?: number;
+    currency?: string;
+    checkoutMode?: "razorpay" | "manual";
+    hasRazorpay?: boolean;
+    hasManualMethods?: boolean;
+    methods?: {
+      type: string;
+      label?: string;
+      upiId?: string;
+      paymentNumber?: string;
+      paymentLink?: string;
+      qrImageUrl?: string;
+      instructions?: string;
+    }[];
+  };
 };
 
 const API_BASE =
@@ -177,6 +200,62 @@ export const fallbackMeetups: Meetup[] = [
       },
     ],
   },
+  {
+    slug: "band-explorers-vybe",
+    title: "Band Explorers Vybe — The Corporate Music Break",
+    dateISO: "2026-09-19",
+    dateLabel: "Saturday, 19 September 2026",
+    dateConfirmed: true,
+    time: "6:00 PM – 9:00 PM",
+    venue: "NanoSpace Coworking",
+    space: "Vijaya Krishna Towers",
+    area: "Nanakramguda",
+    address: "Vijaya Krishna Towers, Nanakramguda, Hyderabad, Telangana",
+    mapsUrl:
+      "https://www.google.com/maps/search/?api=1&query=Vijaya+Krishna+Towers+Nanakramguda+Hyderabad",
+    mapsEmbedUrl:
+      "https://www.google.com/maps?q=Vijaya+Krishna+Towers+Nanakramguda+Hyderabad&output=embed",
+    city: "Hyderabad",
+    seats: 80,
+    format: "Offline" as const,
+    status: "open",
+    blurb:
+      "Live music · Unwind · Connect. Up to 10 members can pitch their problem statements (2 minutes each). Timings 6:00 PM – 9:00 PM at NanoSpace. No snacks. Marketing partner: Trizen Community. Entry ₹599.",
+    speakers: [],
+    hosts: [
+      {
+        name: "Fun Fusion @Work",
+        role: "Event partner",
+        startup: "Corporate music & community experiences",
+        linkedin: "",
+      },
+      {
+        name: "NanoSpace Coworking",
+        role: "Host venue",
+        startup: "Nanakramguda, Hyderabad",
+        linkedin: "https://www.linkedin.com/company/nanospace-coworking/",
+      },
+    ],
+    organization: {
+      id: "nanospace",
+      name: "NanoSpace",
+      slug: "nanospace",
+    },
+    payment: {
+      enabled: true,
+      amountInr: 599,
+      currency: "INR",
+      methods: [
+        {
+          type: "upi_id",
+          label: "PhonePe / Google Pay",
+          paymentNumber: "9666696790",
+          instructions:
+            "Pay ₹599 via PhonePe or Google Pay to 9666696790. For queries call +91 8247579912. No snacks included.",
+        },
+      ],
+    },
+  },
 ];
 
 /** @deprecated Prefer getMeetups() — kept for gradual migration. */
@@ -227,6 +306,8 @@ export function mapApiEventToMeetup(raw: Record<string, unknown>): Meetup {
     hosts: Array.isArray(raw.hosts) ? (raw.hosts as CommunityHost[]) : undefined,
     guestFounder: hasGuest ? guest : undefined,
     speakers,
+    organization: (raw.organization as Meetup["organization"]) || null,
+    payment: (raw.payment as Meetup["payment"]) || undefined,
   };
 }
 
@@ -236,10 +317,13 @@ const CACHE_MS = 30_000;
 
 export async function getMeetups(options?: {
   force?: boolean;
+  organizationSlug?: string;
 }): Promise<Meetup[]> {
   const now = Date.now();
+  const orgSlug = options?.organizationSlug || "";
   if (
     !options?.force &&
+    !orgSlug &&
     meetupsCache &&
     now - meetupsCacheAt < CACHE_MS
   ) {
@@ -247,22 +331,47 @@ export async function getMeetups(options?: {
   }
 
   try {
-    const res = await fetch(`${API_BASE}/api/events`);
+    const qs = orgSlug
+      ? `?organizationSlug=${encodeURIComponent(orgSlug)}`
+      : "";
+    const res = await fetch(`${API_BASE}/api/events${qs}`);
     if (!res.ok) throw new Error("events fetch failed");
     const data = (await res.json()) as { items?: Record<string, unknown>[] };
     const items = (data.items || []).map(mapApiEventToMeetup);
     if (items.length > 0) {
-      meetupsCache = items;
-      meetupsCacheAt = now;
+      if (!orgSlug) {
+        meetupsCache = items;
+        meetupsCacheAt = now;
+      }
       return items;
     }
   } catch {
     // fall through to local fallback
   }
 
-  meetupsCache = fallbackMeetups;
-  meetupsCacheAt = now;
-  return fallbackMeetups;
+  if (!orgSlug) {
+    meetupsCache = fallbackMeetups;
+    meetupsCacheAt = now;
+    return fallbackMeetups;
+  }
+  return fallbackMeetups.filter(
+    (m) => m.organization?.slug === orgSlug || !m.organization,
+  );
+}
+
+export async function getEventOrganizations(): Promise<
+  { id: string; name: string; slug: string }[]
+> {
+  try {
+    const res = await fetch(`${API_BASE}/api/events/meta/organizations`);
+    if (!res.ok) return [];
+    const data = (await res.json()) as {
+      items?: { id: string; name: string; slug: string }[];
+    };
+    return data.items || [];
+  } catch {
+    return [];
+  }
 }
 
 export async function getMeetupBySlug(slug: string): Promise<Meetup | null> {

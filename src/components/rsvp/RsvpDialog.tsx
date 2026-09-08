@@ -27,8 +27,12 @@ import {
 } from "@/lib/heard-about-options";
 import {
   createPaymentOrder,
+  eventFeeInr,
+  fetchPaymentConfig,
   REGISTRATION_FEE_INR,
+  submitManualPaymentRegistration,
   verifyPaymentAndRegister,
+  type EventPaymentConfig,
   type PaymentMethod,
   type RsvpPayload,
 } from "@/lib/api";
@@ -292,6 +296,18 @@ export function RsvpDialog() {
   const [errors, setErrors] = useState<Partial<Record<FormErrorKey, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("upi");
+  const [paymentConfig, setPaymentConfig] = useState<EventPaymentConfig | null>(
+    null,
+  );
+  const [manualProvider, setManualProvider] = useState("");
+  const [paymentNote, setPaymentNote] = useState("");
+  const feeInr =
+    paymentConfig?.amountInr ||
+    eventFeeInr(event) ||
+    REGISTRATION_FEE_INR;
+  const isManualCheckout =
+    paymentConfig?.checkoutMode === "manual" ||
+    (paymentConfig?.hasManualMethods && !paymentConfig?.hasRazorpay);
   const [draftRestored, setDraftRestored] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [stepAnim, setStepAnim] = useState<
@@ -302,6 +318,24 @@ export function RsvpDialog() {
   const skipNextSaveRef = useRef(false);
   const stepAnimTimerRef = useRef<number | null>(null);
   const stepAnimatingRef = useRef(false);
+
+  useEffect(() => {
+    if (!open || !event?.slug) return;
+    let cancelled = false;
+    void fetchPaymentConfig(event.slug)
+      .then((config) => {
+        if (cancelled) return;
+        setPaymentConfig(config);
+        const firstManual = config.methods.find((m) => m.type !== "razorpay");
+        if (firstManual) setManualProvider(firstManual.type);
+      })
+      .catch(() => {
+        if (!cancelled) setPaymentConfig(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, event?.slug]);
 
   useEffect(() => {
     const el = formScrollRef.current;
@@ -677,6 +711,28 @@ export function RsvpDialog() {
     toast.dismiss();
     try {
       const payload = buildRsvpPayload();
+
+      if (isManualCheckout) {
+        const provider =
+          manualProvider ||
+          paymentConfig?.methods.find((m) => m.type !== "razorpay")?.type ||
+          "other";
+        setStep("processing");
+        await submitManualPaymentRegistration({
+          ...payload,
+          provider,
+          note: paymentNote.trim(),
+        });
+        setStep("success");
+        clearRsvpDraft(event.slug);
+        setDraftRestored(false);
+        toast.success(
+          "Registration submitted. Payment is pending organizer review.",
+        );
+        setSubmitting(false);
+        return;
+      }
+
       const order = await createPaymentOrder({
         ...payload,
         paymentMethod,
@@ -730,6 +786,8 @@ export function RsvpDialog() {
       });
     } catch (err) {
       setCheckoutOpen(false);
+      setStep(3);
+      setPanelStep(3);
       const message =
         err instanceof TypeError && /fetch/i.test(err.message)
           ? "Could not reach the server. Please try again."
@@ -1410,14 +1468,86 @@ export function RsvpDialog() {
                     <section className="space-y-5">
                       <div>
                         <h3 className="text-base font-medium text-foreground">
-                          Select a payment method
+                          {isManualCheckout
+                            ? "Complete payment"
+                            : "Select a payment method"}
                         </h3>
                         <p className="mt-1 text-sm text-muted-foreground">
-                          Complete your ₹{REGISTRATION_FEE_INR} registration fee
-                          securely via Razorpay.
+                          {isManualCheckout
+                            ? `Pay ₹${feeInr} using one of the options below, then confirm you've paid.`
+                            : `Complete your ₹${feeInr} registration fee securely via Razorpay.`}
                         </p>
                       </div>
 
+                      {isManualCheckout ? (
+                        <div className="space-y-3">
+                          {(paymentConfig?.methods || [])
+                            .filter((m) => m.type !== "razorpay")
+                            .map((method) => {
+                              const selected = manualProvider === method.type;
+                              return (
+                                <button
+                                  key={method.type}
+                                  type="button"
+                                  onClick={() => setManualProvider(method.type)}
+                                  className={cn(
+                                    "w-full border border-[var(--color-border)] px-4 py-3.5 text-left transition-colors",
+                                    selected
+                                      ? "bg-[color-mix(in_oklab,var(--brand-accent)_8%,transparent)]"
+                                      : "bg-[var(--color-surface)]",
+                                  )}
+                                >
+                                  <p className="text-sm font-medium capitalize text-foreground">
+                                    {method.label ||
+                                      method.type.replace(/_/g, " ")}
+                                  </p>
+                                  {method.upiId ? (
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                      UPI: {method.upiId}
+                                    </p>
+                                  ) : null}
+                                  {method.paymentNumber ? (
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                      Number: {method.paymentNumber}
+                                    </p>
+                                  ) : null}
+                                  {method.paymentLink ? (
+                                    <a
+                                      href={method.paymentLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="mt-1 block text-xs text-[var(--brand-accent)] underline"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      Open payment link
+                                    </a>
+                                  ) : null}
+                                  {method.qrImageUrl ? (
+                                    <img
+                                      src={method.qrImageUrl}
+                                      alt="Payment QR"
+                                      className="mt-3 h-36 w-36 object-contain"
+                                    />
+                                  ) : null}
+                                  {method.instructions ? (
+                                    <p className="mt-2 text-xs text-muted-foreground">
+                                      {method.instructions}
+                                    </p>
+                                  ) : null}
+                                </button>
+                              );
+                            })}
+                          <Field label="Payment note (optional)">
+                            <textarea
+                              value={paymentNote}
+                              onChange={(e) => setPaymentNote(e.target.value)}
+                              placeholder="UTR / transaction reference"
+                              className={textareaClass}
+                              maxLength={400}
+                            />
+                          </Field>
+                        </div>
+                      ) : (
                       <div className="overflow-hidden border border-[var(--color-border)]">
                         {PAYMENT_OPTIONS.map((option, index) => {
                           const Icon = option.icon;
@@ -1468,6 +1598,7 @@ export function RsvpDialog() {
                           );
                         })}
                       </div>
+                      )}
 
                       <div className="flex items-start gap-2.5 border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3 text-xs leading-relaxed text-muted-foreground md:hidden">
                         <Info
@@ -1475,9 +1606,9 @@ export function RsvpDialog() {
                           strokeWidth={1.75}
                         />
                         <p>
-                          We do not store your card details or financial
-                          information. Payments are processed securely by
-                          Razorpay.
+                          {isManualCheckout
+                            ? "After you pay, submit this form. Organizers will verify and confirm your registration."
+                            : "We do not store your card details or financial information. Payments are processed securely by Razorpay."}
                         </p>
                       </div>
 
@@ -1490,7 +1621,7 @@ export function RsvpDialog() {
                             Event Pass × 1
                           </span>
                           <span className="font-medium text-foreground">
-                            ₹{REGISTRATION_FEE_INR}
+                            ₹{feeInr}
                           </span>
                         </div>
                         <div className="mt-3 flex items-center justify-between border-t border-border/70 pt-3">
@@ -1498,7 +1629,7 @@ export function RsvpDialog() {
                             Total
                           </span>
                           <span className="font-display text-xl text-foreground">
-                            ₹{REGISTRATION_FEE_INR}
+                            ₹{feeInr}
                           </span>
                         </div>
                       </div>
@@ -1577,7 +1708,11 @@ export function RsvpDialog() {
                               strokeWidth={1.75}
                               aria-hidden
                             />
-                            <span className="truncate">Proceed to payment</span>
+                            <span className="truncate">
+                              {isManualCheckout
+                                ? "I've paid — submit"
+                                : "Proceed to payment"}
+                            </span>
                           </>
                         )}
                       </button>
@@ -1601,19 +1736,19 @@ export function RsvpDialog() {
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-muted-foreground">Event Pass × 1</span>
                         <span className="font-medium text-foreground">
-                          ₹{REGISTRATION_FEE_INR}
+                          ₹{feeInr}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-muted-foreground">Sub total</span>
                         <span className="font-medium text-foreground">
-                          ₹{REGISTRATION_FEE_INR}
+                          ₹{feeInr}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3 border-t border-border/70 pt-3">
                         <span className="font-medium text-foreground">Total</span>
                         <span className="font-display text-2xl text-foreground">
-                          ₹{REGISTRATION_FEE_INR}
+                          ₹{feeInr}
                         </span>
                       </div>
                     </div>
@@ -1704,7 +1839,7 @@ export function RsvpDialog() {
                       </li>
                     </ul>
                     <p className="mt-auto pt-10 text-xs text-muted-foreground">
-                      ₹{REGISTRATION_FEE_INR} registration ·{" "}
+                      ₹{feeInr} registration ·{" "}
                       {typeof event.seats === "number" ? `${event.seats} seats` : "Limited seats"}{" "}
                       · No pitching
                     </p>

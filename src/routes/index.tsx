@@ -15,6 +15,7 @@ const eventPhotoHero = "/july-2026-1.jpeg";
 const eventPhotoMeetup = "/july-2026-2.jpeg";
 const eventPhotoMoment = "/july-2026-3.jpeg";
 const eventPhotoCommunity = "/july-2026-4.jpeg";
+const bandExplorersPoster = "/band-explorers-vybe.jpg";
 import { useInView } from "@/hooks/use-in-view";
 import { cn } from "@/lib/utils";
 import {
@@ -23,6 +24,7 @@ import {
   getNextMeetup,
   nextMeetup as fallbackNext,
   meetupDateLabel,
+  isMeetupCompleted,
   type Meetup,
 } from "@/lib/events";
 import { links } from "@/lib/links";
@@ -33,21 +35,26 @@ import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 export const Route = createFileRoute("/")({
   loader: async () => {
     const meetups = await getMeetups();
-    return { nextMeetup: getNextMeetup(meetups) ?? fallbackNext };
+    const bandExplorers = meetups.find(
+      (m) => m.slug === "band-explorers-vybe" && !isMeetupCompleted(m),
+    );
+    const nextMeetup =
+      bandExplorers ?? getNextMeetup(meetups) ?? fallbackNext;
+    return { nextMeetup };
   },
   head: () => ({
     meta: [
-      { title: "Hyderabad Founders Network — Monthly Startup Meetup" },
+      { title: "Trizen Community — Community Events Platform" },
       {
         name: "description",
         content:
-          "Build meaningful relationships with founders, builders, operators and aspiring entrepreneurs in Hyderabad. Monthly meetups, shared experiences, and a trusted community beyond pitch decks.",
+          "Discover and register for community events hosted by organizations on Trizen Community. Hyderabad Founders Network and more — no public signup, just event registration.",
       },
-      { property: "og:title", content: "Hyderabad Founders Network" },
+      { property: "og:title", content: "Trizen Community" },
       {
         property: "og:description",
         content:
-          "A trusted community where founders connect beyond business cards and pitch decks.",
+          "A community events platform for founders, builders, and organizers in Hyderabad.",
       },
       { property: "og:url", content: "/" },
     ],
@@ -138,20 +145,20 @@ const marketingPartner = {
 
 const faqs = [
   {
-    q: "Is this community free?",
-    a: "Yes. Most community meetups are free to attend, though some special events may require registration or a nominal fee.",
+    q: "Do I need an account to attend?",
+    a: "No. There is no public signup or login for attendees. You only register for the specific event you want to join.",
+  },
+  {
+    q: "Who hosts these events?",
+    a: "Events are hosted by organizations on Trizen Community — including Trizen Ventures (Hyderabad Founders Network) and partners like NanoSpace.",
   },
   {
     q: "Can I attend if I don't have a startup yet?",
-    a: "Absolutely. Aspiring entrepreneurs, builders and startup enthusiasts are welcome.",
+    a: "Absolutely. Aspiring entrepreneurs, builders and startup enthusiasts are welcome at most community meetups.",
   },
   {
-    q: "How often do you meet?",
-    a: "We host a community meetup every third Saturday of the month, along with occasional workshops and special events.",
-  },
-  {
-    q: "Do I need to register?",
-    a: "Yes. Registration helps us manage seating and create a better experience for everyone.",
+    q: "How often do meetups happen?",
+    a: "Hyderabad Founders Network typically meets every third Saturday. Other organizers may host their own schedules.",
   },
   {
     q: "Where are the meetups held?",
@@ -218,38 +225,38 @@ function HeroSection({ nextMeetup }: { nextMeetup: Meetup }) {
 
         <div className="page-container relative flex h-full items-center justify-center pb-10 pt-10 md:pb-14 md:pt-8">
           <div className="mx-auto w-full max-w-3xl text-center">
-            <p className="hero-reveal text-[11px] font-medium tracking-[0.14em] text-white/72 uppercase md:text-[12px]">
-              Trizen Community
-            </p>
             <h1
-              className="hero-reveal hero-reveal-delay-1 mx-auto mt-3 max-w-[14ch] font-semibold leading-[1.02] tracking-[-0.035em] text-white md:mt-4"
+              className="hero-reveal mx-auto max-w-[16ch] font-semibold leading-[1.02] tracking-[-0.035em] text-white"
               style={{
                 fontFamily: "var(--font-brand)",
                 fontSize: "clamp(2.35rem, 7.5vw, 4.25rem)",
               }}
             >
-              Hyderabad Founders Network
+              Trizen Community
             </h1>
-            <p className="hero-reveal hero-reveal-delay-2 mx-auto mt-4 max-w-[26rem] text-[15px] leading-relaxed text-white/82 md:mt-5 md:text-[16px]">
-              Where founders find their people—and grow together.
+            <p className="hero-reveal hero-reveal-delay-1 mx-auto mt-4 max-w-[28rem] text-[15px] leading-relaxed text-white/82 md:mt-5 md:text-[16px]">
+              Community events for founders and builders — hosted by
+              organizations, open for registration.
             </p>
             <p className="hero-reveal hero-reveal-delay-2 mt-3 text-[13px] font-medium tracking-wide text-white/68 md:text-[14px]">
-              Next meetup · {meetupDateLabel(nextMeetup)}
+              Featuring Hyderabad Founders Network · Next{" "}
+              {meetupDateLabel(nextMeetup)}
             </p>
             <div className="hero-reveal hero-reveal-delay-3 mt-6 flex flex-col items-center justify-center gap-2.5 sm:mt-8 sm:flex-row sm:gap-3">
-              <RsvpButton event={nextMeetup} className="btn-primary min-w-[10.5rem] gap-2">
-                <Ticket className="size-4" strokeWidth={1.75} aria-hidden />
-                Book your spot
-              </RsvpButton>
-              <a
-                href={links.community}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                to="/events"
+                className="btn-primary inline-flex min-h-[46px] min-w-[10.5rem] items-center justify-center gap-2 px-5 text-[14px] font-medium"
+              >
+                <Calendar className="size-4" strokeWidth={1.75} aria-hidden />
+                Browse events
+              </Link>
+              <RsvpButton
+                event={nextMeetup}
                 className="inline-flex min-h-[46px] min-w-[10.5rem] items-center justify-center gap-2 border border-white/28 bg-white/10 px-5 text-[14px] font-medium whitespace-nowrap text-white transition-colors duration-200 hover:border-white/45 hover:bg-white/16"
               >
-                <WhatsAppIcon className="size-4" />
-                Join the Community
-              </a>
+                <Ticket className="size-4" strokeWidth={1.75} aria-hidden />
+                Register for next meetup
+              </RsvpButton>
             </div>
           </div>
         </div>
@@ -257,11 +264,11 @@ function HeroSection({ nextMeetup }: { nextMeetup: Meetup }) {
 
       <div
         className="hero-reveal hero-reveal-delay-3 shrink-0 border-b border-[var(--color-border)] bg-[var(--color-surface)]"
-        aria-label="Community trust signals"
+        aria-label="Platform trust signals"
       >
         <div className="page-container flex flex-col items-center gap-3 py-2.5 md:flex-row md:justify-between md:gap-8 md:py-3.5">
           <p className="text-center text-[12px] font-medium text-[var(--color-text-secondary)] md:text-left md:text-[13px]">
-            Every third Saturday · Hyderabad · Community-led
+            Event registration only · No public signup · Hyderabad
           </p>
           <div className="flex flex-wrap items-center justify-center gap-5 md:gap-8">
             <a
@@ -321,20 +328,21 @@ function WhySection() {
             </h2>
             <div className="mt-5 max-w-[40ch] space-y-3.5 text-[14.5px] leading-[1.7] text-[var(--color-text-secondary)]">
               <p>
-                Startup life is full of hard calls. This network exists so you
-                don&apos;t have to face them alone—honest conversations, shared
-                lessons, and friendships that outlast any single meetup.
+                Trizen Community is where organizations host community events —
+                and attendees register only for the ones they care about. No
+                public accounts. No noise.
               </p>
               <p>
-                Every third Saturday, founders and builders gather in Hyderabad
-                to learn from each other and keep growing.
+                Hyderabad Founders Network (by Trizen Ventures) is our flagship
+                series: honest conversations, shared lessons, and friendships
+                that outlast any single Saturday.
               </p>
             </div>
             <div className="mt-7">
-              <a href="#next-meetup" className="btn-secondary gap-2">
+              <Link to="/events" className="btn-secondary gap-2">
                 <Calendar className="size-4" strokeWidth={1.75} aria-hidden />
-                See upcoming meetup
-              </a>
+                Browse all events
+              </Link>
             </div>
           </div>
           <div
@@ -475,13 +483,14 @@ function MeetupSection({ nextMeetup }: { nextMeetup: Meetup }) {
           <div
             className={cn("reveal-left lg:col-span-5", inView && "is-visible")}
           >
-            <SectionLabel>Monthly meetups</SectionLabel>
-            <h2 className="mt-3 max-w-[14ch] font-display text-[clamp(1.7rem,2.8vw,2.25rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
-              Every third Saturday.
+            <SectionLabel>Featured events</SectionLabel>
+            <h2 className="mt-3 max-w-[16ch] font-display text-[clamp(1.7rem,2.8vw,2.25rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
+              Upcoming community meetups
             </h2>
             <p className="mt-4 max-w-md text-[14.5px] leading-[1.7] text-[var(--color-text-secondary)]">
-              No sales pitches. No long keynotes. Just founder stories,
-              roundtables, and room to connect.
+              Browse the next open event on Trizen Community. Register per event
+              — no account required. Hosted by organizations like Trizen
+              Ventures and NanoSpace.
             </p>
             <ul className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2">
               {meetupIncludes.map((item) => (
@@ -510,18 +519,30 @@ function MeetupSection({ nextMeetup }: { nextMeetup: Meetup }) {
               <div className="grid md:grid-cols-12 md:items-stretch">
                 <div className="relative aspect-[16/10] md:col-span-5 md:aspect-auto md:min-h-[20rem]">
                   <img
-                    src={eventPhotoMeetup}
-                    alt="Founders at the Hyderabad Founders Network meetup"
+                    src={
+                      nextMeetup.slug === "band-explorers-vybe"
+                        ? bandExplorersPoster
+                        : eventPhotoMeetup
+                    }
+                    alt={
+                      nextMeetup.slug === "band-explorers-vybe"
+                        ? "Band Explorers Vybe event poster"
+                        : "Founders at the Hyderabad Founders Network meetup"
+                    }
                     loading="lazy"
                     decoding="async"
-                    className="absolute inset-0 h-full w-full object-cover object-[50%_35%]"
+                    className={
+                      nextMeetup.slug === "band-explorers-vybe"
+                        ? "absolute inset-0 h-full w-full object-cover object-top"
+                        : "absolute inset-0 h-full w-full object-cover object-[50%_35%]"
+                    }
                   />
                 </div>
 
                 <div className="flex flex-col justify-between gap-7 p-6 sm:p-7 md:col-span-7 md:p-8">
                   <div>
                     <p className="text-[12px] font-medium tracking-[0.06em] text-[var(--brand-accent)]">
-                      Upcoming meetup
+                      Upcoming event
                     </p>
                     <h3 className="mt-2.5 font-display text-[1.2rem] leading-[1.25] tracking-tight text-foreground md:text-[1.3rem]">
                       {nextMeetup.title}

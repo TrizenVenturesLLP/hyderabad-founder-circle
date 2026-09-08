@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import {
   CalendarDays,
   MapPin,
@@ -12,20 +12,52 @@ import {
   createAdminEvent,
   deleteAdminEvent,
   fetchAdminEvents,
+  fetchAdminOrganizations,
   updateAdminEvent,
   type AdminEvent,
   type AdminGuestFounder,
   type AdminHost,
+  type AdminOrganization,
+  type AdminPaymentMethod,
   type AdminSpeaker,
+  type AdminSessionUser,
 } from "@/lib/admin-api";
 import { invalidateMeetupsCache } from "@/lib/events";
 import { cn } from "@/lib/utils";
+import { AdminPageHeader } from "@/components/admin/AdminPageChrome";
+
+const adminRoute = getRouteApi("/admin");
 
 export const Route = createFileRoute("/admin/events")({
   component: AdminEventsPage,
   head: () => ({
     meta: [{ title: "Events — Admin" }],
   }),
+});
+
+const METHOD_TYPES: AdminPaymentMethod["type"][] = [
+  "razorpay",
+  "upi_qr",
+  "upi_id",
+  "payment_link",
+  "qiyu",
+  "other",
+];
+
+const emptyPaymentMethod = (
+  type: AdminPaymentMethod["type"] = "razorpay",
+): AdminPaymentMethod => ({
+  type,
+  enabled: true,
+  label: type === "razorpay" ? "Razorpay" : type.replace(/_/g, " "),
+  upiId: "",
+  paymentNumber: "",
+  paymentLink: "",
+  qrImageUrl: "",
+  razorpayKeyId: "",
+  qiyuMerchantId: "",
+  qiyuApiKey: "",
+  instructions: "",
 });
 
 const emptySpeaker = (): AdminSpeaker => ({
@@ -61,17 +93,14 @@ const emptyForm = (): AdminEvent => ({
   dateISO: "",
   dateLabel: "",
   dateConfirmed: false,
-  time: "11:00 AM – 1:00 PM",
-  venue: "DraperU India",
-  space: "5th floor event space",
-  area: "Gachibowli",
-  address:
-    "DraperU India (Formerly Draper Startup House Hyderabad), Rajiv Gandhi Nagar, Gachibowli, Hyderabad, Telangana 500032",
-  mapsUrl:
-    "https://maps.app.goo.gl/KTRvgep4y9ciSCjSA?g_st=com.microsoft.skype.teams.extshare",
-  mapsEmbedUrl:
-    "https://www.google.com/maps?q=DraperU+India+Gachibowli+Hyderabad&output=embed",
-  city: "Hyderabad",
+  time: "",
+  venue: "",
+  space: "",
+  area: "",
+  address: "",
+  mapsUrl: "",
+  mapsEmbedUrl: "",
+  city: "",
   seats: 40,
   format: "Offline",
   status: "open",
@@ -81,10 +110,23 @@ const emptyForm = (): AdminEvent => ({
   guestFounder: emptyGuest(),
   published: true,
   sortOrder: 0,
+  organizationId: "",
+  payment: {
+    enabled: true,
+    amountInr: 99,
+    currency: "INR",
+    methods: [emptyPaymentMethod("razorpay")],
+  },
 });
 
 function AdminEventsPage() {
+  const { admin } = adminRoute.useRouteContext() as {
+    admin?: AdminSessionUser;
+  };
+  const isPlatform = admin?.role === "platform_admin";
   const [items, setItems] = useState<AdminEvent[]>([]);
+  const [orgs, setOrgs] = useState<AdminOrganization[]>([]);
+  const [orgFilter, setOrgFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editorOpen, setEditorOpen] = useState(false);
@@ -96,8 +138,14 @@ function AdminEventsPage() {
     setLoading(true);
     setError("");
     try {
-      const data = await fetchAdminEvents();
+      const [data, orgData] = await Promise.all([
+        fetchAdminEvents(orgFilter === "all" ? undefined : orgFilter),
+        isPlatform
+          ? fetchAdminOrganizations()
+          : Promise.resolve({ items: [] as AdminOrganization[] }),
+      ]);
       setItems(data.items);
+      if (isPlatform) setOrgs(orgData.items);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
     } finally {
@@ -107,11 +155,20 @@ function AdminEventsPage() {
 
   useEffect(() => {
     void load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgFilter]);
 
   function startCreate() {
     setEditing(null);
-    setForm({ ...emptyForm(), sortOrder: items.length });
+    const defaultOrg =
+      isPlatform && orgs.length
+        ? orgs.find((o) => o.slug === "admin")?.id || orgs[0].id
+        : admin?.organizationId || "";
+    setForm({
+      ...emptyForm(),
+      sortOrder: items.length,
+      organizationId: defaultOrg,
+    });
     setEditorOpen(true);
   }
 
@@ -120,6 +177,18 @@ function AdminEventsPage() {
     setForm({
       ...emptyForm(),
       ...item,
+      organizationId: item.organizationId || item.organization?.id || "",
+      payment: {
+        enabled: item.payment?.enabled !== false,
+        amountInr: item.payment?.amountInr ?? 99,
+        currency: item.payment?.currency || "INR",
+        methods: item.payment?.methods?.length
+          ? item.payment.methods.map((m) => ({
+              ...emptyPaymentMethod(m.type),
+              ...m,
+            }))
+          : [emptyPaymentMethod("razorpay")],
+      },
       speakers: item.speakers?.length
         ? item.speakers.map((s) => ({ ...emptySpeaker(), ...s }))
         : [],
@@ -149,6 +218,12 @@ function AdminEventsPage() {
         guestFounder: form.guestFounder?.name?.trim()
           ? form.guestFounder
           : {},
+        payment: {
+          enabled: form.payment?.enabled !== false,
+          amountInr: Number(form.payment?.amountInr) || 99,
+          currency: form.payment?.currency || "INR",
+          methods: form.payment?.methods || [],
+        },
       };
       if (editing?._id) {
         await updateAdminEvent(editing._id, payload);
@@ -197,29 +272,41 @@ function AdminEventsPage() {
   }
 
   return (
-    <div className="p-4 sm:p-5 md:p-8">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
-        <div>
-          <p className="hidden text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--brand-accent)] lg:block">
-            Admin
-          </p>
-          <h1 className="mt-1 font-display text-xl tracking-tight text-foreground sm:text-2xl md:text-[1.75rem]">
-            Events
-          </h1>
-          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            {loading ? "Loading…" : `${items.length} event(s)`} — edit speakers,
-            venue & page content.
-          </p>
-        </div>
-        <button
-          type="button"
-          className="btn-primary w-full gap-1.5 sm:w-auto"
-          onClick={startCreate}
-        >
-          <Plus className="size-4" strokeWidth={2} />
-          Add event
-        </button>
-      </div>
+    <div className="h-full overflow-y-auto p-4 sm:p-5 md:p-6">
+      <AdminPageHeader
+        title={isPlatform ? "All Events" : "My Events"}
+        description={
+          loading
+            ? "Loading…"
+            : `${items.length} event(s)${
+                isPlatform
+                  ? " — filter by organization or manage payment methods."
+                  : " — create and manage your organization’s events."
+              }`
+        }
+        actions={
+          <>
+            {isPlatform ? (
+              <select
+                value={orgFilter}
+                onChange={(e) => setOrgFilter(e.target.value)}
+                className="border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm"
+              >
+                <option value="all">All organizations</option>
+                {orgs.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            <button type="button" className="btn-primary" onClick={startCreate}>
+              <Plus className="size-4" strokeWidth={1.75} />
+              Add event
+            </button>
+          </>
+        }
+      />
 
       {error && !editorOpen ? (
         <p className="mt-4 text-sm text-red-600">{error}</p>
@@ -239,7 +326,7 @@ function AdminEventsPage() {
           return (
             <li
               key={item._id}
-              className="flex aspect-square flex-col rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-[0_1px_2px_rgba(59,35,24,0.04)]"
+              className="flex aspect-square flex-col border border-[var(--color-border)] bg-white p-4 transition-colors hover:border-[var(--color-border-strong)]"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -269,6 +356,9 @@ function AdminEventsPage() {
                 </h2>
                 <p className="mt-1.5 truncate text-[11px] text-[var(--color-text-muted)]">
                   /{item.slug}
+                  {item.organization?.name
+                    ? ` · ${item.organization.name}`
+                    : ""}
                 </p>
                 <div className="mt-2.5 space-y-1 text-[12px] text-[var(--color-text-secondary)]">
                   <p className="flex items-center gap-1.5 truncate">
@@ -336,6 +426,8 @@ function AdminEventsPage() {
           editing={!!editing}
           saving={saving}
           error={error}
+          isPlatform={isPlatform}
+          organizations={orgs}
           onClose={closeEditor}
           onSubmit={onSubmit}
           updateField={updateField}
@@ -409,6 +501,8 @@ function EventEditorModal({
   editing,
   saving,
   error,
+  isPlatform,
+  organizations,
   onClose,
   onSubmit,
   updateField,
@@ -423,6 +517,8 @@ function EventEditorModal({
   editing: boolean;
   saving: boolean;
   error: string;
+  isPlatform: boolean;
+  organizations: AdminOrganization[];
   onClose: () => void;
   onSubmit: (e: FormEvent) => void;
   updateField: <K extends keyof AdminEvent>(key: K, value: AdminEvent[K]) => void;
@@ -439,6 +535,7 @@ function EventEditorModal({
   const tabs: { id: EditorTab; label: string; hint?: string }[] = [
     { id: "details", label: "Details" },
     { id: "venue", label: "Venue" },
+    { id: "payment", label: "Payment" },
     {
       id: "speakers",
       label: "Speakers",
@@ -447,6 +544,30 @@ function EventEditorModal({
     { id: "hosts", label: "Hosts", hint: String(form.hosts?.length || 0) },
     { id: "guest", label: "Guest" },
   ];
+
+  function updatePaymentField<K extends keyof NonNullable<AdminEvent["payment"]>>(
+    key: K,
+    value: NonNullable<AdminEvent["payment"]>[K],
+  ) {
+    updateField("payment", {
+      enabled: true,
+      amountInr: 99,
+      currency: "INR",
+      methods: [],
+      ...(form.payment || {}),
+      [key]: value,
+    });
+  }
+
+  function updateMethod(
+    index: number,
+    key: keyof AdminPaymentMethod,
+    value: string | boolean,
+  ) {
+    const methods = [...(form.payment?.methods || [])];
+    methods[index] = { ...methods[index], [key]: value };
+    updatePaymentField("methods", methods);
+  }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -526,12 +647,30 @@ function EventEditorModal({
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
             {tab === "details" ? (
               <div className="space-y-4">
+                {isPlatform ? (
+                  <Field label="Organization owner">
+                    <select
+                      value={form.organizationId || ""}
+                      onChange={(e) =>
+                        updateField("organizationId", e.target.value)
+                      }
+                      className="field"
+                    >
+                      <option value="">Select organization</option>
+                      {organizations.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                ) : null}
                 <Field label="Title">
                   <input
                     value={form.title}
                     onChange={(e) => updateField("title", e.target.value)}
                     className="field"
-                    placeholder="Hyderabad Founders Network – July"
+                    placeholder="Enter the event title"
                   />
                 </Field>
                 <Field label="Short description">
@@ -540,7 +679,7 @@ function EventEditorModal({
                     onChange={(e) => updateField("blurb", e.target.value)}
                     rows={3}
                     className="field"
-                    placeholder="One or two sentences for the event page…"
+                    placeholder="Brief summary shown on the event page"
                   />
                 </Field>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -549,7 +688,7 @@ function EventEditorModal({
                       value={form.slug}
                       onChange={(e) => updateField("slug", e.target.value)}
                       className="field"
-                      placeholder="hyderabad-founders-network-july"
+                      placeholder="event-name-in-url"
                     />
                   </Field>
                   <Field label="Date">
@@ -565,7 +704,7 @@ function EventEditorModal({
                       value={form.dateLabel}
                       onChange={(e) => updateField("dateLabel", e.target.value)}
                       className="field"
-                      placeholder="Saturday, 18 July 2026"
+                      placeholder="How the date appears publicly"
                     />
                   </Field>
                   <label className="flex items-start gap-3 sm:col-span-2">
@@ -592,6 +731,7 @@ function EventEditorModal({
                       value={form.time}
                       onChange={(e) => updateField("time", e.target.value)}
                       className="field"
+                      placeholder="e.g. 11:00 AM – 1:00 PM"
                     />
                   </Field>
                 </div>
@@ -678,6 +818,7 @@ function EventEditorModal({
                       value={form.venue}
                       onChange={(e) => updateField("venue", e.target.value)}
                       className="field"
+                      placeholder="Building or venue name"
                     />
                   </Field>
                   <Field label="Space / floor">
@@ -685,6 +826,7 @@ function EventEditorModal({
                       value={form.space || ""}
                       onChange={(e) => updateField("space", e.target.value)}
                       className="field"
+                      placeholder="Floor, hall, or room"
                     />
                   </Field>
                   <Field label="Area">
@@ -692,6 +834,7 @@ function EventEditorModal({
                       value={form.area || ""}
                       onChange={(e) => updateField("area", e.target.value)}
                       className="field"
+                      placeholder="Neighborhood or locality"
                     />
                   </Field>
                   <Field label="City">
@@ -699,6 +842,7 @@ function EventEditorModal({
                       value={form.city}
                       onChange={(e) => updateField("city", e.target.value)}
                       className="field"
+                      placeholder="City"
                     />
                   </Field>
                 </div>
@@ -708,6 +852,7 @@ function EventEditorModal({
                     onChange={(e) => updateField("address", e.target.value)}
                     rows={2}
                     className="field"
+                    placeholder="Complete street address for attendees"
                   />
                 </Field>
                 <Field label="Maps link">
@@ -715,7 +860,7 @@ function EventEditorModal({
                     value={form.mapsUrl || ""}
                     onChange={(e) => updateField("mapsUrl", e.target.value)}
                     className="field"
-                    placeholder="https://maps.app.goo.gl/…"
+                    placeholder="Google Maps share link"
                   />
                 </Field>
                 <Field label="Maps embed URL">
@@ -725,9 +870,248 @@ function EventEditorModal({
                       updateField("mapsEmbedUrl", e.target.value)
                     }
                     className="field"
-                    placeholder="https://www.google.com/maps?…&output=embed"
+                    placeholder="Google Maps embed URL"
                   />
                 </Field>
+              </div>
+            ) : null}
+
+            {tab === "payment" ? (
+              <div className="space-y-4">
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="mt-1 size-4"
+                    checked={form.payment?.enabled !== false}
+                    onChange={(e) =>
+                      updatePaymentField("enabled", e.target.checked)
+                    }
+                  />
+                  <span className="text-sm">
+                    <span className="font-medium">Payments enabled</span>
+                    <span className="mt-0.5 block text-[12px] text-[var(--color-text-muted)]">
+                      Configure fee and how attendees can pay for this event.
+                    </span>
+                  </span>
+                </label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Amount (INR)">
+                    <input
+                      type="number"
+                      min={0}
+                      value={form.payment?.amountInr ?? 99}
+                      onChange={(e) =>
+                        updatePaymentField(
+                          "amountInr",
+                          Number(e.target.value) || 0,
+                        )
+                      }
+                      className="field"
+                    />
+                  </Field>
+                  <Field label="Currency">
+                    <input
+                      value={form.payment?.currency || "INR"}
+                      onChange={(e) =>
+                        updatePaymentField("currency", e.target.value)
+                      }
+                      className="field"
+                    />
+                  </Field>
+                </div>
+
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-medium text-foreground">
+                    Payment methods
+                  </p>
+                  <select
+                    className="rounded-lg border border-[var(--color-border)] px-2 py-1.5 text-xs"
+                    defaultValue=""
+                    onChange={(e) => {
+                      const type = e.target
+                        .value as AdminPaymentMethod["type"];
+                      if (!type) return;
+                      updatePaymentField("methods", [
+                        ...(form.payment?.methods || []),
+                        emptyPaymentMethod(type),
+                      ]);
+                      e.target.value = "";
+                    }}
+                  >
+                    <option value="">Add method…</option>
+                    {METHOD_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {t.replace(/_/g, " ")}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {(form.payment?.methods || []).length === 0 ? (
+                  <p className="rounded-xl border border-dashed border-[var(--color-border)] px-4 py-8 text-center text-sm text-[var(--color-text-muted)]">
+                    No methods yet. Add Razorpay, UPI QR, UPI ID, payment link,
+                    or QIYU.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {(form.payment?.methods || []).map((method, index) => (
+                      <div
+                        key={`${method.type}-${index}`}
+                        className="rounded-xl border border-[var(--color-border)] p-4"
+                      >
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                          <p className="text-sm font-semibold capitalize">
+                            {method.label || method.type.replace(/_/g, " ")}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <label className="flex items-center gap-1.5 text-xs">
+                              <input
+                                type="checkbox"
+                                checked={method.enabled !== false}
+                                onChange={(e) =>
+                                  updateMethod(index, "enabled", e.target.checked)
+                                }
+                              />
+                              Enabled
+                            </label>
+                            <button
+                              type="button"
+                              className="text-xs text-red-600"
+                              onClick={() =>
+                                updatePaymentField(
+                                  "methods",
+                                  (form.payment?.methods || []).filter(
+                                    (_, i) => i !== index,
+                                  ),
+                                )
+                              }
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <Field label="Label">
+                            <input
+                              value={method.label || ""}
+                              onChange={(e) =>
+                                updateMethod(index, "label", e.target.value)
+                              }
+                              className="field"
+                            />
+                          </Field>
+                          {method.type === "razorpay" ? (
+                            <Field label="Razorpay Key ID (optional override)">
+                              <input
+                                value={method.razorpayKeyId || ""}
+                                onChange={(e) =>
+                                  updateMethod(
+                                    index,
+                                    "razorpayKeyId",
+                                    e.target.value,
+                                  )
+                                }
+                                className="field"
+                                placeholder="Optional Razorpay key"
+                              />
+                            </Field>
+                          ) : null}
+                          {method.type === "upi_id" || method.type === "upi_qr" ? (
+                            <>
+                              <Field label="UPI ID">
+                                <input
+                                  value={method.upiId || ""}
+                                  onChange={(e) =>
+                                    updateMethod(index, "upiId", e.target.value)
+                                  }
+                                  className="field"
+                                  placeholder="yourorg@upi"
+                                />
+                              </Field>
+                              <Field label="Payment number">
+                                <input
+                                  value={method.paymentNumber || ""}
+                                  onChange={(e) =>
+                                    updateMethod(
+                                      index,
+                                      "paymentNumber",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="field"
+                                  placeholder="Phone number for UPI"
+                                />
+                              </Field>
+                            </>
+                          ) : null}
+                          {method.type === "upi_qr" ? (
+                            <Field label="QR image URL">
+                              <input
+                                value={method.qrImageUrl || ""}
+                                onChange={(e) =>
+                                  updateMethod(
+                                    index,
+                                    "qrImageUrl",
+                                    e.target.value,
+                                  )
+                                }
+                                className="field"
+                                placeholder="Link to QR code image"
+                              />
+                            </Field>
+                          ) : null}
+                          {method.type === "payment_link" ? (
+                            <Field label="Payment link">
+                              <input
+                                value={method.paymentLink || ""}
+                                onChange={(e) =>
+                                  updateMethod(
+                                    index,
+                                    "paymentLink",
+                                    e.target.value,
+                                  )
+                                }
+                                className="field"
+                                placeholder="Payment page URL"
+                              />
+                            </Field>
+                          ) : null}
+                          {method.type === "qiyu" ? (
+                            <Field label="QIYU merchant ID">
+                              <input
+                                value={method.qiyuMerchantId || ""}
+                                onChange={(e) =>
+                                  updateMethod(
+                                    index,
+                                    "qiyuMerchantId",
+                                    e.target.value,
+                                  )
+                                }
+                                className="field"
+                                placeholder="Merchant ID"
+                              />
+                            </Field>
+                          ) : null}
+                          <Field label="Instructions">
+                            <textarea
+                              value={method.instructions || ""}
+                              onChange={(e) =>
+                                updateMethod(
+                                  index,
+                                  "instructions",
+                                  e.target.value,
+                                )
+                              }
+                              rows={2}
+                              className="field"
+                              placeholder="Payment notes shown during registration"
+                            />
+                          </Field>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : null}
 
@@ -752,6 +1136,7 @@ function EventEditorModal({
                             updateSpeaker(i, "name", e.target.value)
                           }
                           className="field"
+                          placeholder="Speaker full name"
                         />
                       </Field>
                       <Field label="Role">
@@ -761,6 +1146,7 @@ function EventEditorModal({
                             updateSpeaker(i, "role", e.target.value)
                           }
                           className="field"
+                          placeholder="Job title or role"
                         />
                       </Field>
                       <Field label="Org">
@@ -770,6 +1156,7 @@ function EventEditorModal({
                             updateSpeaker(i, "org", e.target.value)
                           }
                           className="field"
+                          placeholder="Company or organization"
                         />
                       </Field>
                       <Field label="Badge">
@@ -779,6 +1166,7 @@ function EventEditorModal({
                             updateSpeaker(i, "badge", e.target.value)
                           }
                           className="field"
+                          placeholder="Short label, e.g. Keynote"
                         />
                       </Field>
                       <Field label="Bio" className="sm:col-span-2">
@@ -789,6 +1177,7 @@ function EventEditorModal({
                           }
                           rows={2}
                           className="field"
+                          placeholder="Short speaker bio"
                         />
                       </Field>
                       <Field label="LinkedIn">
@@ -798,6 +1187,7 @@ function EventEditorModal({
                             updateSpeaker(i, "linkedin", e.target.value)
                           }
                           className="field"
+                          placeholder="LinkedIn profile URL"
                         />
                       </Field>
                       <Field label="Website">
@@ -807,6 +1197,7 @@ function EventEditorModal({
                             updateSpeaker(i, "website", e.target.value)
                           }
                           className="field"
+                          placeholder="Personal or company website"
                         />
                       </Field>
                       <Field label="Photo" className="sm:col-span-2">
@@ -816,7 +1207,7 @@ function EventEditorModal({
                             updateSpeaker(i, "photo", e.target.value)
                           }
                           className="field"
-                          placeholder="Name key or image URL"
+                          placeholder="Photo URL or image file name"
                         />
                       </Field>
                     </div>
@@ -832,7 +1223,7 @@ function EventEditorModal({
                               updateSpeaker(i, "photoPosition", e.target.value)
                             }
                             className="field"
-                            placeholder="center top"
+                            placeholder="e.g. center top"
                           />
                         </Field>
                         <Field label="Padding bottom">
@@ -876,6 +1267,7 @@ function EventEditorModal({
                             updateHost(i, "name", e.target.value)
                           }
                           className="field"
+                          placeholder="Host full name"
                         />
                       </Field>
                       <Field label="Role">
@@ -885,6 +1277,7 @@ function EventEditorModal({
                             updateHost(i, "role", e.target.value)
                           }
                           className="field"
+                          placeholder="Job title or role"
                         />
                       </Field>
                       <Field label="Startup">
@@ -894,6 +1287,7 @@ function EventEditorModal({
                             updateHost(i, "startup", e.target.value)
                           }
                           className="field"
+                          placeholder="Startup or company name"
                         />
                       </Field>
                       <Field label="LinkedIn">
@@ -903,6 +1297,7 @@ function EventEditorModal({
                             updateHost(i, "linkedin", e.target.value)
                           }
                           className="field"
+                          placeholder="LinkedIn profile URL"
                         />
                       </Field>
                       <Field label="Photo" className="sm:col-span-2">
@@ -912,6 +1307,7 @@ function EventEditorModal({
                             updateHost(i, "photo", e.target.value)
                           }
                           className="field"
+                          placeholder="Photo URL or image file name"
                         />
                       </Field>
                     </div>
@@ -936,6 +1332,7 @@ function EventEditorModal({
                         })
                       }
                       className="field"
+                      placeholder="Guest founder name"
                     />
                   </Field>
                   <Field label="Photo">
@@ -948,6 +1345,7 @@ function EventEditorModal({
                         })
                       }
                       className="field"
+                      placeholder="Photo URL or image file name"
                     />
                   </Field>
                   <Field label="Bio" className="sm:col-span-2">
@@ -961,6 +1359,7 @@ function EventEditorModal({
                       }
                       rows={3}
                       className="field"
+                      placeholder="Short bio for the guest founder"
                     />
                   </Field>
                 </div>
@@ -1023,7 +1422,13 @@ function EventEditorModal({
   );
 }
 
-type EditorTab = "details" | "venue" | "speakers" | "hosts" | "guest";
+type EditorTab =
+  | "details"
+  | "venue"
+  | "payment"
+  | "speakers"
+  | "hosts"
+  | "guest";
 
 function tabLabel(tab: EditorTab) {
   switch (tab) {
@@ -1031,6 +1436,8 @@ function tabLabel(tab: EditorTab) {
       return "Event details";
     case "venue":
       return "Venue & maps";
+    case "payment":
+      return "Payment methods";
     case "speakers":
       return "Speakers";
     case "hosts":

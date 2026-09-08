@@ -13,6 +13,8 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StoriesRouteImport } from './routes/stories'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as OrgLoginRouteImport } from './routes/org-login'
+import { Route as HostRouteImport } from './routes/host'
 import { Route as EventsRouteImport } from './routes/events'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CommunityRouteImport } from './routes/community'
@@ -27,6 +29,7 @@ import { Route as EventsSlugRouteImport } from './routes/events.$slug'
 import { Route as AdminRegistrationsRouteImport } from './routes/admin.registrations'
 import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminContactsRouteImport } from './routes/admin.contacts'
+import { Route as AdminApplicationsRouteImport } from './routes/admin.applications'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -46,6 +49,16 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrgLoginRoute = OrgLoginRouteImport.update({
+  id: '/org-login',
+  path: '/org-login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HostRoute = HostRouteImport.update({
+  id: '/host',
+  path: '/host',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventsRoute = EventsRouteImport.update({
@@ -118,6 +131,11 @@ const AdminContactsRoute = AdminContactsRouteImport.update({
   path: '/contacts',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminApplicationsRoute = AdminApplicationsRouteImport.update({
+  id: '/applications',
+  path: '/applications',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -128,10 +146,13 @@ export interface FileRoutesByFullPath {
   '/community': typeof CommunityRoute
   '/contact': typeof ContactRoute
   '/events': typeof EventsRouteWithChildren
+  '/host': typeof HostRoute
+  '/org-login': typeof OrgLoginRoute
   '/privacy': typeof PrivacyRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stories': typeof StoriesRoute
   '/terms': typeof TermsRoute
+  '/admin/applications': typeof AdminApplicationsRoute
   '/admin/contacts': typeof AdminContactsRoute
   '/admin/events': typeof AdminEventsRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
@@ -146,10 +167,13 @@ export interface FileRoutesByTo {
   '/badge': typeof BadgeRoute
   '/community': typeof CommunityRoute
   '/contact': typeof ContactRoute
+  '/host': typeof HostRoute
+  '/org-login': typeof OrgLoginRoute
   '/privacy': typeof PrivacyRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stories': typeof StoriesRoute
   '/terms': typeof TermsRoute
+  '/admin/applications': typeof AdminApplicationsRoute
   '/admin/contacts': typeof AdminContactsRoute
   '/admin/events': typeof AdminEventsRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
@@ -167,10 +191,13 @@ export interface FileRoutesById {
   '/community': typeof CommunityRoute
   '/contact': typeof ContactRoute
   '/events': typeof EventsRouteWithChildren
+  '/host': typeof HostRoute
+  '/org-login': typeof OrgLoginRoute
   '/privacy': typeof PrivacyRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stories': typeof StoriesRoute
   '/terms': typeof TermsRoute
+  '/admin/applications': typeof AdminApplicationsRoute
   '/admin/contacts': typeof AdminContactsRoute
   '/admin/events': typeof AdminEventsRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
@@ -189,10 +216,13 @@ export interface FileRouteTypes {
     | '/community'
     | '/contact'
     | '/events'
+    | '/host'
+    | '/org-login'
     | '/privacy'
     | '/sitemap.xml'
     | '/stories'
     | '/terms'
+    | '/admin/applications'
     | '/admin/contacts'
     | '/admin/events'
     | '/admin/registrations'
@@ -207,10 +237,13 @@ export interface FileRouteTypes {
     | '/badge'
     | '/community'
     | '/contact'
+    | '/host'
+    | '/org-login'
     | '/privacy'
     | '/sitemap.xml'
     | '/stories'
     | '/terms'
+    | '/admin/applications'
     | '/admin/contacts'
     | '/admin/events'
     | '/admin/registrations'
@@ -227,10 +260,13 @@ export interface FileRouteTypes {
     | '/community'
     | '/contact'
     | '/events'
+    | '/host'
+    | '/org-login'
     | '/privacy'
     | '/sitemap.xml'
     | '/stories'
     | '/terms'
+    | '/admin/applications'
     | '/admin/contacts'
     | '/admin/events'
     | '/admin/registrations'
@@ -248,6 +284,8 @@ export interface RootRouteChildren {
   CommunityRoute: typeof CommunityRoute
   ContactRoute: typeof ContactRoute
   EventsRoute: typeof EventsRouteWithChildren
+  HostRoute: typeof HostRoute
+  OrgLoginRoute: typeof OrgLoginRoute
   PrivacyRoute: typeof PrivacyRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   StoriesRoute: typeof StoriesRoute
@@ -282,6 +320,20 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/org-login': {
+      id: '/org-login'
+      path: '/org-login'
+      fullPath: '/org-login'
+      preLoaderRoute: typeof OrgLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/host': {
+      id: '/host'
+      path: '/host'
+      fullPath: '/host'
+      preLoaderRoute: typeof HostRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/events': {
@@ -382,10 +434,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminContactsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/applications': {
+      id: '/admin/applications'
+      path: '/applications'
+      fullPath: '/admin/applications'
+      preLoaderRoute: typeof AdminApplicationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
 interface AdminRouteChildren {
+  AdminApplicationsRoute: typeof AdminApplicationsRoute
   AdminContactsRoute: typeof AdminContactsRoute
   AdminEventsRoute: typeof AdminEventsRoute
   AdminRegistrationsRoute: typeof AdminRegistrationsRoute
@@ -393,6 +453,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminApplicationsRoute: AdminApplicationsRoute,
   AdminContactsRoute: AdminContactsRoute,
   AdminEventsRoute: AdminEventsRoute,
   AdminRegistrationsRoute: AdminRegistrationsRoute,
@@ -423,6 +484,8 @@ const rootRouteChildren: RootRouteChildren = {
   CommunityRoute: CommunityRoute,
   ContactRoute: ContactRoute,
   EventsRoute: EventsRouteWithChildren,
+  HostRoute: HostRoute,
+  OrgLoginRoute: OrgLoginRoute,
   PrivacyRoute: PrivacyRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   StoriesRoute: StoriesRoute,

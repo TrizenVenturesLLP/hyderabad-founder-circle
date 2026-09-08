@@ -35,7 +35,7 @@ import {
   type EventSpeaker,
 } from "@/lib/events";
 import { getEventPageContent, type EventPartner } from "@/lib/event-page-content";
-import { REGISTRATION_FEE_INR } from "@/lib/api";
+import { eventFeeInr } from "@/lib/api";
 import { links } from "@/lib/links";
 import { EventShareBar } from "@/components/EventShareBar";
 import { RsvpButton } from "@/components/rsvp/RsvpButton";
@@ -100,7 +100,7 @@ export const Route = createFileRoute("/events/$slug")({
                 isAccessibleForFree: false,
                 offers: {
                   "@type": "Offer",
-                  price: String(REGISTRATION_FEE_INR),
+                  price: String(eventFeeInr(m)),
                   priceCurrency: "INR",
                   availability: "https://schema.org/InStock",
                   url: `https://community.trizenventures.com/events/${m.slug}`,
@@ -184,7 +184,7 @@ const venueAmenities = [
 const faqs = [
   {
     q: "Is this event free?",
-    a: `Registration is ₹${REGISTRATION_FEE_INR} per person and is required due to limited capacity.`,
+    a: "Registration includes a small fee per person and is required due to limited capacity.",
   },
   {
     q: "Can I attend if I'm not a founder?",
@@ -804,7 +804,7 @@ function EventDetail() {
                 { label: "Date", value: meetupDateLabel(meetup), icon: Calendar },
                 { label: "Time", value: meetup.time, icon: Clock },
                 { label: "Venue", value: meetup.venue, icon: MapPin },
-                { label: "Fee", value: `₹${REGISTRATION_FEE_INR}`, icon: Ticket },
+                { label: "Fee", value: `₹${eventFeeInr(meetup)}`, icon: Ticket },
               ].map(({ label, value, icon: Icon }) => (
                 <div key={label} className="min-w-0">
                   <dt className="inline-flex items-center gap-1.5 text-[11px] font-medium tracking-[0.04em] text-[var(--color-text-muted)]">
@@ -1417,7 +1417,7 @@ function EventDetail() {
                   Reserve your seat
                 </h2>
                 <p className="mt-2.5 max-w-[34ch] text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
-                  ₹{REGISTRATION_FEE_INR} · {seatsLabel} seats. Confirmation, venue notes, and the
+                  ₹{eventFeeInr(meetup)} · {seatsLabel} seats. Confirmation, venue notes, and the
                   WhatsApp link land in your inbox after you register.
                 </p>
 
@@ -1426,7 +1426,7 @@ function EventDetail() {
                     { label: "Date", value: meetupDateLabel(meetup) },
                     { label: "Time", value: meetup.time },
                     { label: "Venue", value: meetup.venue },
-                    { label: "Fee", value: `₹${REGISTRATION_FEE_INR}` },
+                    { label: "Fee", value: `₹${eventFeeInr(meetup)}` },
                   ].map((row) => (
                     <div key={row.label} className="min-w-0">
                       <dt className="text-[11px] font-medium tracking-[0.04em] text-[var(--color-text-muted)]">
