@@ -3,7 +3,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
-  CreditCard,
+  Eye,
   Mail,
   MoreHorizontal,
   Search,
@@ -98,6 +98,14 @@ function PaymentStatusCell({ payment }: { payment?: AdminRsvp["payment"] }) {
               title={payment.razorpayPaymentId}
             >
               {payment.razorpayPaymentId}
+            </p>
+          ) : null}
+          {payment?.note ? (
+            <p
+              className="mt-0.5 max-w-[10rem] truncate font-mono text-[10px] text-[var(--brand-accent)]"
+              title={payment.note}
+            >
+              ID: {payment.note}
             </p>
           ) : null}
         </>
@@ -448,8 +456,8 @@ function AdminRegistrationsPage() {
                             onClick={() => setPaymentDetail(row)}
                             className="cursor-pointer gap-2"
                           >
-                            <CreditCard className="size-4" strokeWidth={1.75} />
-                            Payment details
+                            <Eye className="size-4" strokeWidth={1.75} />
+                            View application
                           </DropdownMenuItem>
                           {row.payment?.status !== "paid" ? (
                             <DropdownMenuItem
@@ -509,7 +517,7 @@ function AdminRegistrationsPage() {
       ) : null}
 
       {paymentDetail ? (
-        <PaymentDetailsModal
+        <RegistrationDetailsModal
           rsvp={paymentDetail}
           onClose={() => setPaymentDetail(null)}
         />
@@ -518,7 +526,7 @@ function AdminRegistrationsPage() {
   );
 }
 
-function PaymentDetailsModal({
+function RegistrationDetailsModal({
   rsvp,
   onClose,
 }: {
@@ -527,14 +535,54 @@ function PaymentDetailsModal({
 }) {
   const payment = rsvp.payment;
   const status = payment?.status || "unpaid";
-  const paid = status === "paid";
-  const rows: { label: string; value: string; mono?: boolean }[] = [
-    { label: "Registrant", value: rsvp.name },
+  const paymentStatus =
+    status === "paid"
+      ? "Paid"
+      : status === "failed"
+        ? "Failed"
+        : status === "pending_review"
+          ? "Pending review"
+          : "Unpaid";
+  const showList = (values?: string[]) =>
+    values?.length ? values.join(", ") : "—";
+
+  const applicationRows: { label: string; value: string; mono?: boolean }[] = [
+    { label: "Full name", value: rsvp.name },
     { label: "Email", value: rsvp.email },
+    {
+      label: "Phone",
+      value: formatAdminPhone(rsvp.countryCode, rsvp.phone),
+    },
+    { label: "LinkedIn", value: rsvp.linkedin || "—" },
+    { label: "Role", value: rsvp.role || "—" },
+    { label: "Company", value: rsvp.company || "—" },
+    { label: "Startup stage", value: rsvp.startupStage || "—" },
+    { label: "Industry", value: rsvp.industry || "—" },
+    { label: "GTM challenges", value: showList(rsvp.gtmChallenges) },
+    { label: "Wants to leave with", value: showList(rsvp.leaveWith) },
+    { label: "Looking for", value: showList(rsvp.lookingFor) },
+    { label: "Can offer community", value: showList(rsvp.offerCommunity) },
+    { label: "Wants to meet", value: showList(rsvp.wantToMeet) },
+    { label: "Additional offer", value: rsvp.canHelpWith || "—" },
+    { label: "Biggest challenge", value: rsvp.biggestChallenge || "—" },
+    { label: "Questions / notes", value: rsvp.questions || "—" },
+    { label: "Heard about event", value: formatHeardAbout(rsvp) },
+    { label: "Join WhatsApp", value: rsvp.joinWhatsapp ? "Yes" : "No" },
+    {
+      label: "Subscribe to updates",
+      value: rsvp.subscribeUpdates ? "Yes" : "No",
+    },
     { label: "Event", value: rsvp.event?.title || "—" },
     {
+      label: "Applied on",
+      value: new Date(rsvp.createdAt).toLocaleString("en-IN"),
+    },
+  ];
+
+  const paymentRows: { label: string; value: string; mono?: boolean }[] = [
+    {
       label: "Status",
-      value: paid ? "Paid" : status === "failed" ? "Failed" : "Unpaid",
+      value: paymentStatus,
     },
     {
       label: "Amount",
@@ -545,7 +593,12 @@ function PaymentDetailsModal({
     },
     { label: "Method", value: paymentMethodLabel(payment?.method) },
     {
-      label: "Payment ID",
+      label: "Transaction ID / UTR",
+      value: payment?.note || payment?.razorpayPaymentId || "—",
+      mono: true,
+    },
+    {
+      label: "Razorpay payment ID",
       value: payment?.razorpayPaymentId || "—",
       mono: true,
     },
@@ -576,11 +629,11 @@ function PaymentDetailsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-[16px] border border-[var(--color-border)] bg-white p-5 shadow-xl">
+      <div className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-[16px] border border-[var(--color-border)] bg-white p-5 shadow-xl">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--brand-accent)]">
-              Payment details
+              Registration application
             </p>
             <h3 className="mt-1 font-display text-xl tracking-tight text-foreground">
               {rsvp.name}
@@ -595,11 +648,49 @@ function PaymentDetailsModal({
           </button>
         </div>
 
-        <dl className="mt-5 space-y-3">
-          {rows.map((row) => (
+        <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
+          Applicant details
+        </p>
+        <dl className="mt-3 grid gap-x-8 sm:grid-cols-2">
+          {applicationRows.map((row) => (
             <div
               key={row.label}
-              className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] pb-3 last:border-0 last:pb-0"
+              className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] py-3"
+            >
+              <dt className="shrink-0 text-xs text-[var(--color-text-muted)]">
+                {row.label}
+              </dt>
+              <dd className="min-w-0 text-right">
+                <p
+                  className={cn(
+                    "break-all text-xs font-medium text-foreground",
+                    row.mono && "font-mono text-[11px]",
+                  )}
+                >
+                  {row.value}
+                </p>
+                {row.mono && row.value !== "—" ? (
+                  <button
+                    type="button"
+                    onClick={() => void copyValue(row.value, row.label)}
+                    className="mt-1 text-[10px] font-medium text-[var(--brand-accent)] hover:underline"
+                  >
+                    Copy
+                  </button>
+                ) : null}
+              </dd>
+            </div>
+          ))}
+        </dl>
+
+        <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
+          Payment details
+        </p>
+        <dl className="mt-3 grid gap-x-8 sm:grid-cols-2">
+          {paymentRows.map((row) => (
+            <div
+              key={row.label}
+              className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] py-3"
             >
               <dt className="shrink-0 text-xs text-[var(--color-text-muted)]">
                 {row.label}

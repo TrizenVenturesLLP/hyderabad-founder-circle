@@ -283,7 +283,17 @@ export type AdminRsvp = {
   role: string;
   company: string;
   startupStage: string;
+  gtmChallenges?: string[];
+  leaveWith?: string[];
   industry: string;
+  lookingFor?: string[];
+  offerCommunity?: string[];
+  wantToMeet?: string[];
+  canHelpWith?: string;
+  biggestChallenge?: string;
+  joinWhatsapp?: boolean;
+  subscribeUpdates?: boolean;
+  questions?: string;
   heardAboutEvent: string;
   heardAboutEventOther: string;
   createdAt: string;
