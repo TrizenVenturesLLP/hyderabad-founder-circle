@@ -302,6 +302,7 @@ export function RsvpDialog() {
   );
   const [manualProvider, setManualProvider] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
+  const [paymentPendingReview, setPaymentPendingReview] = useState(false);
   const feeInr =
     paymentConfig?.amountInr ||
     eventFeeInr(event) ||
@@ -393,6 +394,7 @@ export function RsvpDialog() {
       setStepAnim(null);
       stepAnimatingRef.current = false;
       setPaymentMethod(draft.paymentMethod);
+      setPaymentPendingReview(false);
       setDraftRestored(true);
       setErrors({});
       setSubmitting(false);
@@ -405,6 +407,7 @@ export function RsvpDialog() {
       setErrors({});
       setSubmitting(false);
       setPaymentMethod("upi");
+      setPaymentPendingReview(false);
       setDraftRestored(false);
     }
   }, [open, event.slug]);
@@ -469,6 +472,7 @@ export function RsvpDialog() {
     setErrors({});
     setSubmitting(false);
     setPaymentMethod("upi");
+    setPaymentPendingReview(false);
     setDraftRestored(false);
     setCheckoutOpen(false);
   }
@@ -729,11 +733,12 @@ export function RsvpDialog() {
           provider,
           note: paymentNote.trim(),
         });
+        setPaymentPendingReview(true);
         setStep("success");
         clearRsvpDraft(event.slug);
         setDraftRestored(false);
         toast.success(
-          "Registration submitted. Payment is pending organizer review.",
+          "Application submitted. Payment is pending organizer review.",
         );
         setSubmitting(false);
         return;
@@ -771,6 +776,7 @@ export function RsvpDialog() {
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
               });
+              setPaymentPendingReview(false);
               setStep("success");
               clearRsvpDraft(event.slug);
               setDraftRestored(false);
@@ -884,7 +890,11 @@ export function RsvpDialog() {
         </DialogDescription>
 
         {step === "success" ? (
-          <SuccessView event={event} registrantName={form.name} />
+          <SuccessView
+            event={event}
+            registrantName={form.name}
+            pendingReview={paymentPendingReview}
+          />
         ) : step === "processing" ? (
           <ProcessingView />
         ) : (
@@ -2069,9 +2079,11 @@ function ProcessingView() {
 function SuccessView({
   event,
   registrantName,
+  pendingReview,
 }: {
   event: Meetup;
   registrantName: string;
+  pendingReview: boolean;
 }) {
   const { closeRsvp } = useRsvp();
   const dateConfirmed = isMeetupDateConfirmed(event);
@@ -2178,42 +2190,71 @@ function SuccessView({
                 <span className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center">
                   <span
                     aria-hidden
-                    className="absolute inset-0 animate-[hero-pulse_2.4s_ease-in-out_infinite] rounded-none bg-primary/20"
+                    className={cn(
+                      "absolute inset-0 animate-[hero-pulse_2.4s_ease-in-out_infinite] rounded-none",
+                      pendingReview ? "bg-amber-500/20" : "bg-primary/20",
+                    )}
                   />
-                  <span className="relative flex h-9 w-9 items-center justify-center rounded-none bg-primary text-primary-foreground shadow-[0_10px_24px_-10px_color-mix(in_oklab,var(--terracotta)_70%,transparent)]">
-                    <Check className="h-4 w-4" strokeWidth={2.5} />
+                  <span
+                    className={cn(
+                      "relative flex h-9 w-9 items-center justify-center rounded-none text-white",
+                      pendingReview ? "bg-amber-600" : "bg-primary",
+                    )}
+                  >
+                    {pendingReview ? (
+                      <Clock className="h-4 w-4" strokeWidth={2.2} />
+                    ) : (
+                      <Check className="h-4 w-4" strokeWidth={2.5} />
+                    )}
                   </span>
                 </span>
-                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-primary sm:text-[11px]">
-                  Confirmed
+                <p
+                  className={cn(
+                    "text-[10px] font-medium uppercase tracking-[0.18em] sm:text-[11px]",
+                    pendingReview ? "text-amber-700" : "text-primary",
+                  )}
+                >
+                  {pendingReview ? "Under review" : "Confirmed"}
                 </p>
               </div>
               <h2 className="font-display text-[1.45rem] leading-tight tracking-tight text-foreground sm:text-[1.7rem]">
-                You&apos;re Registered!
+                {pendingReview
+                  ? "Your application is under review"
+                  : "You’re Registered!"}
               </h2>
               <p className="mt-1.5 max-w-sm text-[13px] leading-relaxed text-muted-foreground sm:text-sm">
-                Seat locked in. Create a badge, join WhatsApp, and save the date.
+                {pendingReview
+                  ? "We received your application and transaction ID. Our team will verify the payment before confirming your seat."
+                  : "Seat locked in. Create a badge, join WhatsApp, and save the date."}
               </p>
             </div>
 
-            {/* Actions under copy on desktop only */}
-            <div className="mt-auto hidden pt-5 md:block">{actions}</div>
+            {/* Actions are available only after payment is confirmed. */}
+            {!pendingReview ? (
+              <div className="mt-auto hidden pt-5 md:block">{actions}</div>
+            ) : null}
             <p className="mt-3 hidden items-center gap-2 text-left text-[12px] text-muted-foreground md:inline-flex">
               <Mail className="h-3.5 w-3.5 shrink-0 text-primary" strokeWidth={1.75} />
-              Confirmation + badge link sent to your email.
+              {pendingReview
+                ? "Confirmation will be emailed after payment verification."
+                : "Confirmation + badge link sent to your email."}
             </p>
           </div>
 
           {/* Card + actions — stacked on mobile, side-by-side on desktop */}
           <div className="flex min-w-0 flex-col gap-3 md:contents">
             <div className="min-w-0">{eventCard}</div>
-            <div className="min-w-0 md:hidden">{actions}</div>
+            {!pendingReview ? (
+              <div className="min-w-0 md:hidden">{actions}</div>
+            ) : null}
           </div>
         </div>
 
         <p className="mt-3.5 flex items-center justify-center gap-2 text-center text-[11px] text-muted-foreground md:hidden">
           <Mail className="h-3.5 w-3.5 shrink-0 text-primary" strokeWidth={1.75} />
-          Confirmation + badge link sent to your email.
+          {pendingReview
+            ? "Confirmation will be emailed after payment verification."
+            : "Confirmation + badge link sent to your email."}
         </p>
       </div>
     </div>
