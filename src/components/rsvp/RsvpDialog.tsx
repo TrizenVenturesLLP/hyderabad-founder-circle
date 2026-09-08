@@ -22,8 +22,8 @@ import { toast } from "sonner";
 import { meetupMapsUrl, meetupDateLabel, isMeetupDateConfirmed, type Meetup } from "@/lib/events";
 import { getEventRoles } from "@/lib/event-page-content";
 import {
-  HEARD_ABOUT_EVENT_OPTIONS,
   HEARD_ABOUT_OTHER_LABEL,
+  getHeardAboutEventOptions,
 } from "@/lib/heard-about-options";
 import {
   createPaymentOrder,
@@ -291,6 +291,7 @@ const STEP2_FIELD_ORDER = [
 export function RsvpDialog() {
   const { open, event, closeRsvp } = useRsvp();
   const roleOptions = event ? getEventRoles(roles, event) : [...roles];
+  const heardAboutOptions = getHeardAboutEventOptions(event);
   const [step, setStep] = useState<Step>(1);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [errors, setErrors] = useState<Partial<Record<FormErrorKey, string>>>({});
@@ -706,6 +707,11 @@ export function RsvpDialog() {
 
   async function payAndRegister() {
     if (step !== 3) return;
+
+    if (isManualCheckout && !paymentNote.trim()) {
+      toast.error("Enter the transaction ID before submitting.");
+      return;
+    }
 
     setSubmitting(true);
     toast.dismiss();
@@ -1157,7 +1163,7 @@ export function RsvpDialog() {
                           data-rsvp-control
                           className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2"
                         >
-                          {HEARD_ABOUT_EVENT_OPTIONS.map((option) => {
+                          {heardAboutOptions.map((option) => {
                             const selected = form.heardAboutEvent === option;
                             return (
                               <button
@@ -1537,13 +1543,14 @@ export function RsvpDialog() {
                                 </button>
                               );
                             })}
-                          <Field label="Payment note (optional)">
-                            <textarea
+                          <Field label="Transaction ID" required>
+                            <input
                               value={paymentNote}
                               onChange={(e) => setPaymentNote(e.target.value)}
-                              placeholder="UTR / transaction reference"
-                              className={textareaClass}
-                              maxLength={400}
+                              placeholder="Enter UTR or transaction reference"
+                              className={fieldClass}
+                              maxLength={120}
+                              required
                             />
                           </Field>
                         </div>

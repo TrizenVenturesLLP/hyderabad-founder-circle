@@ -49,7 +49,7 @@ export async function submitManualPaymentRegistration(
   payload: RsvpPayload & {
     provider: string;
     proofUrl?: string;
-    note?: string;
+    note: string;
   },
 ) {
   const res = await fetch(`${API_BASE}/api/payments/manual-confirm`, {
