@@ -154,6 +154,15 @@ export async function fetchAdminEvents(organizationId?: string) {
   );
 }
 
+export async function uploadAdminPaymentQr(file: File) {
+  const body = new FormData();
+  body.append("qr", file);
+  return adminFetch<{ key: string }>("/api/admin/events/payment-qr-upload", {
+    method: "POST",
+    body,
+  });
+}
+
 export async function createAdminEvent(payload: Partial<AdminEvent>) {
   return adminFetch<{ item: AdminEvent }>("/api/admin/events", {
     method: "POST",

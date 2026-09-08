@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   Search,
   Trash2,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -54,7 +55,13 @@ function paymentMethodLabel(method?: string) {
   return labels[key] || (method ? String(method) : "—");
 }
 
-function PaymentStatusCell({ payment }: { payment?: AdminRsvp["payment"] }) {
+function PaymentStatusCell({
+  payment,
+  onViewProof,
+}: {
+  payment?: AdminRsvp["payment"];
+  onViewProof?: () => void;
+}) {
   const status = payment?.status || "unpaid";
   const paid = status === "paid";
   const pending = status === "pending_review";
@@ -107,6 +114,15 @@ function PaymentStatusCell({ payment }: { payment?: AdminRsvp["payment"] }) {
             >
               ID: {payment.note}
             </p>
+          ) : null}
+          {payment?.proofUrl ? (
+            <button
+              type="button"
+              onClick={onViewProof}
+              className="mt-0.5 text-[10px] font-medium text-[var(--brand-accent)] hover:underline"
+            >
+              View image
+            </button>
           ) : null}
         </>
       ) : null}
@@ -177,6 +193,10 @@ function AdminRegistrationsPage() {
   const [error, setError] = useState("");
   const [composeOpen, setComposeOpen] = useState(false);
   const [paymentDetail, setPaymentDetail] = useState<AdminRsvp | null>(null);
+  const [proofPreview, setProofPreview] = useState<{
+    url: string;
+    name: string;
+  } | null>(null);
   const [page, setPage] = useState(1);
 
   async function load() {
@@ -256,7 +276,9 @@ function AdminRegistrationsPage() {
     if (!confirm(`Mark payment as paid for ${name}?`)) return;
     try {
       await updateAdminRsvpPaymentStatus(id, "paid");
-      toast.success(`Marked ${name} as paid`);
+      toast.success(
+        `${name} marked as paid. Registration confirmation is being emailed.`,
+      );
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not update payment");
@@ -427,7 +449,18 @@ function AdminRegistrationsPage() {
                       {row.event?.title}
                     </td>
                     <td className="px-4 py-3">
-                      <PaymentStatusCell payment={row.payment} />
+                      <PaymentStatusCell
+                        payment={row.payment}
+                        onViewProof={
+                          row.payment?.proofUrl
+                            ? () =>
+                                setProofPreview({
+                                  url: row.payment?.proofUrl || "",
+                                  name: row.name,
+                                })
+                            : undefined
+                        }
+                      />
                     </td>
                     <td className="px-4 py-3 text-xs">
                       <span className="font-medium text-foreground">{sent}</span>
@@ -522,6 +555,14 @@ function AdminRegistrationsPage() {
           onClose={() => setPaymentDetail(null)}
         />
       ) : null}
+
+      {proofPreview ? (
+        <PaymentProofModal
+          url={proofPreview.url}
+          name={proofPreview.name}
+          onClose={() => setProofPreview(null)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -533,6 +574,14 @@ function RegistrationDetailsModal({
   rsvp: AdminRsvp;
   onClose: () => void;
 }) {
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
   const payment = rsvp.payment;
   const status = payment?.status || "unpaid";
   const paymentStatus =
@@ -628,7 +677,12 @@ function RegistrationDetailsModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
       <div className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-[16px] border border-[var(--color-border)] bg-white p-5 shadow-xl">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -717,6 +771,68 @@ function RegistrationDetailsModal({
             </div>
           ))}
         </dl>
+        {payment?.proofUrl ? (
+          <div className="mt-5">
+            <p className="mb-2 text-xs text-[var(--color-text-muted)]">
+              Payment proof
+            </p>
+            <a
+              href={payment.proofUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block"
+            >
+              <img
+                src={payment.proofUrl}
+                alt={`Payment proof submitted by ${rsvp.name}`}
+                className="max-h-80 max-w-full border border-[var(--color-border)] object-contain"
+              />
+            </a>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function PaymentProofModal({
+  url,
+  name,
+  onClose,
+}: {
+  url: string;
+  name: string;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div className="relative max-h-[90dvh] max-w-4xl bg-white p-3 shadow-2xl">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-5 top-5 z-10 inline-flex size-8 items-center justify-center rounded-full bg-black/75 text-white hover:bg-black"
+          aria-label="Close payment proof"
+        >
+          <X className="size-4" aria-hidden />
+        </button>
+        <img
+          src={url}
+          alt={`Payment proof submitted by ${name}`}
+          className="max-h-[calc(90dvh-1.5rem)] max-w-full object-contain"
+        />
       </div>
     </div>
   );

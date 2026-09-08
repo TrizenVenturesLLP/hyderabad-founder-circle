@@ -17,6 +17,7 @@ import {
   MessageCircle,
   Smartphone,
   Wallet,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { meetupMapsUrl, meetupDateLabel, isMeetupDateConfirmed, type Meetup } from "@/lib/events";
@@ -31,6 +32,7 @@ import {
   fetchPaymentConfig,
   REGISTRATION_FEE_INR,
   submitManualPaymentRegistration,
+  uploadPaymentProof,
   verifyPaymentAndRegister,
   type EventPaymentConfig,
   type PaymentMethod,
@@ -301,7 +303,9 @@ export function RsvpDialog() {
     null,
   );
   const [manualProvider, setManualProvider] = useState("");
-  const [paymentNote, setPaymentNote] = useState("");
+  const [paymentProof, setPaymentProof] = useState("");
+  const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
+  const [paymentProofName, setPaymentProofName] = useState("");
   const [paymentPendingReview, setPaymentPendingReview] = useState(false);
   const feeInr =
     paymentConfig?.amountInr ||
@@ -310,6 +314,9 @@ export function RsvpDialog() {
   const isManualCheckout =
     paymentConfig?.checkoutMode === "manual" ||
     (paymentConfig?.hasManualMethods && !paymentConfig?.hasRazorpay);
+  const manualQrMethod = paymentConfig?.methods.find(
+    (method) => method.type !== "razorpay" && method.qrImageUrl,
+  );
   const [draftRestored, setDraftRestored] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [stepAnim, setStepAnim] = useState<
@@ -407,6 +414,9 @@ export function RsvpDialog() {
       setErrors({});
       setSubmitting(false);
       setPaymentMethod("upi");
+      setPaymentProof("");
+      setPaymentProofFile(null);
+      setPaymentProofName("");
       setPaymentPendingReview(false);
       setDraftRestored(false);
     }
@@ -472,6 +482,9 @@ export function RsvpDialog() {
     setErrors({});
     setSubmitting(false);
     setPaymentMethod("upi");
+    setPaymentProof("");
+    setPaymentProofFile(null);
+    setPaymentProofName("");
     setPaymentPendingReview(false);
     setDraftRestored(false);
     setCheckoutOpen(false);
@@ -712,8 +725,9 @@ export function RsvpDialog() {
   async function payAndRegister() {
     if (step !== 3) return;
 
-    if (isManualCheckout && !paymentNote.trim()) {
-      toast.error("Enter the transaction ID before submitting.");
+    const proofFile = paymentProofFile;
+    if (isManualCheckout && !proofFile) {
+      toast.error("Upload your payment screenshot before submitting.");
       return;
     }
 
@@ -723,15 +737,19 @@ export function RsvpDialog() {
       const payload = buildRsvpPayload();
 
       if (isManualCheckout) {
+        if (!proofFile) {
+          throw new Error("Upload your payment screenshot before submitting.");
+        }
         const provider =
           manualProvider ||
           paymentConfig?.methods.find((m) => m.type !== "razorpay")?.type ||
           "other";
         setStep("processing");
+        const proofKey = await uploadPaymentProof(proofFile);
         await submitManualPaymentRegistration({
           ...payload,
           provider,
-          note: paymentNote.trim(),
+          proofKey,
         });
         setPaymentPendingReview(true);
         setStep("success");
@@ -811,6 +829,27 @@ export function RsvpDialog() {
     }
   }
 
+  function selectPaymentProof(file?: File) {
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast.error("Upload a JPG, PNG, or WebP image.");
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error("Payment screenshot must be smaller than 3 MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPaymentProof(String(reader.result || ""));
+      setPaymentProofFile(file);
+      setPaymentProofName(file.name);
+    };
+    reader.onerror = () => toast.error("Could not read that image.");
+    reader.readAsDataURL(file);
+  }
+
   function onSubmit(e: FormEvent) {
     e.preventDefault();
   }
@@ -880,8 +919,8 @@ export function RsvpDialog() {
           "max-sm:max-h-[92dvh] max-sm:pb-[env(safe-area-inset-bottom,0px)]",
           "max-sm:data-[state=open]:!animate-none max-sm:data-[state=closed]:!animate-none",
           step === "success" || step === "processing"
-            ? "max-h-[min(92dvh,560px)] max-sm:w-full w-[calc(100%-1.25rem)] max-w-[680px] sm:max-w-[680px]"
-            : "max-h-[min(92dvh,880px)] max-sm:w-full w-[calc(100%-1rem)] max-w-[1080px] sm:max-w-[1080px]",
+            ? "max-h-[min(92dvh,560px)] max-sm:!w-full max-sm:!max-w-none !w-[80vw] !max-w-[80vw]"
+            : "max-h-[min(92dvh,880px)] max-sm:w-full w-[80vw] max-w-[1200px] sm:max-w-[1200px]",
         )}
       >
         <DialogTitle className="sr-only">Founders & Builders Meetup Registration</DialogTitle>
@@ -1490,13 +1529,27 @@ export function RsvpDialog() {
                         </h3>
                         <p className="mt-1 text-sm text-muted-foreground">
                           {isManualCheckout
-                            ? `Pay ₹${feeInr} using one of the options below, then confirm you've paid.`
+                            ? manualQrMethod
+                              ? `Scan the QR code in the payment summary on the right, pay ₹${feeInr}, then upload your payment screenshot below.`
+                              : `Pay ₹${feeInr} using one of the options below, then upload your payment screenshot.`
                             : `Complete your ₹${feeInr} registration fee securely via Razorpay.`}
                         </p>
                       </div>
 
                       {isManualCheckout ? (
                         <div className="space-y-3">
+                          {manualQrMethod ? (
+                            <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-4 md:hidden">
+                              <p className="text-xs font-medium text-foreground">
+                                Scan this QR code to pay ₹{feeInr}
+                              </p>
+                              <img
+                                src={manualQrMethod.qrImageUrl}
+                                alt={`Payment QR for ${event.title}`}
+                                className="mx-auto mt-3 max-h-64 w-auto object-contain"
+                              />
+                            </div>
+                          ) : null}
                           {(paymentConfig?.methods || [])
                             .filter((m) => m.type !== "razorpay")
                             .map((method) => {
@@ -1538,13 +1591,6 @@ export function RsvpDialog() {
                                       Open payment link
                                     </a>
                                   ) : null}
-                                  {method.qrImageUrl ? (
-                                    <img
-                                      src={method.qrImageUrl}
-                                      alt="Payment QR"
-                                      className="mt-3 h-36 w-36 object-contain"
-                                    />
-                                  ) : null}
                                   {method.instructions ? (
                                     <p className="mt-2 text-xs text-muted-foreground">
                                       {method.instructions}
@@ -1553,15 +1599,47 @@ export function RsvpDialog() {
                                 </button>
                               );
                             })}
-                          <Field label="Transaction ID" required>
-                            <input
-                              value={paymentNote}
-                              onChange={(e) => setPaymentNote(e.target.value)}
-                              placeholder="Enter UTR or transaction reference"
-                              className={fieldClass}
-                              maxLength={120}
-                              required
-                            />
+                          <Field label="Payment screenshot" required>
+                            <label className="flex cursor-pointer items-center gap-3 border border-dashed border-[var(--color-border)] bg-[var(--color-background-alt)] px-4 py-3 transition-colors hover:border-[var(--brand-accent)]">
+                              <ImagePlus className="size-5 shrink-0 text-[var(--brand-accent)]" />
+                              <span className="min-w-0 text-sm text-foreground">
+                                {paymentProofName || "Upload payment proof"}
+                                <span className="mt-0.5 block text-xs text-muted-foreground">
+                                  JPG, PNG, or WebP · maximum 3 MB
+                                </span>
+                              </span>
+                              <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                className="sr-only"
+                                onChange={(e) =>
+                                  selectPaymentProof(e.target.files?.[0])
+                                }
+                                required={!paymentProof}
+                              />
+                            </label>
+                            {paymentProof ? (
+                              <div className="relative mt-3 w-fit">
+                                <img
+                                  src={paymentProof}
+                                  alt="Selected payment proof"
+                                  className="max-h-48 w-auto border border-[var(--color-border)] object-contain"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPaymentProof("");
+                                    setPaymentProofFile(null);
+                                    setPaymentProofName("");
+                                  }}
+                                  className="absolute right-2 top-2 inline-flex size-7 items-center justify-center rounded-full bg-black/75 text-white shadow-sm transition-colors hover:bg-black"
+                                  aria-label="Remove payment screenshot"
+                                  title="Remove image"
+                                >
+                                  <X className="size-4" aria-hidden />
+                                </button>
+                              </div>
+                            ) : null}
                           </Field>
                         </div>
                       ) : (
@@ -1703,7 +1781,10 @@ export function RsvpDialog() {
                       <button
                         type="button"
                         onClick={() => void payAndRegister()}
-                        disabled={submitting}
+                        disabled={
+                          submitting ||
+                          (isManualCheckout && !paymentProofFile)
+                        }
                         className={cn(
                           btnPrimaryClass,
                           "min-w-0 flex-1 px-3 text-[13px] sm:flex-none sm:px-6 sm:text-sm",
@@ -1716,7 +1797,11 @@ export function RsvpDialog() {
                               strokeWidth={1.75}
                               aria-hidden
                             />
-                            <span className="truncate">Opening checkout…</span>
+                            <span className="truncate">
+                              {isManualCheckout
+                                ? "Submitting…"
+                                : "Opening checkout…"}
+                            </span>
                           </>
                         ) : (
                           <>
@@ -1727,7 +1812,9 @@ export function RsvpDialog() {
                             />
                             <span className="truncate">
                               {isManualCheckout
-                                ? "I've paid — submit"
+                                ? paymentProofFile
+                                  ? "I've paid — submit"
+                                  : "Upload proof to continue"
                                 : "Proceed to payment"}
                             </span>
                           </>
@@ -1769,20 +1856,37 @@ export function RsvpDialog() {
                         </span>
                       </div>
                     </div>
+                    {isManualCheckout && manualQrMethod ? (
+                      <div className="mt-6 border border-border/70 bg-card p-4 text-center">
+                        <p className="text-xs font-medium text-foreground">
+                          Scan to pay ₹{feeInr}
+                        </p>
+                        <img
+                          src={manualQrMethod.qrImageUrl}
+                          alt={`Payment QR for ${event.title}`}
+                          className="mx-auto mt-3 max-h-64 w-auto object-contain"
+                        />
+                        <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                          Complete the payment, then upload the payment
+                          screenshot in the form.
+                        </p>
+                      </div>
+                    ) : null}
                     <div className="mt-6 flex items-start gap-2.5 rounded-none border border-border/70 bg-card/80 px-3.5 py-3 text-xs leading-relaxed text-muted-foreground">
                       <Info
                         className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary"
                         strokeWidth={1.75}
                       />
                       <p>
-                        We do not store your card details or financial
-                        information. Payments are processed securely by
-                        Razorpay.
+                        {isManualCheckout
+                          ? "Your registration will remain under review until the organizer verifies your payment proof."
+                          : "We do not store your card details or financial information. Payments are processed securely by Razorpay."}
                       </p>
                     </div>
                     <p className="mt-auto pt-10 text-xs leading-relaxed text-muted-foreground">
                       By proceeding, you agree to share registration details with
-                      Hyderabad Founders Network for event coordination.
+                      {event.organization?.name || event.title} for event
+                      coordination.
                     </p>
                   </>
                 ) : (
@@ -2224,7 +2328,7 @@ function SuccessView({
               </h2>
               <p className="mt-1.5 max-w-sm text-[13px] leading-relaxed text-muted-foreground sm:text-sm">
                 {pendingReview
-                  ? "We received your application and transaction ID. Our team will verify the payment before confirming your seat."
+                  ? "We received your application and payment proof. Our team will verify the payment before confirming your seat. We’ve also sent you an email."
                   : "Seat locked in. Create a badge, join WhatsApp, and save the date."}
               </p>
             </div>

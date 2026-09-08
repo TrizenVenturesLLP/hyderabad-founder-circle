@@ -48,8 +48,8 @@ export async function fetchPaymentConfig(eventSlug: string) {
 export async function submitManualPaymentRegistration(
   payload: RsvpPayload & {
     provider: string;
-    proofUrl?: string;
-    note: string;
+    proofKey: string;
+    note?: string;
   },
 ) {
   const res = await fetch(`${API_BASE}/api/payments/manual-confirm`, {
@@ -67,6 +67,23 @@ export async function submitManualPaymentRegistration(
     throw new Error(data.error || "Could not submit registration.");
   }
   return data;
+}
+
+export async function uploadPaymentProof(file: File) {
+  const body = new FormData();
+  body.append("proof", file);
+  const res = await fetch(`${API_BASE}/api/payments/proof-upload`, {
+    method: "POST",
+    body,
+  });
+  const data = (await res.json().catch(() => ({}))) as {
+    key?: string;
+    error?: string;
+  };
+  if (!res.ok || !data.key) {
+    throw new Error(data.error || "Could not upload payment proof.");
+  }
+  return data.key;
 }
 
 export type RsvpPayload = {

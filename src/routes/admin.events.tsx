@@ -1,6 +1,8 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import {
   CalendarDays,
+  ImagePlus,
+  Loader2,
   MapPin,
   Plus,
   Trash2,
@@ -13,6 +15,7 @@ import {
   deleteAdminEvent,
   fetchAdminEvents,
   fetchAdminOrganizations,
+  uploadAdminPaymentQr,
   updateAdminEvent,
   type AdminEvent,
   type AdminGuestFounder,
@@ -25,6 +28,7 @@ import {
 import { invalidateMeetupsCache } from "@/lib/events";
 import { cn } from "@/lib/utils";
 import { AdminPageHeader } from "@/components/admin/AdminPageChrome";
+import { toast } from "sonner";
 
 const adminRoute = getRouteApi("/admin");
 
@@ -529,6 +533,7 @@ function EventEditorModal({
   addHost: () => void;
   removeHost: (i: number) => void;
 }) {
+  const [qrUploadingIndex, setQrUploadingIndex] = useState<number | null>(null);
   const [tab, setTab] = useState<EditorTab>("details");
   const [localError, setLocalError] = useState("");
 
@@ -567,6 +572,28 @@ function EventEditorModal({
     const methods = [...(form.payment?.methods || [])];
     methods[index] = { ...methods[index], [key]: value };
     updatePaymentField("methods", methods);
+  }
+
+  async function uploadPaymentQr(index: number, file?: File) {
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast.error("Upload a JPG, PNG, or WebP image.");
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error("QR image must be smaller than 3 MB.");
+      return;
+    }
+    setQrUploadingIndex(index);
+    try {
+      const { key } = await uploadAdminPaymentQr(file);
+      updateMethod(index, "qrImageUrl", key);
+      toast.success("Payment QR uploaded");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "QR upload failed");
+    } finally {
+      setQrUploadingIndex(null);
+    }
   }
 
   function handleSubmit(e: FormEvent) {
@@ -1045,19 +1072,36 @@ function EventEditorModal({
                             </>
                           ) : null}
                           {method.type === "upi_qr" ? (
-                            <Field label="QR image URL">
-                              <input
-                                value={method.qrImageUrl || ""}
-                                onChange={(e) =>
-                                  updateMethod(
-                                    index,
-                                    "qrImageUrl",
-                                    e.target.value,
-                                  )
-                                }
-                                className="field"
-                                placeholder="Link to QR code image"
-                              />
+                            <Field label="Payment QR image">
+                              <label className="flex cursor-pointer items-center gap-2 border border-dashed border-[var(--color-border)] px-3 py-2.5 text-sm hover:border-[var(--brand-accent)]">
+                                {qrUploadingIndex === index ? (
+                                  <Loader2 className="size-4 animate-spin" />
+                                ) : (
+                                  <ImagePlus className="size-4" />
+                                )}
+                                <span>
+                                  {method.qrImageUrl
+                                    ? "Replace QR image"
+                                    : "Upload QR image"}
+                                </span>
+                                <input
+                                  type="file"
+                                  accept="image/jpeg,image/png,image/webp"
+                                  className="sr-only"
+                                  disabled={qrUploadingIndex === index}
+                                  onChange={(e) =>
+                                    void uploadPaymentQr(
+                                      index,
+                                      e.target.files?.[0],
+                                    )
+                                  }
+                                />
+                              </label>
+                              {method.qrImageUrl ? (
+                                <p className="mt-1 text-xs text-emerald-700">
+                                  QR image uploaded
+                                </p>
+                              ) : null}
                             </Field>
                           ) : null}
                           {method.type === "payment_link" ? (
