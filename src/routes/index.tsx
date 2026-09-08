@@ -7,8 +7,9 @@ import {
   MapPin,
   Ticket,
 } from "lucide-react";
-import bestverseLogo from "@/assets/logo-Bestverse.jpeg";
-import draperLogo from "@/assets/draper_logo.svg";
+// Trust-strip partner logos are currently hidden from the landing page.
+// import bestverseLogo from "@/assets/logo-Bestverse.jpeg";
+// import draperLogo from "@/assets/draper_logo.svg";
 
 /** Real photos from Hyderabad Founders Network meetups */
 const eventPhotoHero = "/july-2026-1.jpeg";
@@ -133,6 +134,7 @@ const storyTeasers = [
   "Partnerships that stick",
 ];
 
+/*
 const communityPartner = {
   name: "DraperU",
   href: "https://www.draperuniversity.com/",
@@ -142,6 +144,7 @@ const marketingPartner = {
   name: "Bestverse",
   href: "https://bestverse.in/",
 };
+*/
 
 const faqs = [
   {
@@ -195,7 +198,7 @@ const scrollRevealOpts = {
   rootMargin: "0px 0px -22% 0px",
 } as const;
 
-/** Conversion path: Hero → Trust → Why → Who → Gains → Meetup → Gallery → Stories → FAQ → CTA */
+/** Conversion path: Hero → Why → Who → Gains → Meetup → Gallery → Stories → FAQ → CTA */
 
 function HeroSection({ nextMeetup }: { nextMeetup: Meetup }) {
   return (
@@ -262,6 +265,7 @@ function HeroSection({ nextMeetup }: { nextMeetup: Meetup }) {
         </div>
       </div>
 
+      {/* Trust strip intentionally hidden from the landing page.
       <div
         className="hero-reveal hero-reveal-delay-3 shrink-0 border-b border-[var(--color-border)] bg-[var(--color-surface)]"
         aria-label="Platform trust signals"
@@ -308,6 +312,7 @@ function HeroSection({ nextMeetup }: { nextMeetup: Meetup }) {
           </div>
         </div>
       </div>
+      */}
     </section>
   );
 }
