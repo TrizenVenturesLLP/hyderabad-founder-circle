@@ -187,6 +187,9 @@ function AdminRegistrationsPage() {
     { slug: string; title: string; count: number }[]
   >([]);
   const [eventSlug, setEventSlug] = useState("all");
+  const [reviewFilter, setReviewFilter] = useState<
+    "all" | "pending_review" | "paid"
+  >("all");
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -223,18 +226,27 @@ function AdminRegistrationsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventSlug]);
 
-  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  const filteredItems = useMemo(
+    () =>
+      reviewFilter === "all"
+        ? items
+        : items.filter((item) => item.payment?.status === reviewFilter),
+    [items, reviewFilter],
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
 
   const pageItems = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
-    return items.slice(start, start + PAGE_SIZE);
-  }, [items, currentPage]);
+    return filteredItems.slice(start, start + PAGE_SIZE);
+  }, [filteredItems, currentPage]);
 
-  const rangeStart = items.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
-  const rangeEnd = Math.min(currentPage * PAGE_SIZE, items.length);
+  const rangeStart =
+    filteredItems.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(currentPage * PAGE_SIZE, filteredItems.length);
 
-  const allIds = items.map((i) => i._id);
+  const allIds = filteredItems.map((i) => i._id);
   const allSelected =
     allIds.length > 0 && allIds.every((id) => selected.has(id));
   const someSelected = selected.size > 0 && !allSelected;
@@ -299,7 +311,9 @@ function AdminRegistrationsPage() {
           title="Registrations"
           description={
             <>
-              {loading ? "Loading…" : `${items.length} registration(s)`}
+              {loading
+                ? "Loading…"
+                : `${filteredItems.length} registration(s)`}
               {selectedCount > 0 ? (
                 <span className="text-[var(--brand-accent)]">
                   {" "}
@@ -336,6 +350,23 @@ function AdminRegistrationsPage() {
             ))}
           </select>
 
+          <select
+            value={reviewFilter}
+            onChange={(e) => {
+              setReviewFilter(
+                e.target.value as "all" | "pending_review" | "paid",
+              );
+              setPage(1);
+              setSelected(new Set());
+            }}
+            aria-label="Filter by approval status"
+            className="h-12 w-full shrink-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-background-alt)] px-3 text-sm outline-none focus:border-[var(--brand-accent)] sm:h-11 sm:w-44"
+          >
+            <option value="all">All applications</option>
+            <option value="pending_review">Pending review</option>
+            <option value="paid">Approved</option>
+          </select>
+
           <div className="flex h-12 min-w-0 flex-1 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-background-alt)] focus-within:border-[var(--brand-accent)] sm:h-11">
             <div className="flex items-center pl-3 text-[var(--color-text-muted)]">
               <Search className="size-4" strokeWidth={1.75} />
@@ -358,10 +389,10 @@ function AdminRegistrationsPage() {
             </button>
           </div>
 
-          {!loading && items.length > 0 ? (
+          {!loading && filteredItems.length > 0 ? (
             <div className="flex items-center justify-between gap-3 border-t border-[var(--color-border)] pt-2.5 sm:border-0 sm:pt-0 sm:pl-1">
               <p className="text-xs text-[var(--color-text-muted)] sm:hidden">
-                {rangeStart}–{rangeEnd} of {items.length}
+                {rangeStart}–{rangeEnd} of {filteredItems.length}
               </p>
               <p className="hidden text-xs text-[var(--color-text-muted)] sm:block">
                 {rangeStart}–{rangeEnd}
@@ -521,7 +552,7 @@ function AdminRegistrationsPage() {
                   </tr>
                 );
               })}
-              {!loading && items.length === 0 ? (
+              {!loading && filteredItems.length === 0 ? (
                 <tr>
                   <td
                     colSpan={10}
