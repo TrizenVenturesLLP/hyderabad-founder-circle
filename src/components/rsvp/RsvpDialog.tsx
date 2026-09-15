@@ -22,6 +22,8 @@ import {
 import { toast } from "sonner";
 import { meetupMapsUrl, meetupDateLabel, isMeetupDateConfirmed, type Meetup } from "@/lib/events";
 import { getEventRoles } from "@/lib/event-page-content";
+import { trackFunnel } from "@/lib/analytics";
+import { downloadEventIcs, googleCalendarUrl } from "@/lib/event-calendar";
 import {
   HEARD_ABOUT_OTHER_LABEL,
   getHeardAboutEventOptions,
@@ -112,6 +114,9 @@ type FormState = {
   questions: string;
   heardAboutEvent: string;
   heardAboutEventOther: string;
+  guestName: string;
+  guestPhone: string;
+  guestEmail: string;
 };
 
 const emptyForm: FormState = {
@@ -135,6 +140,9 @@ const emptyForm: FormState = {
   questions: "",
   heardAboutEvent: "",
   heardAboutEventOther: "",
+  guestName: "",
+  guestPhone: "",
+  guestEmail: "",
 };
 
 const roles = [
@@ -303,11 +311,20 @@ export function RsvpDialog() {
     null,
   );
   const [manualProvider, setManualProvider] = useState("");
+  const [ticketId, setTicketId] = useState("");
   const [paymentProof, setPaymentProof] = useState("");
   const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
   const [paymentProofName, setPaymentProofName] = useState("");
   const [paymentPendingReview, setPaymentPendingReview] = useState(false);
+  const tickets = paymentConfig?.tickets || [];
+  const isMinimalRsvp =
+    paymentConfig?.formMode === "minimal" ||
+    event.slug === "band-explorers-vybe" ||
+    tickets.length > 0;
+  const selectedTicket =
+    tickets.find((ticket) => ticket.id === ticketId) || tickets[0] || null;
   const feeInr =
+    selectedTicket?.amountInr ||
     paymentConfig?.amountInr ||
     eventFeeInr(event) ||
     REGISTRATION_FEE_INR;
@@ -327,6 +344,36 @@ export function RsvpDialog() {
   const skipNextSaveRef = useRef(false);
   const stepAnimTimerRef = useRef<number | null>(null);
   const stepAnimatingRef = useRef(false);
+  const funnelFiredRef = useRef<Set<string>>(new Set());
+
+  function fireFunnel(name: Parameters<typeof trackFunnel>[0]) {
+    if (!event?.slug) return;
+    const key = `${event.slug}:${name}`;
+    if (funnelFiredRef.current.has(key)) return;
+    funnelFiredRef.current.add(key);
+    trackFunnel(name, event.slug);
+  }
+
+  useEffect(() => {
+    if (!open) {
+      funnelFiredRef.current.clear();
+      return;
+    }
+    if (!event?.slug) return;
+    fireFunnel("rsvp_open");
+  }, [open, event?.slug]);
+
+  useEffect(() => {
+    if (!open || !event?.slug) return;
+    if (typeof step === "number") {
+      if (step === 2) fireFunnel("rsvp_details");
+      if (step === 3) {
+        if (isMinimalRsvp) fireFunnel("rsvp_details");
+        fireFunnel("rsvp_payment");
+      }
+    }
+    if (step === "success") fireFunnel("rsvp_success");
+  }, [open, event?.slug, step, isMinimalRsvp]);
 
   useEffect(() => {
     if (!open || !event?.slug) return;
@@ -337,6 +384,9 @@ export function RsvpDialog() {
         setPaymentConfig(config);
         const firstManual = config.methods.find((m) => m.type !== "razorpay");
         if (firstManual) setManualProvider(firstManual.type);
+        if (config.tickets?.length) {
+          setTicketId((current) => current || config.tickets![0].id);
+        }
       })
       .catch(() => {
         if (!cancelled) setPaymentConfig(null);
@@ -395,7 +445,7 @@ export function RsvpDialog() {
     skipNextSaveRef.current = true;
     const draft = loadRsvpDraft(event.slug);
     if (draft && hasRsvpDraftContent(draft.form)) {
-      setForm(draft.form);
+      setForm({ ...emptyForm, ...draft.form } satisfies FormState);
       setStep(draft.step);
       setPanelStep(draft.step);
       setStepAnim(null);
@@ -482,6 +532,7 @@ export function RsvpDialog() {
     setErrors({});
     setSubmitting(false);
     setPaymentMethod("upi");
+    setTicketId("");
     setPaymentProof("");
     setPaymentProofFile(null);
     setPaymentProofName("");
@@ -498,6 +549,43 @@ export function RsvpDialog() {
   }
 
   function buildRsvpPayload(): RsvpPayload {
+    if (isMinimalRsvp) {
+      const guests =
+        (selectedTicket?.memberCount || 1) > 1
+          ? [
+              {
+                name: form.guestName.trim(),
+                phone: form.guestPhone.trim(),
+                email: form.guestEmail.trim().toLowerCase(),
+              },
+            ]
+          : [];
+
+      return {
+        name: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
+        phone: form.phone.trim(),
+        countryCode: "+91",
+        linkedin: "https://www.linkedin.com/in/not-provided",
+        role: "Other",
+        company: "Guest",
+        startupStage: "Exploring a startup idea",
+        gtmChallenges: [
+          "Preparing for launch",
+          "Finding our first paying customers",
+          "Other",
+        ],
+        leaveWith: ["Other"],
+        industry: "Other",
+        lookingFor: ["Networking"],
+        offerCommunity: ["Other"],
+        wantToMeet: ["Other"],
+        heardAboutEvent: "Trizen Community",
+        guests,
+        event: eventPayload(event),
+      };
+    }
+
     return {
       name: form.name,
       email: form.email,
@@ -605,13 +693,40 @@ export function RsvpDialog() {
   function validateStep1() {
     const next: Partial<Record<FormErrorKey, string>> = {};
     if (!form.name.trim()) next.name = "Please enter your full name.";
-    if (!form.email.trim()) next.email = "Please enter your email.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-      next.email = "Please enter a valid email.";
-    }
     if (!form.phone.trim()) next.phone = "Please enter your mobile number.";
     else if (!/^\d{10}$/.test(form.phone.trim())) {
       next.phone = "Please enter a valid 10-digit mobile number.";
+    }
+
+    if (isMinimalRsvp) {
+      if (!form.email.trim()) next.email = "Please enter your email.";
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+        next.email = "Please enter a valid email.";
+      }
+      if (!selectedTicket) {
+        next.company = "Please select a ticket option.";
+      }
+      if ((selectedTicket?.memberCount || 1) > 1) {
+        if (!form.guestName.trim()) {
+          next.guestName = "Please enter the second member's name.";
+        }
+        if (!form.guestPhone.trim()) {
+          next.guestPhone = "Please enter the second member's mobile number.";
+        } else if (!/^\d{10}$/.test(form.guestPhone.trim())) {
+          next.guestPhone = "Please enter a valid 10-digit mobile number.";
+        }
+        if (!form.guestEmail.trim()) {
+          next.guestEmail = "Please enter the second member's email.";
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.guestEmail.trim())) {
+          next.guestEmail = "Please enter a valid email.";
+        }
+      }
+      return next;
+    }
+
+    if (!form.email.trim()) next.email = "Please enter your email.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      next.email = "Please enter a valid email.";
     }
     if (!form.linkedin.trim()) next.linkedin = "Please enter your LinkedIn profile URL.";
     else if (form.linkedin.trim().length > FIELD_LIMITS.linkedin) {
@@ -700,13 +815,26 @@ export function RsvpDialog() {
   function goNext() {
     const next = validateStep1();
     setErrors(next);
-    const key = firstErrorKey(next, STEP1_FIELD_ORDER);
+    const key = firstErrorKey(
+      next,
+      isMinimalRsvp
+        ? ([
+            "name",
+            "email",
+            "phone",
+            "company",
+            "guestName",
+            "guestEmail",
+            "guestPhone",
+          ] as const)
+        : STEP1_FIELD_ORDER,
+    );
     if (key) {
       scrollToField(key);
       return;
     }
     setErrors({});
-    moveToStep(2);
+    moveToStep(isMinimalRsvp ? 3 : 2);
   }
 
   function goToPayment() {
@@ -731,6 +859,7 @@ export function RsvpDialog() {
       return;
     }
 
+    fireFunnel("rsvp_submit");
     setSubmitting(true);
     toast.dismiss();
     try {
@@ -750,6 +879,8 @@ export function RsvpDialog() {
           ...payload,
           provider,
           proofKey,
+          ticketId: selectedTicket?.id,
+          formMode: isMinimalRsvp ? "minimal" : "full",
         });
         setPaymentPendingReview(true);
         setStep("success");
@@ -923,7 +1054,9 @@ export function RsvpDialog() {
             : "max-h-[min(92dvh,880px)] max-sm:w-full w-[80vw] max-w-[1200px] sm:max-w-[1200px]",
         )}
       >
-        <DialogTitle className="sr-only">Founders & Builders Meetup Registration</DialogTitle>
+        <DialogTitle className="sr-only">
+          {event.title} — Registration
+        </DialogTitle>
         <DialogDescription className="sr-only">
           Register for {event.title}
         </DialogDescription>
@@ -947,10 +1080,12 @@ export function RsvpDialog() {
                   </p>
                 </div>
                 <h2 className="mt-3 break-words font-display text-[1.35rem] tracking-tight text-foreground sm:text-[1.65rem]">
-                  Founders & Builders Meetup Registration
+                  {event.title}
                 </h2>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                  Reserve your seat for the next meetup in Hyderabad.
+                  {isMinimalRsvp
+                    ? `Reserve your spot · ${event.city}`
+                    : `Reserve your seat · ${event.city}`}
                 </p>
                 {draftRestored || hasRsvpDraftContent(form) ? (
                   <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -966,7 +1101,10 @@ export function RsvpDialog() {
                     </button>
                   </div>
                 ) : null}
-                <Stepper step={step} />
+                <Stepper
+                  step={typeof step === "number" ? step : panelStep}
+                  minimal={isMinimalRsvp}
+                />
               </header>
 
               <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
@@ -994,9 +1132,20 @@ export function RsvpDialog() {
                   >
                   {panelStep === 1 ? (
                     <section className="space-y-5">
+                      <div>
+                        <h3 className="text-base font-medium text-foreground">
+                          {isMinimalRsvp ? "Register for the evening" : "Your details"}
+                        </h3>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {isMinimalRsvp
+                            ? "Enter your details, choose 1 or 2 members, then complete payment."
+                            : "Tell us a bit about yourself to continue."}
+                        </p>
+                      </div>
+
                       <Field
                         fieldKey="name"
-                        label="Full Name"
+                        label="Name"
                         required
                         error={errors.name}
                         count={form.name.length}
@@ -1012,63 +1161,195 @@ export function RsvpDialog() {
                         />
                       </Field>
 
-                      <div className="grid gap-5 sm:grid-cols-2">
-                        <Field
-                          fieldKey="email"
-                          label="Email"
-                          required
-                          error={errors.email}
-                          count={form.email.length}
-                          max={FIELD_LIMITS.email}
-                        >
+                      <Field
+                        fieldKey="email"
+                        label="Email"
+                        required
+                        error={errors.email}
+                        count={form.email.length}
+                        max={FIELD_LIMITS.email}
+                      >
+                        <Input
+                          type="email"
+                          value={form.email}
+                          onChange={(e) => update("email", e.target.value)}
+                          placeholder="you@email.com"
+                          autoComplete="email"
+                          maxLength={FIELD_LIMITS.email}
+                          className={fieldClass}
+                        />
+                      </Field>
+
+                      <Field
+                        fieldKey="phone"
+                        label="Mobile number"
+                        required
+                        error={errors.phone}
+                        hint="10-digit Indian mobile number"
+                        count={form.phone.length}
+                        max={FIELD_LIMITS.phone}
+                      >
+                        <div className="flex gap-1.5">
+                          <span
+                            className={cn(
+                              fieldClass,
+                              "inline-flex w-[3.25rem] shrink-0 items-center justify-center px-0 text-sm text-muted-foreground",
+                            )}
+                            aria-label="Country code +91"
+                          >
+                            +91
+                          </span>
                           <Input
-                            type="email"
-                            value={form.email}
-                            onChange={(e) => update("email", e.target.value)}
-                            placeholder="you@email.com"
-                            autoComplete="email"
-                            maxLength={FIELD_LIMITS.email}
-                            className={fieldClass}
+                            type="tel"
+                            inputMode="numeric"
+                            value={form.phone}
+                            onChange={(e) =>
+                              update(
+                                "phone",
+                                e.target.value.replace(/\D/g, "").slice(0, FIELD_LIMITS.phone),
+                              )
+                            }
+                            placeholder="9876543210"
+                            autoComplete="tel-national"
+                            maxLength={FIELD_LIMITS.phone}
+                            className={cn(fieldClass, "min-w-0 flex-1")}
                           />
-                        </Field>
+                        </div>
+                      </Field>
+
+                      {isMinimalRsvp ? (
+                        <>
                         <Field
-                          fieldKey="phone"
-                          label="Mobile Number"
+                          fieldKey="company"
+                          label="Ticket"
                           required
-                          error={errors.phone}
-                          hint="10-digit Indian mobile number"
-                          count={form.phone.length}
-                          max={FIELD_LIMITS.phone}
+                          error={errors.company}
                         >
-                          <div className="flex gap-1.5">
-                            <span
-                              className={cn(
-                                fieldClass,
-                                "inline-flex w-[3.25rem] shrink-0 items-center justify-center px-0 text-sm text-muted-foreground",
-                              )}
-                              aria-label="Country code +91"
-                            >
-                              +91
-                            </span>
-                            <Input
-                              type="tel"
-                              inputMode="numeric"
-                              value={form.phone}
-                              onChange={(e) =>
-                                update(
-                                  "phone",
-                                  e.target.value.replace(/\D/g, "").slice(0, FIELD_LIMITS.phone),
-                                )
-                              }
-                              placeholder="9876543210"
-                              autoComplete="tel-national"
-                              maxLength={FIELD_LIMITS.phone}
-                              className={cn(fieldClass, "min-w-0 flex-1")}
-                            />
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            {tickets.map((ticket) => {
+                              const selected =
+                                (ticketId || selectedTicket?.id) === ticket.id;
+                              return (
+                                <button
+                                  key={ticket.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setTicketId(ticket.id);
+                                    setErrors((prev) => ({
+                                      ...prev,
+                                      company: undefined,
+                                      guestName: undefined,
+                                      guestPhone: undefined,
+                                      guestEmail: undefined,
+                                    }));
+                                  }}
+                                  className={cn(
+                                    "border px-4 py-3.5 text-left transition-colors",
+                                    selected
+                                      ? "border-[var(--brand-accent)] bg-[color-mix(in_oklab,var(--brand-accent)_8%,transparent)]"
+                                      : "border-[var(--color-border)] bg-[var(--color-surface)]",
+                                  )}
+                                >
+                                  <p className="text-sm font-medium text-foreground">
+                                    ₹{ticket.amountInr}
+                                  </p>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    {ticket.label}
+                                  </p>
+                                </button>
+                              );
+                            })}
                           </div>
                         </Field>
-                      </div>
 
+                        {(selectedTicket?.memberCount || 1) > 1 ? (
+                          <div className="space-y-4 border border-[var(--color-border)] bg-[var(--color-background-alt)] p-4">
+                            <div>
+                              <p className="text-sm font-medium text-foreground">
+                                Second member details
+                              </p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                Required for the 2 members ticket.
+                              </p>
+                            </div>
+                            <Field
+                              fieldKey="guestName"
+                              label="Second member name"
+                              required
+                              error={errors.guestName}
+                              count={form.guestName.length}
+                              max={FIELD_LIMITS.name}
+                            >
+                              <Input
+                                value={form.guestName}
+                                onChange={(e) =>
+                                  update("guestName", e.target.value)
+                                }
+                                placeholder="Enter second member name"
+                                maxLength={FIELD_LIMITS.name}
+                                className={fieldClass}
+                              />
+                            </Field>
+                            <Field
+                              fieldKey="guestEmail"
+                              label="Second member email"
+                              required
+                              error={errors.guestEmail}
+                              count={form.guestEmail.length}
+                              max={FIELD_LIMITS.email}
+                            >
+                              <Input
+                                type="email"
+                                value={form.guestEmail}
+                                onChange={(e) =>
+                                  update("guestEmail", e.target.value)
+                                }
+                                placeholder="second@email.com"
+                                maxLength={FIELD_LIMITS.email}
+                                className={fieldClass}
+                              />
+                            </Field>
+                            <Field
+                              fieldKey="guestPhone"
+                              label="Second member mobile"
+                              required
+                              error={errors.guestPhone}
+                              count={form.guestPhone.length}
+                              max={FIELD_LIMITS.phone}
+                            >
+                              <div className="flex gap-1.5">
+                                <span
+                                  className={cn(
+                                    fieldClass,
+                                    "inline-flex w-[3.25rem] shrink-0 items-center justify-center px-0 text-sm text-muted-foreground",
+                                  )}
+                                  aria-label="Country code +91"
+                                >
+                                  +91
+                                </span>
+                                <Input
+                                  type="tel"
+                                  inputMode="numeric"
+                                  value={form.guestPhone}
+                                  onChange={(e) =>
+                                    update(
+                                      "guestPhone",
+                                      e.target.value
+                                        .replace(/\D/g, "")
+                                        .slice(0, FIELD_LIMITS.phone),
+                                    )
+                                  }
+                                  placeholder="9876543210"
+                                  maxLength={FIELD_LIMITS.phone}
+                                  className={cn(fieldClass, "min-w-0 flex-1")}
+                                />
+                              </div>
+                            </Field>
+                          </div>
+                        ) : null}
+                        </>
+                      ) : (
+                        <>
                       <Field
                         fieldKey="linkedin"
                         label="What is your LinkedIn profile URL?"
@@ -1198,6 +1479,8 @@ export function RsvpDialog() {
                           ))}
                         </select>
                       </Field>
+                        </>
+                      )}
                     </section>
                   ) : null}
 
@@ -1530,7 +1813,7 @@ export function RsvpDialog() {
                         <p className="mt-1 text-sm text-muted-foreground">
                           {isManualCheckout
                             ? manualQrMethod
-                              ? `Scan the QR code in the payment summary on the right, pay ₹${feeInr}, then upload your payment screenshot below.`
+                              ? `Scan the QR code in the payment summary on the right, pay ₹${feeInr}${selectedTicket ? ` for ${selectedTicket.label}` : ""}, then upload your payment screenshot below.`
                               : `Pay ₹${feeInr} using one of the options below, then upload your payment screenshot.`
                             : `Complete your ₹${feeInr} registration fee securely via Razorpay.`}
                         </p>
@@ -1713,7 +1996,9 @@ export function RsvpDialog() {
                         </p>
                         <div className="mt-3 flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">
-                            Event Pass × 1
+                            {selectedTicket
+                              ? selectedTicket.label
+                              : "Event Pass × 1"}
                           </span>
                           <span className="font-medium text-foreground">
                             ₹{feeInr}
@@ -1738,7 +2023,11 @@ export function RsvpDialog() {
                     {step === 2 || step === 3 ? (
                       <button
                         type="button"
-                        onClick={() => moveToStep(step === 3 ? 2 : 1)}
+                        onClick={() =>
+                          moveToStep(
+                            step === 3 ? (isMinimalRsvp ? 1 : 2) : 1,
+                          )
+                        }
                         className={cn(btnSecondaryClass, "shrink-0 px-3 sm:px-5")}
                       >
                         <ArrowLeft
@@ -1757,7 +2046,7 @@ export function RsvpDialog() {
                         onClick={goNext}
                         className={cn(btnPrimaryClass, "min-w-0 flex-1 px-3 sm:flex-none sm:px-6")}
                       >
-                        Next step
+                        {isMinimalRsvp ? "Continue to payment" : "Next step"}
                         <ArrowRight
                           className="size-3.5 shrink-0"
                           strokeWidth={1.75}
@@ -1838,7 +2127,11 @@ export function RsvpDialog() {
                     </h3>
                     <div className="mt-6 space-y-3 text-sm">
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-muted-foreground">Event Pass × 1</span>
+                        <span className="text-muted-foreground">
+                          {selectedTicket
+                            ? `${selectedTicket.label}`
+                            : "Event Pass × 1"}
+                        </span>
                         <span className="font-medium text-foreground">
                           ₹{feeInr}
                         </span>
@@ -1961,8 +2254,8 @@ export function RsvpDialog() {
                     </ul>
                     <p className="mt-auto pt-10 text-xs text-muted-foreground">
                       ₹{feeInr} registration ·{" "}
-                      {typeof event.seats === "number" ? `${event.seats} seats` : "Limited seats"}{" "}
-                      · No pitching
+                      {typeof event.seats === "number" ? `${event.seats} seats` : "Limited seats"}
+                      {isMinimalRsvp ? " · Live music evening" : " · No pitching"}
                     </p>
                   </>
                 )}
@@ -2048,7 +2341,23 @@ function MobileEventSummary({
   );
 }
 
-function Stepper({ step }: { step: 1 | 2 | 3 }) {
+function Stepper({
+  step,
+  minimal = false,
+}: {
+  step: 1 | 2 | 3;
+  minimal?: boolean;
+}) {
+  if (minimal) {
+    return (
+      <ol className="mt-4 flex min-w-0 items-center gap-1.5 overflow-x-auto text-sm sm:mt-5 sm:gap-3">
+        <StepItem n={1} label="Details" active={step === 1} done={step > 1} />
+        <span className="h-px min-w-3 flex-1 bg-[var(--color-border)] sm:max-w-8" aria-hidden />
+        <StepItem n={2} label="Payment" active={step === 3} done={false} />
+      </ol>
+    );
+  }
+
   return (
     <ol className="mt-4 flex min-w-0 items-center gap-1.5 overflow-x-auto text-sm sm:mt-5 sm:gap-3">
       <StepItem n={1} label="Your details" active={step === 1} done={step > 1} />
@@ -2099,36 +2408,6 @@ function StepItem({
       </span>
     </li>
   );
-}
-
-function eventHours(event: Meetup) {
-  if (/10\s*:\s*30\s*AM/i.test(event.time)) {
-    return { startHour: 10, startMin: 30, endHour: 13, endMin: 0 };
-  }
-  if (/11\s*:\s*00\s*AM/i.test(event.time)) {
-    return { startHour: 11, startMin: 0, endHour: 13, endMin: 0 };
-  }
-  if (/10\s*:\s*00\s*AM/i.test(event.time)) {
-    return { startHour: 10, startMin: 0, endHour: 13, endMin: 0 };
-  }
-  return { startHour: 17, startMin: 0, endHour: 20, endMin: 0 };
-}
-
-function googleCalendarUrl(event: Meetup) {
-  const [y, m, d] = event.dateISO.split("-").map(Number);
-  const { startHour, startMin, endHour, endMin } = eventHours(event);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const stamp = (hour: number, minute: number) =>
-    `${y}${pad(m)}${pad(d)}T${pad(hour)}${pad(minute)}00`;
-  const params = new URLSearchParams({
-    action: "TEMPLATE",
-    text: event.title,
-    dates: `${stamp(startHour, startMin)}/${stamp(endHour, endMin)}`,
-    details: event.blurb,
-    location: event.address ?? `${event.venue}, ${event.city}`,
-    ctz: "Asia/Kolkata",
-  });
-  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
 function ProcessingView() {
@@ -2265,15 +2544,25 @@ function SuccessView({
         WhatsApp
       </a>
       {dateConfirmed ? (
-        <a
-          href={googleCalendarUrl(event)}
-          target="_blank"
-          rel="noreferrer"
-          className={cn(btnSecondaryClass, "w-full gap-2 px-3.5 text-[13px] sm:px-4 sm:text-sm")}
-        >
-          <CalendarDays className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" strokeWidth={1.75} />
-          Calendar
-        </a>
+        <>
+          <a
+            href={googleCalendarUrl(event)}
+            target="_blank"
+            rel="noreferrer"
+            className={cn(btnSecondaryClass, "w-full gap-2 px-3.5 text-[13px] sm:px-4 sm:text-sm")}
+          >
+            <CalendarDays className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" strokeWidth={1.75} />
+            Add to Google Calendar
+          </a>
+          <button
+            type="button"
+            onClick={() => downloadEventIcs(event)}
+            className={cn(btnSecondaryClass, "w-full gap-2 px-3.5 text-[13px] sm:px-4 sm:text-sm")}
+          >
+            <CalendarDays className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" strokeWidth={1.75} />
+            Download .ics
+          </button>
+        </>
       ) : null}
     </div>
   );

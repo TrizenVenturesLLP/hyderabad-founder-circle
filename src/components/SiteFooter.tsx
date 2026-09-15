@@ -2,14 +2,6 @@ import { Link } from "@tanstack/react-router";
 import { links } from "@/lib/links";
 import { BrandLogo } from "@/components/BrandLogo";
 
-const navLinks = [
-  { to: "/community", label: "Community Guidelines" },
-  { to: "/stories", label: "Stories" },
-  { to: "/events", label: "Upcoming Events" },
-  { to: "/about", label: "Partners" },
-  { to: "/contact", label: "Contact" },
-] as const;
-
 const linkClassName =
   "inline-block whitespace-nowrap text-[14px] text-[var(--color-text-secondary)] transition-colors duration-200 hover:text-[var(--brand-accent)]";
 
@@ -32,140 +24,99 @@ export function SiteFooter() {
                   Trizen Community
                 </span>
                 <span className="text-[10.5px] font-medium text-[var(--color-text-muted)]">
-                  Community events platform
+                  Event hosting platform
                 </span>
               </span>
             </Link>
-            <p className="mt-3 max-w-[36ch] text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
-              Event registration for community meetups hosted by organizations
-              like{" "}
-              <a
-                href={links.sponsor.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium text-foreground underline-offset-4 transition-colors duration-200 hover:text-[var(--brand-accent)] hover:underline"
-              >
-                Trizen Ventures
-              </a>
-              . No public signup — register only for the events you want to
-              attend.
-            </p>
-            <p className="mt-3 max-w-[36ch] text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
-              Want to create a new event?{" "}
-              <Link
-                to="/host"
-                className="font-medium text-foreground underline-offset-4 transition-colors duration-200 hover:text-[var(--brand-accent)] hover:underline"
-              >
-                Create an organization account
-              </Link>
-              . Already registered organizations can sign in from that page.
+            <p className="mt-3 max-w-[38ch] text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
+              Discover events from communities across Hyderabad. Register per
+              event — no public attendee account required.
             </p>
           </div>
 
-          <div className="lg:col-span-3">
-            <p className={labelClassName}>Community Links</p>
-            <ul className="mt-3 space-y-2">
-              {navLinks.map((item) => (
-                <li key={item.to}>
-                  <Link to={item.to} className={linkClassName}>
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="min-w-0 lg:col-span-3">
-            <p className={labelClassName}>Email</p>
+          <div className="lg:col-span-2">
+            <p className={labelClassName}>Explore</p>
             <ul className="mt-3 space-y-2">
               <li>
-                <a
-                  href={`mailto:${links.email}`}
-                  className="inline-block whitespace-nowrap text-[14px] text-[var(--color-text-secondary)] transition-colors duration-200 hover:text-[var(--brand-accent)]"
-                >
-                  {links.email}
-                </a>
+                <Link to="/events" className={linkClassName}>
+                  Events
+                </Link>
               </li>
             </ul>
           </div>
 
           <div className="lg:col-span-2">
-            <p className={labelClassName}>Social Links</p>
+            <p className={labelClassName}>Account</p>
             <ul className="mt-3 space-y-2">
               <li>
-                <a
-                  href={links.linkedin}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={linkClassName}
-                >
-                  LinkedIn
-                </a>
+                <Link to="/org-login" className={linkClassName}>
+                  Organizer Login
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div className="lg:col-span-2">
+            <p className={labelClassName}>Company</p>
+            <ul className="mt-3 space-y-2">
+              <li>
+                <Link to="/about" className={linkClassName}>
+                  About
+                </Link>
               </li>
               <li>
-                <a
-                  href={links.instagram}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={linkClassName}
-                >
-                  Instagram
-                </a>
+                <Link to="/contact" className={linkClassName}>
+                  Contact
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div className="lg:col-span-2">
+            <p className={labelClassName}>Legal</p>
+            <ul className="mt-3 space-y-2">
+              <li>
+                <Link to="/privacy" className={linkClassName}>
+                  Privacy
+                </Link>
               </li>
               <li>
-                <a
-                  href={links.twitter}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={linkClassName}
-                >
-                  Twitter
-                </a>
-              </li>
-              <li>
-                <a
-                  href={links.community}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={linkClassName}
-                >
-                  WhatsApp
-                </a>
+                <Link to="/terms" className={linkClassName}>
+                  Terms
+                </Link>
               </li>
             </ul>
           </div>
         </div>
-      </div>
 
-      <div className="border-t border-[var(--color-border)] bg-[var(--color-background-alt)]">
-        <div className="page-container flex flex-col gap-2 py-3.5 text-[13px] text-[var(--color-text-secondary)] md:flex-row md:items-center md:justify-between md:py-4">
-          <p>
-            © {new Date().getFullYear()} Trizen Community
+        <div className="mt-10 flex flex-col gap-3 border-t border-[var(--color-border)] pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[13px] text-[var(--color-text-secondary)]">
+            © {new Date().getFullYear()} Trizen Community · Made in Hyderabad
           </p>
-          <nav
-            aria-label="Legal"
-            className="flex flex-wrap items-center gap-y-1 text-[13px]"
-          >
-            <Link
-              to="/privacy"
-              className="transition-colors duration-200 hover:text-[var(--brand-accent)]"
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            <a
+              href={links.linkedin}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={linkClassName}
             >
-              Privacy
-            </Link>
-            <span className="whitespace-pre text-[var(--color-border-strong)]">
-              {" · "}
-            </span>
-            <Link
-              to="/terms"
-              className="transition-colors duration-200 hover:text-[var(--brand-accent)]"
+              LinkedIn
+            </a>
+            <a
+              href={links.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={linkClassName}
             >
-              Terms
-            </Link>
-            <span className="whitespace-pre text-[var(--color-border-strong)]">
-              {" · "}
-            </span>
-            <span>Made in Hyderabad</span>
-          </nav>
+              Instagram
+            </a>
+            <a
+              href={`mailto:${links.email}`}
+              className={linkClassName}
+            >
+              {links.email}
+            </a>
+          </div>
         </div>
       </div>
     </footer>

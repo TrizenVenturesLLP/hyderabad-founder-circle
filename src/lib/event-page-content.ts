@@ -41,11 +41,49 @@ export type EventWhyContent = {
   headline: string;
   paragraphs: string[];
   closingLine: string;
+  label?: string;
+};
+
+export type AudienceItem = {
+  title: string;
+  desc: string;
+};
+
+export type TakeawayItem = {
+  title: string;
+  body: string;
+};
+
+export type FaqItem = {
+  q: string;
+  a: string;
+};
+
+export type EventAudienceContent = {
+  heading: string;
+  intro: string;
+  items: AudienceItem[];
+};
+
+export type EventTakeawaysContent = {
+  heading: string;
+  intro: string;
+  items: TakeawayItem[];
+};
+
+export type EventCtaContent = {
+  label: string;
+  heading: string;
+  body: string;
 };
 
 export type EventPageOverrides = {
   hero?: EventHeroContent;
   why?: EventWhyContent;
+  audience?: EventAudienceContent;
+  takeaways?: EventTakeawaysContent;
+  faqs?: FaqItem[];
+  cta?: EventCtaContent;
   agenda?: AgendaItem[];
   agendaHeading?: string;
   agendaSubheading?: string;
@@ -54,6 +92,8 @@ export type EventPageOverrides = {
   speakersHeading?: string;
   speakersSubheading?: string;
   excludeRoles?: string[];
+  metaOrganizer?: string;
+  hideRefreshmentsAmenity?: boolean;
 };
 
 const defaultAgenda: AgendaItem[] = [
@@ -209,18 +249,107 @@ const EVENT_OVERRIDES: Record<string, EventPageOverrides> = {
       brandTitle: "Band Explorers Vybe",
       subtitle: "The Corporate Music Break",
       headline: "Live music. Unwind. Connect.",
-      tagline: "Same professionals. New connections.",
+      tagline: "An evening of live music and good company.",
       audienceLine:
-        "Professionals · Founders · Builders · Community members",
+        "Working professionals · Music lovers · Creative teams · Community members",
       positioning: "Hosted at NanoSpace Coworking · Nanakramguda",
     },
     why: {
-      headline: "A corporate music break with room to pitch and connect.",
+      label: "Why this evening?",
+      headline: "A corporate music break — not a networking meetup.",
       paragraphs: [
-        "Band Explorers Vybe brings live music, unwinding, and real conversations into one evening at NanoSpace. Meet people beyond your usual circle — work, unwind, connect, create.",
-        "Up to 10 members can pitch their problem statements in 2 minutes each. Entry is ₹599. Please note: no snacks are provided. Marketing partner: Trizen Community.",
+        "Band Explorers Vybe is an evening music experience at NanoSpace for people who want to unwind after work, enjoy a live set, and hang out in a relaxed room.",
+        "Tickets: ₹399 for 1 member or ₹699 for 2 members. No snacks are provided. Hosted by NanoSpace · Marketing partner: Trizen Community.",
       ],
-      closingLine: "See you there — powered by NanoSpace Co-Working.",
+      closingLine: "Come for the music. Stay for the vibe.",
+    },
+    audience: {
+      heading: "Built for people who want a music break.",
+      intro:
+        "This is a corporate music evening — open to professionals, creatives, and anyone who wants live music with room to connect.",
+      items: [
+        {
+          title: "Working professionals",
+          desc: "Unwind after work with live music and a change of pace.",
+        },
+        {
+          title: "Music lovers",
+          desc: "Enjoy the Band Explorers set in an intimate coworking venue.",
+        },
+        {
+          title: "Creative & corporate teams",
+          desc: "Bring colleagues for an evening of music and conversation.",
+        },
+        {
+          title: "Community members",
+          desc: "Meet people beyond your usual circle in a relaxed setting.",
+        },
+        {
+          title: "Friends & plus-ones",
+          desc: "Grab the 2-member ticket and come together.",
+        },
+        {
+          title: "Anyone looking for a night out",
+          desc: "No founder gate — if live music sounds good, you’re welcome.",
+        },
+      ],
+    },
+    takeaways: {
+      heading: "What the evening is about",
+      intro: "Music first. Good company second. That’s it.",
+      items: [
+        {
+          title: "Live music to unwind",
+          body: "Settle into the Band Explorers set and reset after the work week.",
+        },
+        {
+          title: "A break from the usual",
+          body: "Conversations happen naturally around music — not a formal room.",
+        },
+        {
+          title: "New people, same city",
+          body: "Meet professionals and community members you wouldn’t normally cross paths with.",
+        },
+        {
+          title: "An evening at NanoSpace",
+          body: "A focused 6–9 PM session at Vijaya Krishna Towers, Nanakramguda.",
+        },
+        {
+          title: "Clear entry",
+          body: "₹399 for 1 member or ₹699 for 2 members. No snacks. Come ready for music.",
+        },
+      ],
+    },
+    faqs: [
+      {
+        q: "Is this a Hyderabad Founders Network meetup?",
+        a: "No. Band Explorers Vybe is a corporate music evening hosted at NanoSpace — live band, not a founder meetup.",
+      },
+      {
+        q: "Who should attend?",
+        a: "Working professionals, music lovers, creative teams, community members, and anyone who wants a live music night. Founder status is not required.",
+      },
+      {
+        q: "What is the entry fee?",
+        a: "₹399 for 1 member, or ₹699 for 2 members. Registration needs name, email, and mobile, then payment.",
+      },
+      {
+        q: "What are the timings?",
+        a: "Saturday, 19 September 2026 · 6:00 PM – 9:00 PM at NanoSpace Coworking, Nanakramguda.",
+      },
+      {
+        q: "Will there be food or snacks?",
+        a: "No. This evening does not include snacks or refreshments.",
+      },
+      {
+        q: "What should I expect?",
+        a: "Doors, a live Band Explorers set, and time to hang out. It’s a music night — come to listen and enjoy.",
+      },
+    ],
+    cta: {
+      label: "Evening",
+      heading: "Ready for a corporate music break?",
+      body: "Register for Band Explorers Vybe at NanoSpace — live music from 6–9 PM.",
     },
     agenda: [
       {
@@ -229,29 +358,27 @@ const EVENT_OVERRIDES: Record<string, EventPageOverrides> = {
         desc: "Check in at Vijaya Krishna Towers, Nanakramguda.",
       },
       {
-        time: "6:15 – 7:30 PM",
-        title: "Live music & unwind",
-        desc: "Settle in with the Band Explorers set — music, people, ideas.",
+        time: "6:15 – 8:30 PM",
+        title: "Live music",
+        desc: "Band Explorers set — settle in, listen, unwind.",
       },
       {
-        time: "7:30 – 8:15 PM",
-        title: "Problem statement pitches",
-        desc: "Up to 10 members pitch their problem statements — 2 minutes each.",
-      },
-      {
-        time: "8:15 – 9:00 PM",
-        title: "Connect & close",
-        desc: "Open networking. No snacks — conversations only.",
+        time: "8:30 – 9:00 PM",
+        title: "Hang out & close",
+        desc: "Stick around for a bit after the set. No snacks — music and people only.",
       },
     ],
-    agendaHeading: "6:00 PM – 9:00 PM",
-    agendaSubheading:
-      "Live music, short pitches, and new connections — no snacks.",
+    agendaHeading: "Evening timeline · 6:00 PM – 9:00 PM",
+    agendaSubheading: "Live music and good company — no snacks.",
     collaborativeHosts: [
       {
         name: "NanoSpace Coworking",
         href: "https://nanospace.in/",
         logo: nanospaceLogo,
+      },
+      {
+        name: "Fun Fusion @Work",
+        desc: "Corporate music & community experiences",
       },
     ],
     partnerTiers: [
@@ -278,8 +405,9 @@ const EVENT_OVERRIDES: Record<string, EventPageOverrides> = {
       },
     ],
     speakersHeading: "The evening",
-    speakersSubheading:
-      "Live Music · Unwind · Connect — plus 2-minute problem pitches",
+    speakersSubheading: "Live Music · Unwind · Connect",
+    metaOrganizer: "NanoSpace Coworking",
+    hideRefreshmentsAmenity: true,
   },
 };
 
@@ -288,6 +416,10 @@ export function getEventPageContent(meetup: Meetup) {
   return {
     hero: overrides.hero ?? null,
     why: overrides.why ?? null,
+    audience: overrides.audience ?? null,
+    takeaways: overrides.takeaways ?? null,
+    faqs: overrides.faqs ?? null,
+    cta: overrides.cta ?? null,
     agenda: overrides.agenda ?? defaultAgenda,
     agendaHeading: overrides.agendaHeading ?? "About two hours",
     agendaSubheading:
@@ -300,6 +432,11 @@ export function getEventPageContent(meetup: Meetup) {
       overrides.speakersSubheading ??
       "Industry leaders, founders, and innovators sharing insights from the work.",
     excludeRoles: overrides.excludeRoles ?? [],
+    metaOrganizer:
+      overrides.metaOrganizer ??
+      meetup.organization?.name ??
+      "Hyderabad Founders Network",
+    hideRefreshmentsAmenity: overrides.hideRefreshmentsAmenity === true,
   };
 }
 

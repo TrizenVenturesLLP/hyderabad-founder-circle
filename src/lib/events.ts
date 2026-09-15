@@ -220,7 +220,7 @@ export const fallbackMeetups: Meetup[] = [
     format: "Offline" as const,
     status: "open",
     blurb:
-      "Live music · Unwind · Connect. Up to 10 members can pitch their problem statements (2 minutes each). Timings 6:00 PM – 9:00 PM at NanoSpace. No snacks. Marketing partner: Trizen Community. Entry ₹599.",
+      "Live music · Unwind · Connect. Tickets: ₹399 for 1 member or ₹699 for 2 members. 6–9 PM at NanoSpace. No snacks.",
     speakers: [],
     hosts: [
       {
@@ -243,15 +243,15 @@ export const fallbackMeetups: Meetup[] = [
     },
     payment: {
       enabled: true,
-      amountInr: 599,
+      amountInr: 399,
       currency: "INR",
       methods: [
         {
-          type: "upi_id",
-          label: "PhonePe / Google Pay",
-          paymentNumber: "9666696790",
+          type: "upi_qr",
+          label: "Scan QR to pay",
+          paymentNumber: "",
           instructions:
-            "Pay ₹599 via PhonePe or Google Pay to 9666696790. For queries call +91 8247579912. No snacks included.",
+            "Choose 1 member (₹399) or 2 members (₹699), scan the QR, pay the selected amount, then upload the payment screenshot.",
         },
       ],
     },
@@ -460,6 +460,17 @@ export function meetupMapsEmbedUrl(meetup: Meetup) {
 export function meetupSeatsLabel(meetup: Meetup) {
   if (typeof meetup.seats === "number") return String(meetup.seats);
   return "Limited";
+}
+
+/** Poster / cover art for discovery cards and event heroes. */
+export function meetupCoverImage(meetup: Pick<Meetup, "slug">) {
+  if (meetup.slug === "band-explorers-vybe") return "/band-explorers-vybe.jpg";
+  return "/july-2026-1.jpeg";
+}
+
+export function meetupCoverObjectClass(meetup: Pick<Meetup, "slug">) {
+  if (meetup.slug === "band-explorers-vybe") return "object-top";
+  return "object-[center_42%]";
 }
 
 export function invalidateMeetupsCache() {

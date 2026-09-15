@@ -305,20 +305,28 @@ export type AdminRsvp = {
   questions?: string;
   heardAboutEvent: string;
   heardAboutEventOther: string;
+  guests?: Array<{
+    name: string;
+    phone: string;
+    email: string;
+  }>;
   createdAt: string;
-  payment?: {
-    status?: string;
-    amountInr?: number;
-    amountPaise?: number;
-    currency?: string;
-    method?: string;
-    provider?: string;
-    proofUrl?: string;
-    note?: string;
-    razorpayOrderId?: string;
-    razorpayPaymentId?: string;
-    paidAt?: string;
-  };
+    payment?: {
+      status?: string;
+      amountInr?: number;
+      amountPaise?: number;
+      currency?: string;
+      method?: string;
+      provider?: string;
+      proofUrl?: string;
+      note?: string;
+      ticketId?: string;
+      ticketLabel?: string;
+      memberCount?: number;
+      razorpayOrderId?: string;
+      razorpayPaymentId?: string;
+      paidAt?: string;
+    };
   event: {
     slug: string;
     title: string;
@@ -411,3 +419,28 @@ export type EmailHistoryItem = {
   createdAt: string;
   sentBy?: string;
 };
+
+export type AdminAnalyticsSummary = {
+  days: number;
+  since: string;
+  visitors: {
+    pageviews: number;
+    uniqueSessions: number;
+  };
+  funnel: Array<{
+    name: string;
+    label: string;
+    count: number;
+    sessions: number;
+  }>;
+  topPaths: Array<{ path: string; views: number }>;
+  topEvents: Array<{ slug: string; views: number }>;
+};
+
+export async function fetchAdminAnalytics(days = 7, eventSlug?: string) {
+  const params = new URLSearchParams({ days: String(days) });
+  if (eventSlug) params.set("eventSlug", eventSlug);
+  return adminFetch<AdminAnalyticsSummary>(
+    `/api/admin/analytics/summary?${params.toString()}`,
+  );
+}

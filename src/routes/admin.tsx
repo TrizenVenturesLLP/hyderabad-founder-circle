@@ -12,6 +12,7 @@ import {
   LogOut,
   Menu,
   MessageSquareText,
+  BarChart3,
   Users,
   X,
 } from "lucide-react";
@@ -57,6 +58,7 @@ function AdminLayout() {
     const base = [
       { to: "/admin/registrations", label: "Registrations", icon: Users },
       { to: "/admin/events", label: "Events", icon: CalendarDays },
+      { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
     ] as const;
     if (isPlatform) {
       return [

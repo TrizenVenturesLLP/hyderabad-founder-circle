@@ -5,6 +5,7 @@ import {
   Briefcase,
   Calendar,
   CalendarCheck,
+  CalendarPlus,
   CheckCircle2,
   CircleParking,
   Clock,
@@ -32,6 +33,8 @@ import {
   meetupDateLabel,
   isMeetupDateConfirmed,
   meetupSeatsLabel,
+  meetupCoverImage,
+  meetupCoverObjectClass,
   type EventSpeaker,
 } from "@/lib/events";
 import { getEventPageContent, type EventPartner } from "@/lib/event-page-content";
@@ -42,6 +45,7 @@ import { RsvpButton } from "@/components/rsvp/RsvpButton";
 import { TrizenProductsSection } from "@/components/TrizenProductsSection";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { useInView } from "@/hooks/use-in-view";
+import { googleCalendarUrl } from "@/lib/event-calendar";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/events/$slug")({
@@ -58,23 +62,40 @@ export const Route = createFileRoute("/events/$slug")({
   },
   head: ({ loaderData }) => {
     const m = loaderData?.meetup;
-    const title = m
-      ? `${m.title} — Hyderabad Founders Network`
-      : "Meetup — Hyderabad Founders Network";
+    const pageContent = m ? getEventPageContent(m) : null;
+    const organizer =
+      pageContent?.metaOrganizer ||
+      m?.organization?.name ||
+      "Trizen Community";
+    const title = m ? `${m.title} — ${organizer}` : "Meetup — Trizen Community";
     const desc = m
-      ? `${meetupDateLabel(m)} · ${m.time} · ${meetupVenueLine(m)}. Community-led monthly meetup.`
-      : "Community-led meetup in Hyderabad.";
+      ? `${meetupDateLabel(m)} · ${m.time} · ${meetupVenueLine(m)}. ${m.blurb}`
+      : "Community event in Hyderabad.";
+    const siteUrl = "https://community.trizenventures.com";
     const path = m ? `/events/${m.slug}` : "/events";
+    const absoluteUrl = `${siteUrl}${path}`;
+    const cover = m ? meetupCoverImage(m) : "";
+    const ogImage = m
+      ? cover.startsWith("http")
+        ? cover
+        : `${siteUrl}${cover}`
+      : `${siteUrl}/og-image.png`;
     return {
       meta: [
         { title },
         { name: "description", content: desc },
+        { property: "og:site_name", content: "Trizen Community" },
         { property: "og:title", content: title },
         { property: "og:description", content: desc },
         { property: "og:type", content: "event" },
-        { property: "og:url", content: path },
+        { property: "og:url", content: absoluteUrl },
+        { property: "og:image", content: ogImage },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: desc },
+        { name: "twitter:image", content: ogImage },
       ],
-      links: [{ rel: "canonical", href: path }],
+      links: [{ rel: "canonical", href: absoluteUrl }],
       scripts: m
         ? [
             {
@@ -84,6 +105,8 @@ export const Route = createFileRoute("/events/$slug")({
                 "@type": "Event",
                 name: m.title,
                 description: m.blurb,
+                url: absoluteUrl,
+                image: [ogImage],
                 ...(isMeetupDateConfirmed(m) ? { startDate: m.dateISO } : {}),
                 eventAttendanceMode:
                   "https://schema.org/OfflineEventAttendanceMode",
@@ -95,7 +118,8 @@ export const Route = createFileRoute("/events/$slug")({
                 },
                 organizer: {
                   "@type": "Organization",
-                  name: "Hyderabad Founders Network",
+                  name: organizer,
+                  url: siteUrl,
                 },
                 isAccessibleForFree: false,
                 offers: {
@@ -103,7 +127,7 @@ export const Route = createFileRoute("/events/$slug")({
                   price: String(eventFeeInr(m)),
                   priceCurrency: "INR",
                   availability: "https://schema.org/InStock",
-                  url: `https://community.trizenventures.com/events/${m.slug}`,
+                  url: absoluteUrl,
                 },
               }),
             },
@@ -114,7 +138,7 @@ export const Route = createFileRoute("/events/$slug")({
   component: EventDetail,
 });
 
-const whoFor = [
+const defaultWhoFor = [
   {
     title: "Startup Founders",
     desc: "Meet other founders solving similar challenges.",
@@ -147,7 +171,7 @@ const whoFor = [
   },
 ];
 
-const takeaways = [
+const defaultTakeaways = [
   {
     title: "Meaningful founder conversations",
     body: "Talk through real challenges with people building at a similar stage.",
@@ -181,7 +205,7 @@ const venueAmenities = [
   { label: "Coffee & Refreshments", icon: Coffee },
 ];
 
-const faqs = [
+const defaultFaqs = [
   {
     q: "Is this event free?",
     a: "Registration includes a small fee per person and is required due to limited capacity.",
@@ -206,6 +230,15 @@ const faqs = [
     q: "Will there be food?",
     a: "Light refreshments (or snacks) will be provided.",
   },
+];
+
+const audienceIcons = [
+  UserRound,
+  Users,
+  Lightbulb,
+  Briefcase,
+  Handshake,
+  Rocket,
 ];
 
 const eventGallery = [
@@ -454,7 +487,7 @@ function HeroPosterFooter({
   supportedBy: EventPartner[];
 }) {
   return (
-    <div className="space-y-2 border-t border-white/15 pt-4">
+    <div className="space-y-2">
       <HeroCollaborativeHosts hosts={hosts} />
       <HeroSupportedBy partners={supportedBy} />
     </div>
@@ -631,19 +664,22 @@ function EventDetail() {
   ];
 
   return (
-    <article className="bg-[var(--color-background)]">
-      {/* HERO — poster hierarchy for September */}
-      <header className="relative isolate flex min-h-[min(58dvh,500px)] flex-col overflow-hidden md:min-h-[min(62dvh,540px)]">
+    <article className="bg-[var(--color-background)] pb-[4.75rem] lg:pb-0">
+      {/* HERO — lean first viewport */}
+      <header className="relative isolate flex min-h-[min(52dvh,460px)] flex-col overflow-hidden md:min-h-[min(56dvh,500px)]">
         <div className="absolute inset-0 overflow-hidden" aria-hidden>
           <div className="hero-slide absolute inset-0">
             <img
-              src="/july-2026-1.jpeg"
+              src={meetupCoverImage(meetup)}
               alt=""
               width={1920}
               height={1080}
               fetchPriority="high"
               decoding="async"
-              className="h-full w-full object-cover object-[center_42%]"
+              className={cn(
+                "h-full w-full object-cover",
+                meetupCoverObjectClass(meetup),
+              )}
             />
           </div>
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,10,24,0.5)_0%,rgba(8,10,24,0.78)_42%,rgba(8,10,24,0.94)_100%)]" />
@@ -682,21 +718,12 @@ function EventDetail() {
                 <p className="hero-reveal hero-reveal-delay-1 mt-2.5 text-[13px] font-medium tracking-[0.14em] text-white/85 uppercase md:text-[14px]">
                   {heroContent.subtitle}
                 </p>
-
-                <div className="hero-reveal hero-reveal-delay-2 mt-5 space-y-2 border-l-2 border-[var(--brand-accent)] pl-4 md:mt-6 md:pl-5">
-                  <p className="text-[14px] leading-snug text-white/95 md:text-[15px]">
-                    {meetupDateLabel(meetup)} · {meetup.time}
-                  </p>
-                  <p className="text-[13.5px] leading-snug text-white/90 md:text-[14px]">
-                    {meetupVenueLine(meetup)}
-                  </p>
-                  <p className="text-[12.5px] font-medium tracking-wide text-white/78 md:text-[13px]">
-                    {heroContent.audienceLine}
-                  </p>
-                  <p className="pt-1 text-[15px] font-semibold tracking-wide text-white md:text-[16px]">
-                    {heroContent.tagline}
-                  </p>
-                </div>
+                <p className="hero-reveal hero-reveal-delay-2 mt-4 max-w-lg text-[14px] leading-snug text-white/90 md:text-[15px]">
+                  {meetupDateLabel(meetup)} · {meetup.time} · {meetupVenueLine(meetup)}
+                </p>
+                <p className="hero-reveal hero-reveal-delay-2 mt-2 text-[15px] font-semibold tracking-wide text-white md:text-[16px]">
+                  {heroContent.tagline}
+                </p>
               </>
             ) : (
               <>
@@ -715,160 +742,230 @@ function EventDetail() {
                 <h1 className="hero-reveal hero-reveal-delay-2 mt-3 max-w-[28ch] text-[clamp(1.15rem,2.4vw,1.45rem)] font-medium leading-snug tracking-tight text-white/92">
                   {meetup.title}
                 </h1>
-                <p className="hero-reveal hero-reveal-delay-2 mt-3 max-w-lg text-[14px] leading-relaxed text-white/75 md:text-[15px]">
-                  {meetup.blurb}
+                <p className="hero-reveal hero-reveal-delay-2 mt-3 max-w-lg text-[14px] leading-snug text-white/80 md:text-[15px]">
+                  {meetupDateLabel(meetup)} · {meetup.time} · {meetupVenueLine(meetup)}
                 </p>
               </>
             )}
-            {heroContent ? (
-              <div className="hero-reveal hero-reveal-delay-3 mt-6 md:mt-7">
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <RsvpButton event={meetup} className="btn-primary gap-1.5">
-                    <Ticket className="size-3.5" strokeWidth={1.75} aria-hidden />
-                    {open ? "Register Now" : completed ? "Event completed" : "Coming soon"}
-                  </RsvpButton>
-                  <a
-                    href={mapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex min-h-[46px] items-center justify-center gap-1.5 border border-white/35 bg-white/12 px-5 text-[14px] font-medium text-white backdrop-blur-[2px] transition-colors duration-200 hover:border-white/50 hover:bg-white/18"
-                  >
-                    Get Directions
-                    <ArrowUpRight
-                      className="size-3.5"
-                      strokeWidth={1.75}
-                      aria-hidden
-                    />
-                  </a>
-                </div>
-                <HeroPosterFooter
-                  hosts={pageContent.collaborativeHosts}
-                  supportedBy={supportedByPartners}
+            <div className="hero-reveal hero-reveal-delay-3 mt-6 flex flex-wrap items-center gap-2.5 md:mt-7">
+              <RsvpButton event={meetup} className="btn-primary gap-1.5">
+                <Ticket className="size-3.5" strokeWidth={1.75} aria-hidden />
+                {open
+                  ? heroContent
+                    ? "Register Now"
+                    : "Book your spot"
+                  : completed
+                    ? "Event completed"
+                    : "Coming soon"}
+              </RsvpButton>
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-[46px] items-center justify-center gap-1.5 border border-white/35 bg-white/12 px-5 text-[14px] font-medium text-white backdrop-blur-[2px] transition-colors duration-200 hover:border-white/50 hover:bg-white/18"
+              >
+                Get Directions
+                <ArrowUpRight
+                  className="size-3.5"
+                  strokeWidth={1.75}
+                  aria-hidden
                 />
-              </div>
-            ) : (
-              <div className="hero-reveal hero-reveal-delay-3 mt-6 flex flex-wrap items-center gap-2.5">
-                <RsvpButton event={meetup} className="btn-primary gap-1.5">
-                  <Ticket className="size-3.5" strokeWidth={1.75} aria-hidden />
-                  {open ? "Book your spot" : completed ? "Event completed" : "Coming soon"}
-                </RsvpButton>
-                <a
-                  href={mapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-[46px] items-center justify-center gap-1.5 border border-white/28 bg-white/10 px-5 text-[14px] font-medium text-white transition-colors duration-200 hover:border-white/45 hover:bg-white/16"
-                >
-                  Get Directions
-                  <ArrowUpRight
-                    className="size-3.5"
-                    strokeWidth={1.75}
-                    aria-hidden
-                  />
-                </a>
-              </div>
-            )}
+              </a>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* EVENT DETAILS — below the fold */}
+      {heroContent &&
+      (pageContent.collaborativeHosts.length > 0 ||
+        supportedByPartners.length > 0) ? (
+        <div className="border-b border-[var(--color-border)] bg-[var(--brand-primary)]">
+          <div className="page-container py-4 md:py-5">
+            <HeroPosterFooter
+              hosts={pageContent.collaborativeHosts}
+              supportedBy={supportedByPartners}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {/* Ticket summary + why — sticky rail on desktop */}
       <section
         ref={detailsReveal.ref}
         className="border-b border-[var(--color-border)] bg-[var(--color-surface)]"
         aria-label="Event details"
       >
-        <div className="page-container py-5 md:py-6">
+        <div className="page-container py-6 md:py-8">
           <div
             className={cn(
-              "reveal-up flex flex-col gap-5",
+              "reveal-up grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-10",
               detailsReveal.inView && "is-visible",
             )}
           >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <EventStatusBadge completed={completed} open={open} />
-                <span className="text-[13px] text-[var(--color-text-secondary)]">
-                  {meetup.city} · {seatsLabel} seats
-                </span>
-              </div>
-              <EventShareBar meetup={meetup} orientation="horizontal" />
-            </div>
-
-            <dl
-              className={cn(
-                "stagger-in-fast grid grid-cols-2 gap-4 border-t border-[var(--color-border)] pt-5 sm:grid-cols-4 sm:gap-6",
-                detailsReveal.inView && "is-visible",
-              )}
-            >
-              {[
-                { label: "Date", value: meetupDateLabel(meetup), icon: Calendar },
-                { label: "Time", value: meetup.time, icon: Clock },
-                { label: "Venue", value: meetup.venue, icon: MapPin },
-                { label: "Fee", value: `₹${eventFeeInr(meetup)}`, icon: Ticket },
-              ].map(({ label, value, icon: Icon }) => (
-                <div key={label} className="min-w-0">
-                  <dt className="inline-flex items-center gap-1.5 text-[11px] font-medium tracking-[0.04em] text-[var(--color-text-muted)]">
-                    <Icon
-                      className="size-3.5 text-[var(--brand-accent)]"
-                      strokeWidth={1.75}
-                      aria-hidden
-                    />
-                    {label}
-                  </dt>
-                  <dd className="mt-1 truncate text-[14px] font-medium text-foreground">
-                    {value}
-                  </dd>
+            <div className="min-w-0 space-y-10">
+              <div className="space-y-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <EventStatusBadge completed={completed} open={open} />
+                    <span className="text-[13px] text-[var(--color-text-secondary)]">
+                      {meetup.city} · {seatsLabel} seats
+                    </span>
+                  </div>
+                  <EventShareBar meetup={meetup} orientation="horizontal" />
                 </div>
-              ))}
-            </dl>
-          </div>
-        </div>
-      </section>
 
-      {/* WHY */}
-      <section
-        ref={whyReveal.ref}
-        className="border-b border-[var(--color-border)] py-10 md:py-12"
-      >
-        <div className="page-container">
-          <div
-            className={cn(
-              "reveal-up grid gap-6 lg:grid-cols-12 lg:gap-12",
-              whyReveal.inView && "is-visible",
-            )}
-          >
-            <div className="lg:col-span-5">
-              <SectionLabel>Why this meetup?</SectionLabel>
-              <h2 className="mt-3 max-w-[18ch] font-display text-[clamp(1.5rem,2.5vw,2.05rem)] leading-[1.1] tracking-tight text-foreground">
-                {pageContent.why?.headline ??
-                  "More than networking. A community that grows together."}
-              </h2>
-            </div>
-            <div className="max-w-2xl space-y-3.5 text-[14px] leading-[1.7] text-[var(--color-text-secondary)] md:text-[15px] lg:col-span-7">
-              {pageContent.why ? (
-                <>
-                  {pageContent.why.paragraphs.map((paragraph) => (
-                    <p key={paragraph}>{paragraph}</p>
+                <dl
+                  className={cn(
+                    "stagger-in-fast grid grid-cols-2 gap-4 border-t border-[var(--color-border)] pt-5 sm:grid-cols-4 sm:gap-6",
+                    detailsReveal.inView && "is-visible",
+                  )}
+                >
+                  {[
+                    {
+                      label: "Date",
+                      value: meetupDateLabel(meetup),
+                      icon: Calendar,
+                    },
+                    { label: "Time", value: meetup.time, icon: Clock },
+                    { label: "Venue", value: meetup.venue, icon: MapPin },
+                    {
+                      label: "Fee",
+                      value: `₹${eventFeeInr(meetup)}`,
+                      icon: Ticket,
+                    },
+                  ].map(({ label, value, icon: Icon }) => (
+                    <div key={label} className="min-w-0">
+                      <dt className="inline-flex items-center gap-1.5 text-[11px] font-medium tracking-[0.04em] text-[var(--color-text-muted)]">
+                        <Icon
+                          className="size-3.5 text-[var(--brand-accent)]"
+                          strokeWidth={1.75}
+                          aria-hidden
+                        />
+                        {label}
+                      </dt>
+                      <dd className="mt-1 truncate text-[14px] font-medium text-foreground">
+                        {value}
+                      </dd>
+                    </div>
                   ))}
-                  <p className="font-medium text-foreground">
-                    {pageContent.why.closingLine}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p>Most startup events end when everyone leaves the room.</p>
-                  <p>
-                    At Hyderabad Founders Network, every meetup is an opportunity to
-                    build relationships that continue beyond the event.
-                  </p>
-                  <p>
-                    Whether you&apos;re building your first startup or scaling your
-                    next venture, you&apos;ll meet people who understand the journey
-                    and are willing to share their experiences, ideas and support.
-                  </p>
-                </>
-              )}
+                </dl>
+              </div>
+
+              <section
+                ref={whyReveal.ref}
+                className={cn(
+                  "reveal-up grid gap-5 border-t border-[var(--color-border)] pt-8 sm:gap-6",
+                  whyReveal.inView && "is-visible",
+                )}
+              >
+                <div>
+                  <SectionLabel>
+                    {pageContent.why?.label ?? "Why this meetup?"}
+                  </SectionLabel>
+                  <h2 className="mt-3 max-w-[22ch] font-display text-[clamp(1.5rem,2.5vw,2.05rem)] leading-[1.1] tracking-tight text-foreground">
+                    {pageContent.why?.headline ??
+                      "More than networking. A community that grows together."}
+                  </h2>
+                </div>
+                <div className="max-w-2xl space-y-3.5 text-[14px] leading-[1.7] text-[var(--color-text-secondary)] md:text-[15px]">
+                  {pageContent.why ? (
+                    <>
+                      {pageContent.why.paragraphs.map((paragraph) => (
+                        <p key={paragraph}>{paragraph}</p>
+                      ))}
+                      <p className="font-medium text-foreground">
+                        {pageContent.why.closingLine}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p>
+                        Most startup events end when everyone leaves the room.
+                      </p>
+                      <p>
+                        At Hyderabad Founders Network, every meetup is an
+                        opportunity to build relationships that continue beyond
+                        the event.
+                      </p>
+                      <p>
+                        Whether you&apos;re building your first startup or
+                        scaling your next venture, you&apos;ll meet people who
+                        understand the journey and are willing to share their
+                        experiences, ideas and support.
+                      </p>
+                    </>
+                  )}
+                </div>
+              </section>
             </div>
+
+            <aside className="hidden lg:block">
+              <div className="sticky top-24 border border-[var(--color-border)] bg-[var(--color-background)] p-5 shadow-[var(--shadow-card)]">
+                <p className="text-[12px] font-medium tracking-[0.06em] text-[var(--brand-accent)]">
+                  Tickets
+                </p>
+                <p className="mt-2 font-display text-[1.15rem] tracking-tight text-foreground">
+                  {meetup.title}
+                </p>
+                <dl className="mt-4 space-y-2.5 border-t border-[var(--color-border)] pt-4 text-[13px]">
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-[var(--color-text-muted)]">Date</dt>
+                    <dd className="text-right font-medium text-foreground">
+                      {meetupDateLabel(meetup)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-[var(--color-text-muted)]">Time</dt>
+                    <dd className="text-right font-medium text-foreground">
+                      {meetup.time}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-[var(--color-text-muted)]">Venue</dt>
+                    <dd className="max-w-[11rem] text-right font-medium text-foreground">
+                      {meetup.venue}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-[var(--color-text-muted)]">From</dt>
+                    <dd className="text-right font-medium text-foreground">
+                      ₹{eventFeeInr(meetup)}
+                    </dd>
+                  </div>
+                </dl>
+                <RsvpButton
+                  event={meetup}
+                  className="btn-primary mt-5 w-full justify-center gap-1.5"
+                >
+                  <Ticket className="size-3.5" strokeWidth={1.75} aria-hidden />
+                  {open
+                    ? "Register Now"
+                    : completed
+                      ? "Event completed"
+                      : "Coming soon"}
+                </RsvpButton>
+                {isMeetupDateConfirmed(meetup) ? (
+                  <a
+                    href={googleCalendarUrl(meetup)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-secondary mt-2.5 w-full justify-center gap-1.5"
+                  >
+                    <CalendarPlus className="size-3.5" strokeWidth={1.75} />
+                    Add to Google Calendar
+                  </a>
+                ) : null}
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-secondary mt-2.5 w-full justify-center gap-1.5"
+                >
+                  Directions
+                  <ArrowUpRight className="size-3.5" strokeWidth={1.75} />
+                </a>
+              </div>
+            </aside>
           </div>
         </div>
       </section>
@@ -966,12 +1063,12 @@ function EventDetail() {
           >
             <SectionLabel>Who should attend?</SectionLabel>
             <h2 className="mt-3 font-display text-[clamp(1.7rem,2.8vw,2.25rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
-              Built for people who are building.
+              {pageContent.audience?.heading ??
+                "Built for people who are building."}
             </h2>
             <p className="mt-3 max-w-[36ch] text-[14.5px] leading-relaxed text-[var(--color-text-secondary)]">
-              Founders, operators, mentors, and aspiring entrepreneurs — if
-              you&apos;re shaping Hyderabad&apos;s startup future, you belong
-              here.
+              {pageContent.audience?.intro ??
+                "Founders, operators, mentors, and aspiring entrepreneurs — if you're shaping Hyderabad's startup future, you belong here."}
             </p>
           </div>
           <ul
@@ -980,7 +1077,13 @@ function EventDetail() {
               whoReveal.inView && "is-visible",
             )}
           >
-            {whoFor.map((item) => {
+            {(pageContent.audience?.items
+              ? pageContent.audience.items.map((item, index) => ({
+                  ...item,
+                  icon: audienceIcons[index % audienceIcons.length],
+                }))
+              : defaultWhoFor
+            ).map((item) => {
               const Icon = item.icon;
               return (
                 <li
@@ -1023,10 +1126,11 @@ function EventDetail() {
           >
             <SectionLabel>What you&apos;ll get</SectionLabel>
             <h2 className="mt-3 font-display text-[clamp(1.55rem,2.6vw,2rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
-              What you&apos;ll take away
+              {pageContent.takeaways?.heading ?? "What you'll take away"}
             </h2>
             <p className="mt-2.5 max-w-[34ch] text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
-              Outcomes people leave the room with — not a pitch deck recap.
+              {pageContent.takeaways?.intro ??
+                "Outcomes people leave the room with — not a pitch deck recap."}
             </p>
             <ul
               className={cn(
@@ -1034,7 +1138,8 @@ function EventDetail() {
                 takeawaysReveal.inView && "is-visible",
               )}
             >
-              {takeaways.map((item, i) => (
+              {(pageContent.takeaways?.items ?? defaultTakeaways).map(
+                (item, i) => (
                 <li
                   key={item.title}
                   className="grid gap-1 py-4 sm:grid-cols-[2.5rem_minmax(0,1fr)] sm:gap-3"
@@ -1054,7 +1159,8 @@ function EventDetail() {
                     </p>
                   </div>
                 </li>
-              ))}
+              ),
+              )}
             </ul>
           </div>
 
@@ -1328,7 +1434,12 @@ function EventDetail() {
               venueReveal.inView && "is-visible",
             )}
           >
-            {venueAmenities.map(({ label, icon: Icon }) => (
+            {(pageContent.hideRefreshmentsAmenity
+              ? venueAmenities.filter(
+                  (item) => item.label !== "Coffee & Refreshments",
+                )
+              : venueAmenities
+            ).map(({ label, icon: Icon }) => (
               <li
                 key={label}
                 className="flex items-center gap-2.5 text-[14px] text-foreground"
@@ -1481,7 +1592,7 @@ function EventDetail() {
                     faqReveal.inView && "is-visible",
                   )}
                 >
-                  {faqs.map((f) => (
+                  {(pageContent.faqs ?? defaultFaqs).map((f) => (
                     <div key={f.q} className="py-2.5">
                       <dt className="text-[14px] font-medium tracking-tight text-foreground">
                         {f.q}
@@ -1509,13 +1620,16 @@ function EventDetail() {
               )}
             >
               <div className="mx-auto max-w-xl">
-                <SectionLabel>Community</SectionLabel>
+                <SectionLabel>
+                  {pageContent.cta?.label ?? "Community"}
+                </SectionLabel>
                 <h2 className="mt-2.5 font-display text-[clamp(1.4rem,2.4vw,1.8rem)] tracking-tight text-foreground">
-                  This meetup is just the beginning.
+                  {pageContent.cta?.heading ??
+                    "This meetup is just the beginning."}
                 </h2>
                 <p className="mt-3 text-[14.5px] leading-relaxed text-[var(--color-text-secondary)]">
-                  Stay connected through WhatsApp, future meetups, founder
-                  stories, and ecosystem initiatives.
+                  {pageContent.cta?.body ??
+                    "Stay connected through WhatsApp, future meetups, founder stories, and ecosystem initiatives."}
                 </p>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-2.5">
@@ -1541,6 +1655,28 @@ function EventDetail() {
           </section>
         </>
       )}
+
+      {!completed ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-border)] bg-[var(--color-surface)]/95 px-3 py-3 backdrop-blur-sm lg:hidden">
+          <div className="mx-auto flex max-w-lg items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] font-medium text-foreground">
+                {meetup.title}
+              </p>
+              <p className="truncate text-[12px] text-[var(--color-text-secondary)]">
+                ₹{eventFeeInr(meetup)} · {meetupDateLabel(meetup)}
+              </p>
+            </div>
+            <RsvpButton
+              event={meetup}
+              className="btn-primary shrink-0 gap-1.5 px-4"
+            >
+              <Ticket className="size-3.5" strokeWidth={1.75} aria-hidden />
+              {open ? "Register" : completed ? "Done" : "Soon"}
+            </RsvpButton>
+          </div>
+        </div>
+      ) : null}
     </article>
   );
 }

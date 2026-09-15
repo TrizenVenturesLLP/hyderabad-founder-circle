@@ -93,7 +93,11 @@ function PaymentStatusCell({
         <>
           <p className="mt-1 text-xs font-medium text-foreground">
             ₹{amount}
-            {payment?.method || payment?.provider ? (
+            {payment?.ticketLabel || payment?.memberCount ? (
+              <span className="ml-1 font-normal text-[var(--color-text-muted)]">
+                · {payment.ticketLabel || `${payment.memberCount} member(s)`}
+              </span>
+            ) : payment?.method || payment?.provider ? (
               <span className="ml-1 font-normal text-[var(--color-text-muted)]">
                 · {paymentMethodLabel(payment.provider || payment.method)}
               </span>
@@ -115,16 +119,16 @@ function PaymentStatusCell({
               ID: {payment.note}
             </p>
           ) : null}
-          {payment?.proofUrl ? (
-            <button
-              type="button"
-              onClick={onViewProof}
-              className="mt-0.5 text-[10px] font-medium text-[var(--brand-accent)] hover:underline"
-            >
-              View image
-            </button>
-          ) : null}
         </>
+      ) : null}
+      {payment?.proofUrl ? (
+        <button
+          type="button"
+          onClick={onViewProof}
+          className="mt-1 text-xs font-semibold text-[var(--brand-accent)] underline underline-offset-2"
+        >
+          View image
+        </button>
       ) : null}
     </div>
   );
@@ -633,6 +637,20 @@ function RegistrationDetailsModal({
       label: "Phone",
       value: formatAdminPhone(rsvp.countryCode, rsvp.phone),
     },
+    ...(rsvp.guests || []).flatMap((guest, index) => [
+      {
+        label: `Member ${index + 2} name`,
+        value: guest.name || "—",
+      },
+      {
+        label: `Member ${index + 2} email`,
+        value: guest.email || "—",
+      },
+      {
+        label: `Member ${index + 2} phone`,
+        value: guest.phone || "—",
+      },
+    ]),
     { label: "LinkedIn", value: rsvp.linkedin || "—" },
     { label: "Role", value: rsvp.role || "—" },
     { label: "Company", value: rsvp.company || "—" },
@@ -670,6 +688,12 @@ function RegistrationDetailsModal({
         payment?.amountInr != null && payment.amountInr > 0
           ? `₹${payment.amountInr}`
           : "—",
+    },
+    {
+      label: "Ticket",
+      value:
+        payment?.ticketLabel ||
+        (payment?.memberCount ? `${payment.memberCount} member(s)` : "—"),
     },
     { label: "Method", value: paymentMethodLabel(payment?.method) },
     {
@@ -771,6 +795,32 @@ function RegistrationDetailsModal({
         <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
           Payment details
         </p>
+        {payment?.proofUrl ? (
+          <div className="mt-3 border border-[var(--color-border)] bg-[var(--color-background-alt)] p-3">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold text-foreground">
+                Uploaded payment proof
+              </p>
+              <a
+                href={payment.proofUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-semibold text-[var(--brand-accent)] underline underline-offset-2"
+              >
+                Open full image
+              </a>
+            </div>
+            <img
+              src={payment.proofUrl}
+              alt={`Payment proof submitted by ${rsvp.name}`}
+              className="max-h-80 max-w-full border border-[var(--color-border)] bg-white object-contain"
+            />
+          </div>
+        ) : (
+          <p className="mt-3 text-xs text-[var(--color-text-muted)]">
+            No payment proof was uploaded for this registration.
+          </p>
+        )}
         <dl className="mt-3 grid gap-x-8 sm:grid-cols-2">
           {paymentRows.map((row) => (
             <div
@@ -802,25 +852,6 @@ function RegistrationDetailsModal({
             </div>
           ))}
         </dl>
-        {payment?.proofUrl ? (
-          <div className="mt-5">
-            <p className="mb-2 text-xs text-[var(--color-text-muted)]">
-              Payment proof
-            </p>
-            <a
-              href={payment.proofUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block"
-            >
-              <img
-                src={payment.proofUrl}
-                alt={`Payment proof submitted by ${rsvp.name}`}
-                className="max-h-80 max-w-full border border-[var(--color-border)] object-contain"
-              />
-            </a>
-          </div>
-        ) : null}
       </div>
     </div>
   );

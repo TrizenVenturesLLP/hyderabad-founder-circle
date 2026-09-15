@@ -23,6 +23,9 @@ export type RsvpDraftForm = {
   questions: string;
   heardAboutEvent: string;
   heardAboutEventOther: string;
+  guestName: string;
+  guestPhone: string;
+  guestEmail: string;
 };
 
 export type RsvpDraft = {
@@ -61,7 +64,10 @@ export function hasRsvpDraftContent(form: RsvpDraftForm) {
       form.subscribeUpdates ||
       form.questions.trim() ||
       form.heardAboutEvent ||
-      form.heardAboutEventOther.trim(),
+      form.heardAboutEventOther.trim() ||
+      form.guestName.trim() ||
+      form.guestPhone.trim() ||
+      form.guestEmail.trim(),
   );
 }
 
@@ -119,6 +125,9 @@ export function loadRsvpDraft(eventSlug: string): RsvpDraft | null {
           typeof form.heardAboutEventOther === "string"
             ? form.heardAboutEventOther
             : "",
+        guestName: typeof form.guestName === "string" ? form.guestName : "",
+        guestPhone: typeof form.guestPhone === "string" ? form.guestPhone : "",
+        guestEmail: typeof form.guestEmail === "string" ? form.guestEmail : "",
       },
       step,
       paymentMethod,

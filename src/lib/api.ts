@@ -11,6 +11,13 @@ export function eventFeeInr(event?: { payment?: { amountInr?: number } } | null)
   return Number.isFinite(amount) && amount > 0 ? amount : REGISTRATION_FEE_INR;
 }
 
+export type EventPaymentTicket = {
+  id: string;
+  label: string;
+  amountInr: number;
+  memberCount: number;
+};
+
 export type EventPaymentConfig = {
   keyId?: string;
   amountInr: number;
@@ -27,6 +34,8 @@ export type EventPaymentConfig = {
     qrImageUrl?: string;
     instructions?: string;
   }[];
+  tickets?: EventPaymentTicket[];
+  formMode?: "full" | "minimal";
   hasRazorpay: boolean;
   hasManualMethods: boolean;
   enabled: boolean;
@@ -50,6 +59,8 @@ export async function submitManualPaymentRegistration(
     provider: string;
     proofKey: string;
     note?: string;
+    ticketId?: string;
+    formMode?: "full" | "minimal";
   },
 ) {
   const res = await fetch(`${API_BASE}/api/payments/manual-confirm`, {
@@ -108,6 +119,11 @@ export type RsvpPayload = {
   questions?: string;
   heardAboutEvent: string;
   heardAboutEventOther?: string;
+  guests?: Array<{
+    name: string;
+    phone: string;
+    email: string;
+  }>;
   event: Pick<
     Meetup,
     "slug" | "title" | "dateISO" | "dateLabel" | "time" | "venue" | "city" | "format"

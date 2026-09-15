@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { trackPageview } from "../lib/analytics";
 import { SiteHeader } from "../components/SiteHeader";
 import { SiteFooter } from "../components/SiteFooter";
 import { LazyRsvpDialog } from "../components/rsvp/LazyRsvpDialog";
@@ -88,21 +89,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     const siteUrl = "https://community.trizenventures.com";
     const ogImage = `${siteUrl}/og-image.png`;
     const description =
-      "A community of founders, operators and aspiring entrepreneurs in Hyderabad. Monthly meetups on the 3rd Saturday.";
+      "Discover and register for events in Hyderabad — or apply to host your own. Trizen Community is an event hosting platform for communities and organizers.";
 
     return {
       meta: [
         { charSet: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1" },
-        { title: "Hyderabad Founders Network — Monthly Startup Meetup" },
+        { title: "Trizen Community — Event Hosting Platform" },
         { name: "description", content: description },
-        { name: "author", content: "Hyderabad Founders Network" },
-        { property: "og:site_name", content: "Hyderabad Founders Network" },
+        { name: "author", content: "Trizen Community" },
+        { property: "og:site_name", content: "Trizen Community" },
         { property: "og:type", content: "website" },
         { property: "og:url", content: siteUrl },
         {
           property: "og:title",
-          content: "Hyderabad Founders Network — Monthly Startup Meetup",
+          content: "Trizen Community — Discover & Host Events in Hyderabad",
         },
         { property: "og:description", content: description },
         { property: "og:image", content: ogImage },
@@ -111,12 +112,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { property: "og:image:height", content: "1200" },
         {
           property: "og:image:alt",
-          content: "Trizen Community — Hyderabad Founders Network",
+          content: "Trizen Community — Event hosting platform",
         },
-        { name: "twitter:card", content: "summary" },
+        { name: "twitter:card", content: "summary_large_image" },
         {
           name: "twitter:title",
-          content: "Hyderabad Founders Network — Monthly Startup Meetup",
+          content: "Trizen Community — Event Hosting Platform",
         },
         { name: "twitter:description", content: description },
         { name: "twitter:image", content: ogImage },
@@ -125,6 +126,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { rel: "stylesheet", href: appCss },
         { rel: "icon", type: "image/png", href: "/favicon.png" },
         { rel: "apple-touch-icon", href: "/favicon.png" },
+        {
+          rel: "sitemap",
+          type: "application/xml",
+          href: "/sitemap.xml",
+        },
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         {
           rel: "preconnect",
@@ -167,6 +173,20 @@ function RootComponent() {
     pathname.startsWith("/admin-login") ||
     pathname === "/org-login" ||
     pathname === "/host";
+
+  useEffect(() => {
+    if (
+      pathname.startsWith("/admin") ||
+      pathname.startsWith("/admin-login") ||
+      pathname === "/org-login"
+    ) {
+      return;
+    }
+    const eventSlug = pathname.startsWith("/events/")
+      ? pathname.slice("/events/".length).split("/")[0] || ""
+      : "";
+    trackPageview(pathname, eventSlug || undefined);
+  }, [pathname]);
 
   if (isAuthShell) {
     return (

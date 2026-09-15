@@ -2,9 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { links } from "@/lib/links";
 import { BrandLogo } from "@/components/BrandLogo";
-import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import {
   Sheet,
   SheetContent,
@@ -14,11 +12,9 @@ import {
 } from "@/components/ui/sheet";
 
 const nav = [
-  { to: "/events", label: "Events" },
-  { to: "/community", label: "Community" },
-  { to: "/stories", label: "Stories" },
-  { to: "/about", label: "About" },
-  { to: "/contact", label: "Contact" },
+  { to: "/events", label: "Events", hash: undefined as string | undefined },
+  { to: "/about", label: "About", hash: undefined },
+  { to: "/contact", label: "Contact", hash: undefined },
 ] as const;
 
 function BrandMark({ compact = false }: { compact?: boolean }) {
@@ -46,7 +42,7 @@ function BrandMark({ compact = false }: { compact?: boolean }) {
             compact ? "text-[9.5px]" : "text-[9.5px] md:text-[10.5px]",
           )}
         >
-          Community events platform
+          Event hosting platform
         </span>
       </span>
     </>
@@ -92,16 +88,26 @@ export function SiteHeader() {
           <BrandMark />
         </Link>
 
-        <nav className="hidden items-center gap-0.5 md:flex">
+        <nav className="hidden items-center gap-0.5 lg:flex">
           {nav.map((n) => (
             <Link
-              key={n.to}
+              key={n.label}
               to={n.to}
+              hash={n.hash}
               className="group/nav relative px-3.5 py-2 text-[14px] font-medium text-[var(--color-text-secondary)] transition-colors duration-250 hover:text-foreground lg:px-4 lg:text-[14.5px]"
-              activeProps={{
-                className:
-                  "group/nav relative px-3.5 py-2 text-[14px] font-semibold text-foreground transition-colors duration-250 lg:px-4 lg:text-[14.5px] [&_.nav-underline]:scale-x-100",
-              }}
+              activeOptions={
+                n.hash
+                  ? { exact: true, includeHash: true }
+                  : { exact: n.to === "/" }
+              }
+              activeProps={
+                n.to === "/" && n.hash
+                  ? undefined
+                  : {
+                      className:
+                        "group/nav relative px-3.5 py-2 text-[14px] font-semibold text-foreground transition-colors duration-250 lg:px-4 lg:text-[14.5px] [&_.nav-underline]:scale-x-100",
+                    }
+              }
             >
               {n.label}
               <span
@@ -110,15 +116,12 @@ export function SiteHeader() {
               />
             </Link>
           ))}
-          <a
-            href={links.community}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-primary ml-3 gap-1.5 !min-h-9 !px-3.5 !text-[12.5px]"
+          <Link
+            to="/host"
+            className="btn-primary ml-3 gap-1.5 !min-h-9 !rounded-full !px-4 !text-[12.5px]"
           >
-            <WhatsAppIcon className="size-3.5" />
-            Join the Community
-          </a>
+            Host an Event
+          </Link>
         </nav>
 
         <button
@@ -126,7 +129,7 @@ export function SiteHeader() {
           aria-label="Open menu"
           aria-expanded={open}
           aria-controls="mobile-nav"
-          className="relative flex h-11 w-11 items-center justify-center transition-colors duration-200 hover:bg-[var(--brand-primary-soft)] md:hidden"
+          className="relative flex h-11 w-11 items-center justify-center rounded-xl transition-colors duration-200 hover:bg-[var(--brand-primary-soft)] lg:hidden"
           onClick={() => setOpen(true)}
         >
           <Menu className="h-5 w-5 text-foreground" strokeWidth={1.75} />
@@ -152,14 +155,11 @@ export function SiteHeader() {
           <nav className="flex flex-1 flex-col justify-center px-6 py-10">
             <ul className="divide-y divide-[var(--color-border)] border-y border-[var(--color-border)]">
               {nav.map((n) => (
-                <li key={n.to}>
+                <li key={n.label}>
                   <Link
                     to={n.to}
+                    hash={n.hash}
                     className="group flex items-center justify-between py-5 font-display text-[1.5rem] leading-none tracking-tight text-foreground/75 transition-colors duration-200 hover:text-foreground"
-                    activeProps={{
-                      className:
-                        "group flex items-center justify-between py-5 font-display text-[1.5rem] leading-none tracking-tight text-foreground transition-colors duration-200",
-                    }}
                     onClick={() => setOpen(false)}
                   >
                     {n.label}
@@ -176,16 +176,13 @@ export function SiteHeader() {
           </nav>
 
           <div className="border-t border-[var(--color-border)] px-6 pt-5 pb-[max(1.75rem,env(safe-area-inset-bottom))]">
-            <a
-              href={links.community}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-primary w-full gap-2 !min-h-11 !text-[13.5px]"
+            <Link
+              to="/host"
+              className="btn-primary w-full gap-2 !min-h-11 !rounded-full !text-[13.5px]"
               onClick={() => setOpen(false)}
             >
-              <WhatsAppIcon className="size-4" />
-              Join the Community
-            </a>
+              Host an Event
+            </Link>
           </div>
         </SheetContent>
       </Sheet>

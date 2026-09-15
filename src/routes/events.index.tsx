@@ -1,30 +1,13 @@
-import { useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  ArrowRight,
-  Calendar,
-  CalendarCheck,
-  CheckCircle2,
-  ChevronDown,
-  Clock,
-  Hourglass,
-  MapPin,
-  Ticket,
-} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, useRouterState } from "@tanstack/react-router";
+import { Calendar } from "lucide-react";
 import {
   getMeetups,
-  getNextMeetup,
   getEventOrganizations,
   type Meetup,
   isMeetupCompleted,
-  isRsvpOpen,
-  meetupStatusLabel,
-  meetupLocationLabel,
-  isMeetupDateConfirmed,
-  DATE_TBC_HEADLINE,
-  DATE_TBC_LABEL,
 } from "@/lib/events";
-import { RsvpButton } from "@/components/rsvp/RsvpButton";
+import { EventCard } from "@/components/EventCard";
 import { useInView } from "@/hooks/use-in-view";
 import { cn } from "@/lib/utils";
 
@@ -36,76 +19,91 @@ export const Route = createFileRoute("/events/")({
     ]);
     return { meetups, organizations };
   },
-  head: () => ({
-    meta: [
-      { title: "Events — Trizen Community" },
-      {
-        name: "description",
-        content:
-          "Browse community events on Trizen Community — including Hyderabad Founders Network and partner-hosted meetups. Register per event; no public signup.",
-      },
-      { property: "og:title", content: "Events — Trizen Community" },
-      {
-        property: "og:description",
-        content:
-          "Upcoming and past community events from Trizen Ventures, NanoSpace, and other organizers.",
-      },
-      { property: "og:url", content: "/events" },
-    ],
-    links: [{ rel: "canonical", href: "/events" }],
-  }),
+  head: () => {
+    const siteUrl = "https://community.trizenventures.com";
+    const title = "Events — Trizen Community";
+    const desc =
+      "Browse community events on Trizen Community — including Hyderabad Founders Network and partner-hosted meetups. Register per event; no public signup.";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: desc },
+        { property: "og:title", content: title },
+        {
+          property: "og:description",
+          content:
+            "Upcoming and past community events from Trizen Ventures, NanoSpace, and other organizers.",
+        },
+        { property: "og:url", content: `${siteUrl}/events` },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: desc },
+      ],
+      links: [{ rel: "canonical", href: `${siteUrl}/events` }],
+    };
+  },
   component: EventsIndex,
 });
 
 const filters = ["Upcoming", "Past", "All"] as const;
 type Filter = (typeof filters)[number];
 
-const filterCopy: Record<
+const emptyCopy: Record<
   Filter,
-  { title: string; sub: string; emptyTitle: string; emptyBody: string }
+  { title: string; body: string }
 > = {
   Upcoming: {
-    title: "Current & upcoming",
-    sub: "Open registrations across organizers — filter by organization or browse everything.",
-    emptyTitle: "No upcoming events right now",
-    emptyBody:
-      "Check past events, or join WhatsApp for the next date announcement.",
+    title: "No upcoming events right now",
+    body: "Check past events, or come back soon for the next date.",
   },
   Past: {
-    title: "Past events",
-    sub: "Sessions that already happened — useful if you want a sense of what the room feels like.",
-    emptyTitle: "No past events yet",
-    emptyBody: "Once an event wraps, it will show up here.",
+    title: "No past events yet",
+    body: "Once an event wraps, it will show up here.",
   },
   All: {
-    title: "All events",
-    sub: "Everything in one place — upcoming dates and completed sessions from every organizer.",
-    emptyTitle: "No events listed yet",
-    emptyBody: "Check back soon for the next community meetup.",
+    title: "No events listed yet",
+    body: "Check back soon for the next community meetup.",
   },
 };
 
 const scrollRevealOpts = {
   once: true,
-  threshold: 0.2,
-  rootMargin: "0px 0px -12% 0px",
+  threshold: 0.15,
+  rootMargin: "0px 0px -8% 0px",
 } as const;
-
-function SectionLabel({ children }: { children: string }) {
-  return (
-    <p className="text-[12px] font-medium tracking-[0.06em] text-[var(--brand-accent)]">
-      {children}
-    </p>
-  );
-}
 
 function EventsIndex() {
   const { meetups, organizations } = Route.useLoaderData();
+  const searchStr = useRouterState({
+    select: (s) => s.location.searchStr,
+  });
+  const organizationFromSearch = useMemo(() => {
+    const value = new URLSearchParams(searchStr).get("organization");
+    return value?.trim() || undefined;
+  }, [searchStr]);
   const [filter, setFilter] = useState<Filter>("Upcoming");
-  const [orgFilter, setOrgFilter] = useState<string>("all");
-  const nextMeetup = useMemo(() => getNextMeetup(meetups), [meetups]);
+  const [orgFilter, setOrgFilter] = useState<string>(
+    organizationFromSearch || "all",
+  );
   const listReveal = useInView<HTMLElement>(scrollRevealOpts);
-  const activeIndex = filters.indexOf(filter);
+
+  useEffect(() => {
+    if (organizationFromSearch) {
+      setOrgFilter(organizationFromSearch);
+    } else {
+      setOrgFilter("all");
+    }
+  }, [organizationFromSearch]);
+
+  function updateOrgFilter(next: string) {
+    setOrgFilter(next);
+    const url =
+      next === "all"
+        ? "/events"
+        : `/events?organization=${encodeURIComponent(next)}`;
+    window.history.replaceState(window.history.state, "", url);
+  }
 
   const orgScoped = useMemo(() => {
     if (orgFilter === "all") return meetups;
@@ -120,428 +118,164 @@ function EventsIndex() {
     const past = [...sortedAsc]
       .filter((m) => isMeetupCompleted(m))
       .sort((a, b) => b.dateISO.localeCompare(a.dateISO));
-    const all = sortedAsc;
 
     return {
       Upcoming: upcoming,
       Past: past,
-      All: all,
+      All: sortedAsc,
     } satisfies Record<Filter, Meetup[]>;
   }, [orgScoped]);
 
-  const copy = filterCopy[filter];
-  const visibleCount = panels[filter].length;
-  const featuredEventLabel = nextMeetup
-    ? nextMeetup.title.length > 28
-      ? `${nextMeetup.title.slice(0, 28)}…`
-      : nextMeetup.title
-    : "Coming soon";
-  const orgFilterLabel =
-    orgFilter === "all"
-      ? "All organizers"
-      : organizations.find((o) => o.slug === orgFilter)?.name || "Organization";
+  const items = panels[filter];
+  const empty = emptyCopy[filter];
 
   return (
-    <div className="bg-[var(--color-background)] pb-10 md:pb-12">
-      {/* Hero */}
-      <section className="relative isolate min-h-[min(48dvh,440px)] overflow-hidden md:min-h-[min(46dvh,480px)]">
-        <img
-          src="/july-2026-1.jpeg"
-          alt=""
-          width={1400}
-          height={900}
-          fetchPriority="high"
-          decoding="async"
-          className="absolute inset-0 h-full w-full object-cover object-[50%_50%]"
-          aria-hidden
-        />
-        <div
-          className="absolute inset-0 bg-[linear-gradient(105deg,oklch(0.15_0.02_55_/_0.86)_0%,oklch(0.17_0.025_50_/_0.68)_50%,oklch(0.2_0.03_45_/_0.28)_78%,oklch(0.22_0.03_40_/_0.12)_100%),linear-gradient(to_top,oklch(0.12_0.02_55_/_0.4)_0%,transparent_42%)]"
-          aria-hidden
-        />
-
-        <div className="relative mx-auto flex min-h-[min(48dvh,440px)] max-w-6xl items-end px-4 pb-8 pt-14 md:min-h-[min(46dvh,480px)] md:px-6 md:pb-10 md:pt-16">
-          <div className="w-full max-w-2xl">
-            <p className="text-[11px] font-medium tracking-[0.08em] text-[color-mix(in_oklab,var(--brand-accent)_70%,white)]">
-              Trizen Community
-            </p>
-            <h1 className="mt-2 font-display text-[clamp(1.85rem,3.5vw,2.55rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-white">
-              Community events, one place.
-            </h1>
-            <p className="mt-2.5 max-w-xl text-[14px] leading-relaxed text-white/78 md:text-[14.5px]">
-              Browse meetups from Trizen Ventures, NanoSpace, and other
-              organizers. Register for an event — no account required.
-            </p>
-
-            <dl className="mt-5 flex flex-wrap gap-x-6 gap-y-2.5 border-t border-white/18 pt-4">
-              {[
-                { label: "Platform", value: "Trizen Community" },
-                { label: "Featured events", value: featuredEventLabel },
-                { label: "Access", value: "Event RSVP only" },
-              ].map((item) => (
-                <div key={item.label} className="min-w-0">
-                  <dt className="text-[10px] font-medium tracking-[0.06em] text-white/50">
-                    {item.label}
-                  </dt>
-                  <dd className="mt-0.5 text-[13px] font-medium text-white">
-                    {item.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </div>
+    <div className="bg-[var(--color-background)] pb-14 md:pb-16">
+      <section className="border-b border-[var(--color-border)] bg-[var(--color-background-alt)]">
+        <div className="page-container py-8 md:py-10">
+          <p className="text-[12px] font-medium tracking-[0.06em] text-[var(--brand-accent)]">
+            Trizen Community
+          </p>
+          <h1 className="mt-2 font-display text-[clamp(1.75rem,3.2vw,2.25rem)] font-semibold tracking-tight text-foreground">
+            Events
+          </h1>
+          <p className="mt-2 max-w-xl text-[14.5px] leading-relaxed text-[var(--color-text-secondary)]">
+            Browse upcoming and past community events in Hyderabad. Register for
+            an event — no account required.
+          </p>
         </div>
       </section>
 
-      {/* Listings — tighter side padding */}
-      <section
-        ref={listReveal.ref}
-        className="mx-auto w-full max-w-[1400px] px-3 pt-8 md:px-5 md:pt-10"
-      >
-        <div
-          className={cn(
-            "reveal-up lg:grid lg:grid-cols-[minmax(0,1fr)_240px] lg:items-start lg:gap-6",
-            listReveal.inView && "is-visible",
-          )}
-        >
-          <div className="min-w-0">
-            <div className="max-w-xl">
-              <SectionLabel>Events</SectionLabel>
-              <h2 className="mt-2 font-display text-[clamp(1.35rem,2.4vw,1.7rem)] tracking-tight text-foreground">
-                {copy.title}
-              </h2>
-              <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
-                {copy.sub}
-              </p>
-              <p className="mt-2 text-[12.5px] text-[var(--color-text-muted)]">
-                {visibleCount === 0
-                  ? "Nothing in this view yet"
-                  : `${visibleCount} meetup${visibleCount === 1 ? "" : "s"}`}
-              </p>
-            </div>
-
-            <div className="relative mt-7 overflow-hidden">
-              {filters.map((panel, i) => {
-                const items = panels[panel];
-                const panelCopy = filterCopy[panel];
-                const offset = i - activeIndex;
-                const isActive = offset === 0;
-
-                return (
-                  <div
-                    key={panel}
-                    className={cn(
-                      "w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
-                      isActive
-                        ? "relative z-[1]"
-                        : "pointer-events-none absolute inset-x-0 top-0 z-0",
-                    )}
-                    style={{ transform: `translate3d(${offset * 100}%, 0, 0)` }}
-                    aria-hidden={!isActive}
-                  >
-                    {items.length > 0 ? (
-                      <ul className="grid list-none gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                        {items.map((m) => (
-                          <li key={`${panel}-${m.slug}`} className="min-h-0">
-                            <EventCard meetup={m} />
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-10 text-center shadow-[var(--shadow-card)]">
-                        <Calendar
-                          className="mx-auto size-5 text-[var(--brand-accent)]"
-                          strokeWidth={1.75}
-                          aria-hidden
-                        />
-                        <p className="mt-3 font-display text-[1.05rem] tracking-tight text-foreground">
-                          {panelCopy.emptyTitle}
-                        </p>
-                        <p className="mx-auto mt-1.5 max-w-sm text-[13.5px] leading-relaxed text-[var(--color-text-secondary)]">
-                          {panelCopy.emptyBody}
-                        </p>
-                        {panel === "Upcoming" ? (
-                          <button
-                            type="button"
-                            onClick={() => setFilter("Past")}
-                            className="btn-secondary mt-5"
-                          >
-                            View past meetups
-                          </button>
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {nextMeetup && filter === "Upcoming" ? (
-              <div className="mt-9 flex flex-col gap-4 border-t border-[var(--color-border)] pt-7 md:flex-row md:items-center md:justify-between md:gap-6">
-                <p className="max-w-xl text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
-                  New here? Start with the{" "}
-                  <Link
-                    to="/events/$slug"
-                    params={{ slug: nextMeetup.slug }}
-                    className="font-medium text-foreground underline-offset-4 hover:text-[var(--brand-accent)] hover:underline"
-                  >
-                    next community event
-                  </Link>
-                  .
-                </p>
-                <div className="flex flex-wrap gap-2.5 md:shrink-0">
-                  <Link
-                    to="/events/$slug"
-                    params={{ slug: nextMeetup.slug }}
-                    className="btn-secondary gap-1.5"
-                  >
-                    What to expect
-                    <ArrowRight className="size-3.5" strokeWidth={1.75} />
-                  </Link>
-                  <RsvpButton event={nextMeetup} className="btn-primary">
-                    RSVP
-                  </RsvpButton>
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          <aside
-            aria-label="Event filters"
-            className="mt-8 border-t border-[var(--color-border)] pt-5 lg:sticky lg:top-24 lg:mt-0 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-5"
+      {/* Sticky filter bar */}
+      <div className="sticky top-[64px] z-30 border-b border-[var(--color-border)] bg-[var(--color-background)]/95 backdrop-blur-md md:top-[68px]">
+        <div className="page-container flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div
+            className="flex w-full gap-1 overflow-x-auto sm:w-auto"
+            role="tablist"
+            aria-label="Event status"
           >
-            <p className="text-[12px] font-medium tracking-[0.06em] text-[var(--brand-accent)]">
-              Filters
-            </p>
-
-            <div className="mt-4">
-              <h3 className="text-[13px] font-semibold text-foreground">
-                Report filters
-              </h3>
-              <p className="mt-1 text-[12px] leading-relaxed text-[var(--color-text-muted)]">
-                Choose which events to list.
-              </p>
-              <div
-                className="mt-3 flex flex-col gap-1"
-                role="tablist"
-                aria-label="Report filters"
-              >
-                {filters.map((f) => {
-                  const active = filter === f;
-                  const count = panels[f].length;
-                  return (
-                    <button
-                      key={f}
-                      type="button"
-                      role="tab"
-                      aria-selected={active}
-                      onClick={() => setFilter(f)}
-                      className={cn(
-                        "flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[13px] font-medium transition-colors",
-                        active
-                          ? "bg-[var(--brand-accent)] text-white"
-                          : "text-[var(--color-text-secondary)] hover:bg-[var(--color-background-alt)] hover:text-foreground",
-                      )}
-                    >
-                      <span>{f}</span>
-                      <span
-                        className={cn(
-                          "text-[11px] tabular-nums",
-                          active
-                            ? "text-white/80"
-                            : "text-[var(--color-text-muted)]",
-                        )}
-                      >
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <details className="mt-5 border-t border-[var(--color-border)] pt-5 group">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-[13px] font-semibold text-foreground [&::-webkit-details-marker]:hidden">
-                <span>
-                  Narrow by organization
-                  <span className="mt-0.5 block text-[11px] font-normal text-[var(--color-text-muted)]">
-                    {orgFilterLabel}
-                  </span>
-                </span>
-                <ChevronDown
-                  className="size-4 shrink-0 text-[var(--color-text-muted)] transition-transform group-open:rotate-180"
-                  strokeWidth={1.75}
-                  aria-hidden
-                />
-              </summary>
-              <div
-                className="mt-3 flex flex-col gap-1"
-                role="group"
-                aria-label="Filter by organizer"
-              >
+            {filters.map((f) => {
+              const active = filter === f;
+              return (
                 <button
+                  key={f}
                   type="button"
-                  onClick={() => setOrgFilter("all")}
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setFilter(f)}
                   className={cn(
-                    "w-full px-3 py-2 text-left text-[13px] font-medium transition-colors",
-                    orgFilter === "all"
-                      ? "bg-[var(--brand-primary)] text-white"
+                    "inline-flex shrink-0 items-center gap-2 px-3.5 py-2 text-[13px] font-medium transition-colors",
+                    active
+                      ? "bg-[var(--brand-accent)] text-white"
                       : "text-[var(--color-text-secondary)] hover:bg-[var(--color-background-alt)] hover:text-foreground",
                   )}
                 >
-                  All organizers
-                </button>
-                {organizations.map((org) => (
-                  <button
-                    key={org.id}
-                    type="button"
-                    onClick={() => setOrgFilter(org.slug)}
+                  {f}
+                  <span
                     className={cn(
-                      "w-full px-3 py-2 text-left text-[13px] font-medium transition-colors",
-                      orgFilter === org.slug
-                        ? "bg-[var(--brand-primary)] text-white"
-                        : "text-[var(--color-text-secondary)] hover:bg-[var(--color-background-alt)] hover:text-foreground",
+                      "text-[11px] tabular-nums",
+                      active
+                        ? "text-white/75"
+                        : "text-[var(--color-text-muted)]",
                     )}
                   >
-                    {org.name}
-                  </button>
-                ))}
-              </div>
-            </details>
-          </aside>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function statusMeta(meetup: Meetup) {
-  if (isRsvpOpen(meetup)) {
-    return {
-      label: "Open for RSVP",
-      tone: "bg-[var(--brand-accent)] text-white",
-      Icon: Ticket,
-    };
-  }
-  if (isMeetupCompleted(meetup)) {
-    return {
-      label: meetupStatusLabel(meetup),
-      tone: "bg-[var(--color-background-warm)] text-[var(--color-text-muted)]",
-      Icon: CheckCircle2,
-    };
-  }
-  return {
-    label: meetupStatusLabel(meetup),
-    tone: "bg-[var(--brand-primary-soft)] text-[var(--color-text-secondary)]",
-    Icon: Hourglass,
-  };
-}
-
-function EventCard({ meetup }: { meetup: Meetup }) {
-  const confirmed = isMeetupDateConfirmed(meetup);
-  const day = confirmed ? new Date(meetup.dateISO + "T12:00:00") : null;
-  const dayNum = day?.getDate();
-  const monthShort = day
-    ?.toLocaleDateString("en-IN", { month: "short" })
-    .toUpperCase();
-  const year = day?.getFullYear();
-  const weekday = day?.toLocaleDateString("en-IN", { weekday: "short" });
-  const { label, tone, Icon } = statusMeta(meetup);
-
-  return (
-    <article
-      className={cn(
-        "flex h-full min-h-[280px] flex-col border bg-[var(--color-surface)] transition-[border-color,background-color] duration-200",
-        isRsvpOpen(meetup)
-          ? "border-[var(--brand-accent)] hover:bg-[color-mix(in_oklab,var(--brand-accent)_4%,var(--color-surface))]"
-          : "border-[var(--color-border)] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-background-alt)]",
-      )}
-    >
-      <div className="flex flex-1 flex-col p-5 md:p-6">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            {confirmed ? (
-              <>
-                <p className="font-display text-[2.15rem] leading-none tracking-tight text-foreground">
-                  {dayNum}
-                </p>
-                <p className="mt-1.5 text-[12px] font-medium tracking-[0.06em] text-[var(--color-text-secondary)]">
-                  {monthShort} {year} · {weekday}
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="max-w-[10.5rem] font-display text-[1.35rem] font-semibold uppercase leading-[1.08] tracking-[-0.02em] text-foreground">
-                  {DATE_TBC_HEADLINE}
-                </p>
-                <p className="mt-1.5 text-[12px] font-medium tracking-[0.06em] text-[var(--color-text-secondary)]">
-                  {DATE_TBC_LABEL}
-                </p>
-              </>
-            )}
+                    {panels[f].length}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-          <span
-            className={cn(
-              "inline-flex shrink-0 items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold tracking-[0.05em]",
-              tone,
-            )}
-          >
-            <Icon className="size-3" strokeWidth={2} aria-hidden />
-            {label}
-          </span>
-        </div>
 
-        <p className="mt-5 text-[11px] font-medium tracking-[0.06em] text-[var(--brand-accent)]">
-          {meetup.format}
-          {meetup.organization?.name
-            ? ` · ${meetup.organization.name}`
-            : ""}
-        </p>
-        <h3 className="mt-1.5 line-clamp-2 min-h-[2.5rem] font-display text-[1.08rem] leading-snug tracking-tight text-foreground md:text-[1.12rem]">
-          {meetup.title}
-        </h3>
-
-        <div className="mt-3 flex flex-col gap-1.5 text-[13px] text-[var(--color-text-secondary)]">
-          <span className="inline-flex items-center gap-1.5">
-            <Clock
-              className="size-3.5 shrink-0 text-[var(--brand-accent)]"
-              strokeWidth={1.75}
-            />
-            {meetup.time}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <MapPin
-              className="size-3.5 shrink-0 text-[var(--brand-accent)]"
-              strokeWidth={1.75}
-            />
-            <span className="line-clamp-1">
-              {meetupLocationLabel(meetup)}, {meetup.city}
-            </span>
-          </span>
-        </div>
-
-        <p className="mt-3 line-clamp-2 flex-1 text-[13.5px] leading-relaxed text-[var(--color-text-secondary)]">
-          {meetup.blurb}
-        </p>
-
-        <div className="mt-5 flex gap-2.5">
-          <RsvpButton
-            event={meetup}
-            className="btn-primary min-w-0 flex-1 justify-center gap-1.5"
-          >
-            <CalendarCheck className="size-3.5" strokeWidth={1.75} aria-hidden />
-            RSVP
-          </RsvpButton>
-          <Link
-            to="/events/$slug"
-            params={{ slug: meetup.slug }}
-            className="btn-secondary group min-w-0 flex-1 justify-center gap-1.5"
-          >
-            Details
-            <ArrowRight className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
-          </Link>
+          {organizations.length > 0 ? (
+            <label className="flex items-center gap-2 self-start text-[13px] sm:self-auto">
+              <span className="sr-only">Organizer</span>
+              <select
+                value={orgFilter}
+                onChange={(e) => updateOrgFilter(e.target.value)}
+                className="min-h-[40px] min-w-[11rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-[13px] font-medium text-foreground outline-none focus-visible:border-[var(--brand-accent)]"
+                aria-label="Filter by organizer"
+              >
+                <option value="all">All organizers</option>
+                {organizations.map((org) => (
+                  <option key={org.id} value={org.slug}>
+                    {org.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
         </div>
       </div>
-    </article>
+
+      <section
+        id="event-listings"
+        ref={listReveal.ref}
+        className="page-container pt-8 md:pt-10"
+        aria-live="polite"
+      >
+        <div
+          className={cn(
+            "reveal-up mb-5 flex items-baseline justify-between gap-3",
+            listReveal.inView && "is-visible",
+          )}
+        >
+          <h2 className="font-display text-[1.05rem] tracking-tight text-foreground md:text-[1.15rem]">
+            {filter === "Upcoming"
+              ? "Upcoming"
+              : filter === "Past"
+                ? "Past"
+                : "All events"}
+          </h2>
+          <p className="text-[12.5px] text-[var(--color-text-muted)]">
+            {items.length === 0
+              ? "0 events"
+              : `${items.length} event${items.length === 1 ? "" : "s"}`}
+          </p>
+        </div>
+
+        {items.length > 0 ? (
+          <ul
+            className={cn(
+              "stagger-in grid list-none gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6",
+              listReveal.inView && "is-visible",
+            )}
+          >
+            {items.map((m) => (
+              <li key={m.slug} className="min-h-0">
+                <EventCard meetup={m} />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div
+            className={cn(
+              "reveal-up border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-14 text-center",
+              listReveal.inView && "is-visible",
+            )}
+          >
+            <Calendar
+              className="mx-auto size-5 text-[var(--brand-accent)]"
+              strokeWidth={1.75}
+              aria-hidden
+            />
+            <p className="mt-3 font-display text-[1.05rem] tracking-tight text-foreground">
+              {empty.title}
+            </p>
+            <p className="mx-auto mt-1.5 max-w-sm text-[13.5px] leading-relaxed text-[var(--color-text-secondary)]">
+              {empty.body}
+            </p>
+            {filter === "Upcoming" ? (
+              <button
+                type="button"
+                onClick={() => setFilter("Past")}
+                className="btn-secondary mt-5"
+              >
+                View past events
+              </button>
+            ) : null}
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
