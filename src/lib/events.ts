@@ -224,9 +224,9 @@ export const fallbackMeetups: Meetup[] = [
     speakers: [],
     hosts: [
       {
-        name: "Fun Fusion @Work",
-        role: "Event partner",
-        startup: "Corporate music & community experiences",
+        name: "Band Explorers",
+        role: "Organised by",
+        startup: "Live music for corporate communities",
         linkedin: "",
       },
       {
@@ -234,6 +234,12 @@ export const fallbackMeetups: Meetup[] = [
         role: "Host venue",
         startup: "Nanakramguda, Hyderabad",
         linkedin: "https://www.linkedin.com/company/nanospace-coworking/",
+      },
+      {
+        name: "ExtraHand",
+        role: "Supporting partner",
+        startup: "Your Extra Hand, Whenever You Need One",
+        linkedin: "",
       },
     ],
     organization: {

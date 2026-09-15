@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import {
+  ArrowRight,
   CalendarCheck,
   CheckCircle2,
   Clock,
@@ -43,19 +44,11 @@ function statusMeta(meetup: Meetup) {
   };
 }
 
-export function EventCard({
-  meetup,
-  className,
-}: {
-  meetup: Meetup;
-  className?: string;
-}) {
+export function EventCard({ meetup, className }: { meetup: Meetup; className?: string }) {
   const confirmed = isMeetupDateConfirmed(meetup);
   const day = confirmed ? new Date(meetup.dateISO + "T12:00:00") : null;
   const dayNum = day?.getDate();
-  const monthShort = day
-    ?.toLocaleDateString("en-IN", { month: "short" })
-    .toUpperCase();
+  const monthShort = day?.toLocaleDateString("en-IN", { month: "short" }).toUpperCase();
   const weekday = day?.toLocaleDateString("en-IN", { weekday: "short" });
   const { label, tone, Icon } = statusMeta(meetup);
   const cover = meetupCoverImage(meetup);
@@ -64,7 +57,7 @@ export function EventCard({
   return (
     <article
       className={cn(
-        "group flex h-full flex-col overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-[var(--color-border-strong)]",
+        "group flex h-full flex-col overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[0_1px_0_rgba(15,23,42,0.03)] transition-[border-color,box-shadow,transform] duration-300 ease-out hover:-translate-y-1 hover:border-[var(--color-border-strong)] hover:shadow-[0_12px_28px_-18px_rgba(15,23,42,0.28)]",
         className,
       )}
     >
@@ -81,7 +74,7 @@ export function EventCard({
           loading="lazy"
           decoding="async"
           className={cn(
-            "size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]",
+            "size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]",
             meetupCoverObjectClass(meetup),
           )}
           aria-hidden
@@ -111,9 +104,7 @@ export function EventCard({
             {meetup.title}
           </h3>
           <p className="mt-1.5 text-[12px] font-medium text-white/85">
-            {confirmed
-              ? `${weekday} · ${dayNum} ${monthShort}`
-              : DATE_TBC_LABEL}
+            {confirmed ? `${weekday} · ${dayNum} ${monthShort}` : DATE_TBC_LABEL}
           </p>
         </div>
       </Link>
@@ -146,22 +137,23 @@ export function EventCard({
             to="/events/$slug"
             params={{ slug: meetup.slug }}
             className={cn(
-              "btn-secondary min-w-0 flex-1 justify-center !min-h-10 !px-3 !text-[13px]",
+              "btn-secondary group/details min-w-0 flex-1 justify-center gap-1.5 !min-h-10 !px-3 !text-[13px]",
               !open && "flex-none",
             )}
           >
             {open ? "Details" : "View event"}
+            <ArrowRight
+              className="size-3.5 transition-transform duration-200 group-hover/details:translate-x-0.5"
+              strokeWidth={1.75}
+              aria-hidden
+            />
           </Link>
           {open ? (
             <RsvpButton
               event={meetup}
               className="btn-primary min-w-0 flex-1 justify-center gap-1.5 !min-h-10 !px-3 !text-[13px]"
             >
-              <CalendarCheck
-                className="size-3.5"
-                strokeWidth={1.75}
-                aria-hidden
-              />
+              <CalendarCheck className="size-3.5" strokeWidth={1.75} aria-hidden />
               RSVP
             </RsvpButton>
           ) : null}

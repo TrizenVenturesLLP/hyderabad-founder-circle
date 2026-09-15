@@ -1,121 +1,71 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowUpRight, Mail } from "lucide-react";
-import bestverseLogo from "@/assets/logo-Bestverse.jpeg";
-import draperLogo from "@/assets/draper_logo.svg";
+import { ArrowRight, CalendarPlus, Mail } from "lucide-react";
 import { useInView } from "@/hooks/use-in-view";
 import { links } from "@/lib/links";
 import { cn } from "@/lib/utils";
-import { TrizenProductsSection } from "@/components/TrizenProductsSection";
-import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 
 export const Route = createFileRoute("/about")({
-  head: () => ({
-    meta: [
-      { title: "About & Partners — Hyderabad Founders Network" },
-      {
-        name: "description",
-        content:
-          "Our mission, how we operate, and the partners and sponsor who help keep the lights on.",
-      },
-      { property: "og:title", content: "About — Hyderabad Founders Network" },
-      { property: "og:url", content: "/about" },
-    ],
-    links: [{ rel: "canonical", href: "/about" }],
-  }),
+  head: () => {
+    const siteUrl = "https://community.trizenventures.com";
+    const title = "About — Trizen Community";
+    const desc =
+      "Trizen Community is an event hosting platform for Hyderabad — communities publish events, people discover and register.";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: desc },
+        { property: "og:title", content: title },
+        { property: "og:description", content: desc },
+        { property: "og:url", content: `${siteUrl}/about` },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: desc },
+      ],
+      links: [{ rel: "canonical", href: `${siteUrl}/about` }],
+    };
+  },
   component: AboutPage,
 });
 
 const scrollRevealOpts = {
   once: true,
-  threshold: 0.28,
-  rootMargin: "0px 0px -22% 0px",
+  threshold: 0.22,
+  rootMargin: "0px 0px -16% 0px",
 } as const;
 
-const partners = [
+const pillars = [
   {
-    name: "T-Hub",
-    desc: "India's largest incubator, Madhapur.",
-    mapsUrl:
-      "https://www.google.com/maps/search/?api=1&query=T-Hub+Madhapur+Hyderabad",
+    title: "For attendees",
+    body: "Browse events across communities, register in minutes, and get confirmation details — no public account required.",
   },
   {
-    name: "WE Hub",
-    desc: "State-led incubator for women founders.",
-    mapsUrl:
-      "https://www.google.com/maps/search/?api=1&query=WE+Hub+Hyderabad",
+    title: "For organizers",
+    body: "Host your community’s events on one platform: registrations, payments, and attendee communication in one place.",
   },
   {
-    name: "eChai",
-    desc: "Pan-India founder community with strong Hyderabad chapter.",
-    mapsUrl:
-      "https://www.google.com/maps/search/?api=1&query=eChai+Hyderabad",
-  },
-  {
-    name: "91springboard",
-    desc: "Coworking spaces across the city.",
-    mapsUrl:
-      "https://www.google.com/maps/search/?api=1&query=91springboard+Hyderabad",
-  },
-  {
-    name: "AIC at IIIT-H",
-    desc: "Deep-tech incubator.",
-    mapsUrl:
-      "https://www.google.com/maps/search/?api=1&query=AIC+IIIT+Hyderabad",
-  },
-  {
-    name: "iTIC",
-    desc: "IIT-H's incubator for tech startups.",
-    mapsUrl:
-      "https://www.google.com/maps/search/?api=1&query=iTIC+IIT+Hyderabad",
-  },
-];
-
-const supportingPartners = [
-  {
-    name: "DraperU",
-    role: "Community partner",
-    desc: "Home to our monthly meetups in Gachibowli.",
-    href: "https://www.draperuniversity.com/",
-    logo: draperLogo,
-  },
-  {
-    name: "Bestverse",
-    role: "Marketing partner",
-    desc: "Supports how the community shows up and shares its story.",
-    href: "https://bestverse.in/",
-    logo: bestverseLogo,
+    title: "For Hyderabad",
+    body: "A shared surface for founder meetups, music nights, workshops, and gatherings — not locked to a single community.",
   },
 ];
 
 const howItWorks = [
   {
-    title: "Community-led",
-    body: "Members host, members shape the agenda.",
+    title: "Communities publish",
+    body: "Organizers list events with timings, venue, tickets, and registration details.",
   },
   {
-    title: "Company-supported",
-    body: (
-      <>
-        <strong className="font-semibold text-foreground">
-          {links.sponsor.name}
-        </strong>{" "}
-        provides venue and resources as a sponsor — not as the host.
-      </>
-    ),
+    title: "People discover",
+    body: "Attendees explore upcoming events by community, date, or interest.",
   },
   {
-    title: "No selling",
-    body: "No pitching, no selling to the room, no gatekeepers.",
-  },
-  {
-    title: "Open room",
-    body: "Free to attend. Open to anyone serious about building.",
+    title: "Everyone shows up",
+    body: "Register, confirm, and walk into the room with clear event information.",
   },
 ];
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <p className="text-[12px] font-medium tracking-[0.06em] text-[var(--brand-accent)]">
+    <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--brand-accent)]">
       {children}
     </p>
   );
@@ -123,59 +73,75 @@ function SectionLabel({ children }: { children: string }) {
 
 function AboutPage() {
   const hero = useInView<HTMLElement>(scrollRevealOpts);
+  const pillarsReveal = useInView<HTMLElement>(scrollRevealOpts);
   const how = useInView<HTMLElement>(scrollRevealOpts);
-  const ecosystem = useInView<HTMLElement>(scrollRevealOpts);
-  const supporting = useInView<HTMLElement>(scrollRevealOpts);
-  const sponsor = useInView<HTMLElement>(scrollRevealOpts);
+  const built = useInView<HTMLElement>(scrollRevealOpts);
   const cta = useInView<HTMLElement>(scrollRevealOpts);
 
   return (
     <div className="bg-[var(--color-background)]">
       <header
         ref={hero.ref}
-        className="trizen-mesh border-b border-[var(--color-border)]"
+        className="relative isolate overflow-hidden border-b border-[var(--color-border)]"
       >
-        <div className="page-container grid items-center gap-8 pt-10 pb-9 md:grid-cols-12 md:gap-10 md:pt-12 md:pb-11">
+        <div
+          className="pointer-events-none absolute inset-0"
+          aria-hidden
+          style={{
+            background:
+              "radial-gradient(ellipse 70% 50% at 90% 0%, color-mix(in oklab, var(--brand-accent) 12%, transparent), transparent 55%), radial-gradient(ellipse 45% 40% at 0% 100%, color-mix(in oklab, var(--brand-primary) 7%, transparent), transparent 50%)",
+          }}
+        />
+        <div className="page-container relative grid gap-10 py-12 md:grid-cols-12 md:gap-12 md:py-16 lg:py-20">
           <div
             className={cn(
-              "reveal-left md:col-span-6 lg:col-span-6",
+              "reveal-up md:col-span-7",
               hero.inView && "is-visible",
             )}
           >
             <SectionLabel>About</SectionLabel>
-            <h1 className="mt-2.5 max-w-[18ch] font-display text-[clamp(1.85rem,3.8vw,2.55rem)] font-semibold leading-[1.1] tracking-[-0.03em] text-foreground">
-              We started this because Hyderabad deserves its own founder room.
+            <p
+              className="mt-4 text-[clamp(1.25rem,2.8vw,1.55rem)] font-semibold tracking-[-0.03em] text-foreground"
+              style={{ fontFamily: "var(--font-brand)" }}
+            >
+              Trizen Community
+            </p>
+            <h1 className="mt-3 max-w-[18ch] font-display text-[clamp(1.9rem,4vw,2.75rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-foreground">
+              An event platform for communities in Hyderabad.
             </h1>
-            <div className="mt-4 max-w-[36rem] space-y-3 text-[14.5px] leading-[1.7] text-[var(--color-text-secondary)]">
-              <p>
-                The Hyderabad Founders Network exists for one simple reason:
-                trust and long-term relationships only show up when the same
-                people meet, on purpose, again and again.
-              </p>
-              <p>
-                We&apos;re not an accelerator. We&apos;re not a paid programme.
-                We&apos;re a peer community — founders, operators and aspiring
-                entrepreneurs — who decided to meet on the 3rd Saturday of every
-                month and keep showing up.
-              </p>
+            <p className="mt-5 max-w-[38rem] text-[15px] leading-[1.7] text-[var(--color-text-secondary)]">
+              Trizen Community helps organizers publish events and helps people
+              discover and register for them — founder meetups, workshops, music
+              nights, and more, all in one place.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link to="/events" className="btn-primary gap-2 !rounded-full">
+                Explore events
+                <ArrowRight className="size-4" strokeWidth={1.75} />
+              </Link>
+              <Link to="/host" className="btn-secondary gap-2 !rounded-full">
+                <CalendarPlus className="size-4" strokeWidth={1.75} aria-hidden />
+                Host an event
+              </Link>
             </div>
           </div>
+
           <div
             className={cn(
-              "reveal-right md:col-span-6 lg:col-span-6",
+              "reveal-up md:col-span-5",
               hero.inView && "is-visible",
             )}
             style={{ transitionDelay: hero.inView ? "90ms" : undefined }}
           >
-            <div className="overflow-hidden shadow-[var(--shadow-card)]">
+            <div className="overflow-hidden border border-[var(--color-border)]">
               <img
                 src="/july-2026-3.jpeg"
-                alt="Founders together at a Hyderabad Founders Network meetup"
+                alt="People gathering at a community event in Hyderabad"
                 width={1600}
                 height={1100}
                 fetchPriority="high"
                 decoding="async"
-                className="aspect-[16/11] w-full object-cover object-[50%_35%]"
+                className="aspect-[4/3] w-full object-cover object-[50%_35%]"
               />
             </div>
           </div>
@@ -183,34 +149,30 @@ function AboutPage() {
       </header>
 
       <section
-        ref={how.ref}
+        ref={pillarsReveal.ref}
         className="border-b border-[var(--color-border)] bg-[var(--color-background-alt)]"
       >
-        <div className="page-container py-10 md:py-12">
-          <div className={cn("reveal-up", how.inView && "is-visible")}>
-            <SectionLabel>How it works</SectionLabel>
+        <div className="page-container py-12 md:py-14">
+          <div
+            className={cn("reveal-up max-w-xl", pillarsReveal.inView && "is-visible")}
+          >
+            <SectionLabel>Who it’s for</SectionLabel>
+            <h2 className="mt-3 font-display text-[clamp(1.45rem,2.6vw,1.85rem)] tracking-tight text-foreground">
+              Built for attendees and organizers
+            </h2>
           </div>
           <ul
             className={cn(
-              "stagger-in mt-6 divide-y divide-[var(--color-border)] border-t border-[var(--color-border)]",
-              how.inView && "is-visible",
+              "stagger-in mt-8 grid list-none gap-0 divide-y divide-[var(--color-border)] border-y border-[var(--color-border)] md:grid-cols-3 md:divide-x md:divide-y-0",
+              pillarsReveal.inView && "is-visible",
             )}
           >
-            {howItWorks.map((item, i) => (
-              <li
-                key={item.title}
-                className="grid gap-1.5 py-5 sm:grid-cols-[3.5rem_minmax(0,11rem)_minmax(0,1fr)] sm:items-baseline sm:gap-6 md:py-5"
-              >
-                <span
-                  className="font-display text-[1.05rem] tabular-nums tracking-tight text-[var(--brand-accent)]"
-                  aria-hidden
-                >
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <h2 className="font-display text-[1.08rem] tracking-tight text-foreground">
+            {pillars.map((item) => (
+              <li key={item.title} className="py-6 md:px-6 md:first:pl-0 md:last:pr-0">
+                <h3 className="font-display text-[1.1rem] tracking-tight text-foreground">
                   {item.title}
-                </h2>
-                <p className="text-[14px] leading-[1.65] text-[var(--color-text-secondary)]">
+                </h3>
+                <p className="mt-2 text-[14px] leading-[1.65] text-[var(--color-text-secondary)]">
                   {item.body}
                 </p>
               </li>
@@ -219,244 +181,119 @@ function AboutPage() {
         </div>
       </section>
 
-      <section
-        ref={ecosystem.ref}
-        className="border-b border-[var(--color-border)]"
-      >
-        <div className="page-container py-10 md:py-12">
-          <div className={cn("reveal-up", ecosystem.inView && "is-visible")}>
-            <SectionLabel>Ecosystem partners</SectionLabel>
-            <h2 className="mt-2 font-display text-[clamp(1.4rem,2.5vw,1.7rem)] tracking-tight text-foreground">
-              Communities and spaces across Hyderabad
+      <section ref={how.ref} className="border-b border-[var(--color-border)]">
+        <div className="page-container py-12 md:py-14">
+          <div className={cn("reveal-up", how.inView && "is-visible")}>
+            <SectionLabel>How it works</SectionLabel>
+            <h2 className="mt-3 max-w-[18ch] font-display text-[clamp(1.45rem,2.6vw,1.85rem)] tracking-tight text-foreground">
+              From listing to the room
             </h2>
-            <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
-              Places and communities we collaborate with around the city.
-            </p>
           </div>
-
-          <ul
+          <ol
             className={cn(
-              "stagger-in mt-7 grid list-none sm:grid-cols-2 sm:gap-x-10",
-              ecosystem.inView && "is-visible",
+              "stagger-in mt-8 list-none divide-y divide-[var(--color-border)] border-t border-[var(--color-border)]",
+              how.inView && "is-visible",
             )}
           >
-            {partners.map((p) => (
-              <li key={p.name} className="border-t border-[var(--color-border)]">
-                <a
-                  href={p.mapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex items-start justify-between gap-4 py-4 transition-colors duration-200 hover:text-[var(--brand-accent)]"
+            {howItWorks.map((item, i) => (
+              <li
+                key={item.title}
+                className="grid gap-2 py-6 sm:grid-cols-[3.5rem_minmax(0,12rem)_minmax(0,1fr)] sm:items-baseline sm:gap-6"
+              >
+                <span
+                  className="font-display text-[1.05rem] tabular-nums text-[var(--brand-accent)]"
+                  aria-hidden
                 >
-                  <div className="min-w-0">
-                    <p className="text-[1rem] font-semibold tracking-tight text-foreground transition-colors duration-200 group-hover:text-[var(--brand-accent)]">
-                      {p.name}
-                    </p>
-                    <p className="mt-1 text-[13.5px] leading-snug text-[var(--color-text-secondary)]">
-                      {p.desc}
-                    </p>
-                  </div>
-                  <ArrowUpRight
-                    className="mt-0.5 size-4 shrink-0 text-[var(--color-text-muted)] transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-[var(--brand-accent)]"
-                    strokeWidth={1.75}
-                    aria-hidden
-                  />
-                  <span className="sr-only">
-                    Open {p.name} location in Google Maps
-                  </span>
-                </a>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <h3 className="font-display text-[1.05rem] tracking-tight text-foreground">
+                  {item.title}
+                </h3>
+                <p className="text-[14px] leading-[1.65] text-[var(--color-text-secondary)]">
+                  {item.body}
+                </p>
               </li>
             ))}
-          </ul>
+          </ol>
         </div>
       </section>
 
       <section
-        ref={supporting.ref}
+        ref={built.ref}
         className="border-b border-[var(--color-border)] bg-[var(--color-background-alt)]"
       >
-        <div className="page-container py-10 md:py-12">
-          <div className={cn("reveal-up", supporting.inView && "is-visible")}>
-            <SectionLabel>Community & marketing</SectionLabel>
-            <h2 className="mt-2 font-display text-[clamp(1.4rem,2.5vw,1.7rem)] tracking-tight text-foreground">
-              Partners who help us meet and be seen
-            </h2>
-          </div>
-
-          <ul
-            className={cn(
-              "stagger-in mt-7 grid list-none border-t border-[var(--color-border)] sm:grid-cols-2 sm:gap-x-12",
-              supporting.inView && "is-visible",
-            )}
-          >
-            {supportingPartners.map((p) => {
-              const content = (
-                <div className="flex items-start gap-3.5 py-5">
-                  <img
-                    src={p.logo}
-                    alt=""
-                    width={80}
-                    height={80}
-                    className={
-                      p.name === "Bestverse"
-                        ? "mt-0.5 h-8 w-8 shrink-0 rounded-full object-cover"
-                        : "mt-0.5 h-8 w-8 shrink-0 object-contain"
-                    }
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                      <p className="text-[1.02rem] font-semibold tracking-tight text-foreground transition-colors duration-200 group-hover:text-[var(--brand-accent)]">
-                        {p.name}
-                      </p>
-                      <p className="text-[12px] text-[var(--color-text-muted)]">
-                        {p.role}
-                      </p>
-                    </div>
-                    <p className="mt-1.5 max-w-[34ch] text-[13.5px] leading-relaxed text-[var(--color-text-secondary)]">
-                      {p.desc}
-                    </p>
-                  </div>
-                  {p.href ? (
-                    <ArrowUpRight
-                      className="mt-1 size-3.5 shrink-0 text-[var(--color-text-muted)] transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-[var(--brand-accent)]"
-                      strokeWidth={1.75}
-                      aria-hidden
-                    />
-                  ) : null}
-                </div>
-              );
-
-              return (
-                <li
-                  key={p.name}
-                  className="border-b border-[var(--color-border)]"
-                >
-                  {p.href ? (
-                    <a
-                      href={p.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group block"
-                    >
-                      {content}
-                    </a>
-                  ) : (
-                    content
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      </section>
-
-      <section
-        ref={sponsor.ref}
-        className="border-b border-[var(--color-border)]"
-      >
-        <div className="page-container grid gap-8 py-10 md:grid-cols-12 md:gap-10 md:py-12">
+        <div className="page-container grid gap-8 py-12 md:grid-cols-12 md:gap-12 md:py-14">
           <div
             className={cn(
-              "reveal-left md:col-span-7",
-              sponsor.inView && "is-visible",
+              "reveal-up md:col-span-7",
+              built.inView && "is-visible",
             )}
           >
-            <SectionLabel>Sponsor</SectionLabel>
-            <h2 className="mt-2 font-display text-[clamp(1.4rem,2.5vw,1.7rem)] tracking-tight text-foreground">
+            <SectionLabel>Built by</SectionLabel>
+            <h2 className="mt-3 font-display text-[clamp(1.45rem,2.6vw,1.85rem)] tracking-tight text-foreground">
               <a
                 href={links.sponsor.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="transition-colors duration-200 hover:text-[var(--brand-accent)]"
+                className="transition-colors hover:text-[var(--brand-accent)]"
               >
-                {links.sponsor.name}
+                Trizen Ventures
               </a>
             </h2>
-            <p className="mt-3 max-w-xl text-[14.5px] leading-[1.7] text-[var(--color-text-secondary)]">
-              Venue, chai and operations are supported by{" "}
-              <a
-                href={links.sponsor.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium text-foreground underline-offset-4 transition-colors duration-200 hover:text-[var(--brand-accent)] hover:underline"
-              >
-                {links.sponsor.name}
-              </a>
-              . They don&apos;t get a sales slot. They don&apos;t get the floor.
-              They believe Hyderabad&apos;s founder ecosystem grows faster when
-              founders meet each other freely.
+            <p className="mt-4 max-w-xl text-[14.5px] leading-[1.7] text-[var(--color-text-secondary)]">
+              Trizen Community is built by Trizen Ventures — a Hyderabad team
+              focused on products that help communities and businesses move
+              faster. Communities like Hyderabad Founders Network and NanoSpace
+              host events here; the platform stays open for more organizers to
+              join.
             </p>
           </div>
-
           <div
             className={cn(
-              "reveal-right md:col-span-5",
-              sponsor.inView && "is-visible",
+              "reveal-up md:col-span-5",
+              built.inView && "is-visible",
             )}
-            style={{ transitionDelay: sponsor.inView ? "100ms" : undefined }}
+            style={{ transitionDelay: built.inView ? "80ms" : undefined }}
           >
-            <p className="text-[12px] font-medium tracking-[0.06em] text-[var(--brand-accent)]">
-              Sponsor contact
-            </p>
-            <dl className="mt-3 divide-y divide-[var(--color-border)] border-t border-[var(--color-border)]">
-              <div className="py-3">
-                <dt className="text-[11px] font-medium text-[var(--color-text-muted)]">
-                  Operational address
+            <dl className="divide-y divide-[var(--color-border)] border-y border-[var(--color-border)]">
+              <div className="flex items-baseline justify-between gap-4 py-3.5">
+                <dt className="text-[12px] text-[var(--color-text-muted)]">
+                  Email
+                </dt>
+                <dd className="text-right text-[13.5px] font-medium text-foreground">
+                  <a
+                    href={`mailto:${links.email}`}
+                    className="break-all hover:text-[var(--brand-accent)]"
+                  >
+                    {links.email}
+                  </a>
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-4 py-3.5">
+                <dt className="text-[12px] text-[var(--color-text-muted)]">
+                  Phone
+                </dt>
+                <dd className="text-[13.5px] font-medium text-foreground">
+                  <a
+                    href={links.phoneHref}
+                    className="hover:text-[var(--brand-accent)]"
+                  >
+                    {links.phone}
+                  </a>
+                </dd>
+              </div>
+              <div className="py-3.5">
+                <dt className="text-[12px] text-[var(--color-text-muted)]">
+                  Based in
                 </dt>
                 <dd className="mt-1 text-[13.5px] leading-relaxed text-foreground">
                   <a
                     href={links.address.mapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="transition-colors duration-200 hover:text-[var(--brand-accent)]"
+                    className="hover:text-[var(--brand-accent)]"
                   >
                     {links.address.line}
-                  </a>
-                </dd>
-              </div>
-              <div className="flex items-baseline justify-between gap-4 py-3">
-                <dt className="text-[11px] font-medium text-[var(--color-text-muted)]">
-                  Phone
-                </dt>
-                <dd className="text-[13.5px] font-medium text-foreground">
-                  <a
-                    href={links.phoneHref}
-                    className="transition-colors duration-200 hover:text-[var(--brand-accent)]"
-                  >
-                    {links.phone}
-                  </a>
-                </dd>
-              </div>
-              <div className="flex items-baseline justify-between gap-4 py-3">
-                <dt className="text-[11px] font-medium text-[var(--color-text-muted)]">
-                  Email
-                </dt>
-                <dd className="min-w-0 text-right text-[13.5px] font-medium text-foreground">
-                  <a
-                    href={`mailto:${links.email}`}
-                    className="break-all transition-colors duration-200 hover:text-[var(--brand-accent)]"
-                  >
-                    {links.email}
-                  </a>
-                </dd>
-              </div>
-              <div className="flex items-baseline justify-between gap-4 py-3">
-                <dt className="text-[11px] font-medium text-[var(--color-text-muted)]">
-                  Website
-                </dt>
-                <dd className="text-[13.5px] font-medium text-foreground">
-                  <a
-                    href={links.sponsor.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 transition-colors duration-200 hover:text-[var(--brand-accent)]"
-                  >
-                    trizenventures.com
-                    <ArrowUpRight
-                      className="size-3.5"
-                      strokeWidth={1.75}
-                      aria-hidden
-                    />
                   </a>
                 </dd>
               </div>
@@ -465,41 +302,32 @@ function AboutPage() {
         </div>
       </section>
 
-      <TrizenProductsSection
-        title="Continue your journey with Trizen"
-        description="Products and initiatives from the organization behind Hyderabad Founders Circle."
-        showVisitCta={false}
-        className="border-t-0"
-      />
-
-      <section
-        ref={cta.ref}
-        className="trizen-mesh border-t border-[var(--color-border)]"
-      >
+      <section ref={cta.ref} className="bg-[var(--brand-primary)]">
         <div
           className={cn(
-            "page-container reveal-up py-10 text-center md:py-12",
+            "page-container reveal-up py-12 text-center md:py-14",
             cta.inView && "is-visible",
           )}
         >
-          <h2 className="mx-auto max-w-[18ch] font-display text-[clamp(1.55rem,3vw,2.1rem)] font-semibold leading-[1.12] tracking-[-0.03em] text-foreground">
-            Be part of the room.
+          <h2 className="mx-auto max-w-[18ch] font-display text-[clamp(1.55rem,3vw,2.1rem)] font-semibold leading-[1.12] tracking-[-0.03em] text-white">
+            Ready to explore — or host?
           </h2>
-          <p className="mx-auto mt-3 max-w-md text-[14.5px] leading-relaxed text-[var(--color-text-secondary)]">
-            Join WhatsApp for community updates — or get in touch if you want to
-            partner, host, or share a story.
+          <p className="mx-auto mt-3 max-w-md text-[14.5px] leading-relaxed text-white/75">
+            Browse events happening now, or apply to host your community’s next
+            gathering on Trizen Community.
           </p>
-          <div className="mt-6 flex flex-col items-center justify-center gap-2.5 sm:flex-row sm:gap-3">
-            <a
-              href={links.community}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-primary gap-2"
+          <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              to="/events"
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-white px-5 text-[14px] font-medium text-[var(--brand-primary)] hover:opacity-90"
             >
-              <WhatsAppIcon className="size-4" />
-              Join the Community
-            </a>
-            <Link to="/contact" className="btn-secondary gap-2">
+              Explore events
+              <ArrowRight className="size-4" strokeWidth={1.75} />
+            </Link>
+            <Link
+              to="/contact"
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-white/30 px-5 text-[14px] font-medium text-white hover:bg-white/10"
+            >
               <Mail className="size-4" strokeWidth={1.75} aria-hidden />
               Get in touch
             </Link>

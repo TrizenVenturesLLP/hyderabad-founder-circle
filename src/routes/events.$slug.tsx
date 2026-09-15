@@ -640,28 +640,15 @@ function EventDetail() {
   const ctaReveal = useInView<HTMLElement>(scrollRevealOpts);
   const completed = isMeetupCompleted(meetup);
   const open = isRsvpOpen(meetup);
-  const hasPartners =
-    pageContent.collaborativeHosts.length > 0 ||
-    pageContent.partnerTiers.length > 0;
+  const hasPartners = pageContent.partnerTiers.length > 0;
   const heroContent = pageContent.hero;
   const supportedByPartners =
     pageContent.partnerTiers.find((tier) => tier.label === "Supported by")
       ?.partners ?? [];
-  const partnerGridTiers = [
-    ...(pageContent.collaborativeHosts.length > 0
-      ? [
-          {
-            label: "Collaboratively hosted by",
-            partners: pageContent.collaborativeHosts,
-            layout: "inline" as const,
-          },
-        ]
-      : []),
-    ...pageContent.partnerTiers.map((tier) => ({
-      ...tier,
-      layout: "stack" as const,
-    })),
-  ];
+  const partnerGridTiers = pageContent.partnerTiers.map((tier) => ({
+    ...tier,
+    layout: "stack" as const,
+  }));
 
   return (
     <article className="bg-[var(--color-background)] pb-[4.75rem] lg:pb-0">
@@ -1473,14 +1460,20 @@ function EventDetail() {
                 Supported by the ecosystem
               </h2>
               <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
-                Collaboratively hosted and community supported — the people and
-                partners making this meetup happen.
+                Community partners helping make this meetup happen.
               </p>
             </div>
 
             <div
               className={cn(
-                "stagger-in mx-auto mt-8 grid w-full max-w-4xl gap-px overflow-hidden border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-2 lg:grid-cols-4",
+                "stagger-in mx-auto mt-8 grid w-full max-w-4xl gap-px overflow-hidden border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-2",
+                partnerGridTiers.length >= 4
+                  ? "lg:grid-cols-4"
+                  : partnerGridTiers.length === 3
+                    ? "lg:grid-cols-3"
+                    : partnerGridTiers.length === 1
+                      ? "lg:grid-cols-1"
+                      : "lg:grid-cols-2",
                 partnersReveal.inView && "is-visible",
               )}
             >

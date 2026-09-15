@@ -202,12 +202,12 @@
 }
 
 @utility section-space {
-  padding-block: 56px;
+  padding-block: 48px;
 }
 
 @media (min-width: 768px) {
   .section-space {
-    padding-block: 72px;
+    padding-block: 64px;
   }
 }
 
@@ -324,11 +324,22 @@
 @keyframes hero-reveal {
   from {
     opacity: 0;
-    transform: translate3d(0, 12px, 0);
+    transform: translate3d(0, 22px, 0);
   }
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes hero-card-reveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
@@ -340,19 +351,22 @@
     animation: hero-overlay-in 1s ease-out 0.1s both;
   }
   .hero-reveal {
-    animation: hero-reveal 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: hero-reveal 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
   .hero-reveal-delay-1 {
-    animation-delay: 0.18s;
+    animation-delay: 0.1s;
   }
   .hero-reveal-delay-2 {
-    animation-delay: 0.3s;
+    animation-delay: 0.2s;
   }
   .hero-reveal-delay-3 {
-    animation-delay: 0.42s;
+    animation-delay: 0.3s;
   }
   .hero-reveal-delay-4 {
-    animation-delay: 0.54s;
+    animation-delay: 0.4s;
+  }
+  .hero-card-reveal {
+    animation: hero-card-reveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   .media-frame {
@@ -390,15 +404,15 @@
     opacity: 0;
     will-change: opacity, transform;
     transition:
-      opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
-      transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+      opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .reveal-up,
   .meetup-card,
   .audience-card,
   .timeline-step {
-    transform: translate3d(0, 16px, 0);
+    transform: translate3d(0, 24px, 0);
   }
   .reveal-left {
     transform: translate3d(-12px, 0, 0);
@@ -424,39 +438,67 @@
   /* Parent-driven stagger — one observer, CSS delays children */
   .stagger-in > * {
     opacity: 0;
-    transform: translate3d(0, 14px, 0);
+    transform: translate3d(0, 22px, 0);
     will-change: opacity, transform;
     transition:
-      opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+      opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
   }
   .stagger-in.is-visible > * {
     opacity: 1;
     transform: translate3d(0, 0, 0);
   }
   .stagger-in.is-visible > *:nth-child(1) {
-    transition-delay: 0.04s;
+    transition-delay: 0.05s;
   }
   .stagger-in.is-visible > *:nth-child(2) {
-    transition-delay: 0.1s;
+    transition-delay: 0.15s;
   }
   .stagger-in.is-visible > *:nth-child(3) {
-    transition-delay: 0.16s;
+    transition-delay: 0.25s;
   }
   .stagger-in.is-visible > *:nth-child(4) {
-    transition-delay: 0.22s;
+    transition-delay: 0.35s;
   }
   .stagger-in.is-visible > *:nth-child(5) {
-    transition-delay: 0.28s;
+    transition-delay: 0.45s;
   }
   .stagger-in.is-visible > *:nth-child(6) {
-    transition-delay: 0.34s;
+    transition-delay: 0.55s;
   }
   .stagger-in.is-visible > *:nth-child(7) {
-    transition-delay: 0.4s;
+    transition-delay: 0.65s;
   }
   .stagger-in.is-visible > *:nth-child(8) {
-    transition-delay: 0.46s;
+    transition-delay: 0.75s;
+  }
+
+  .steps-progress {
+    position: absolute;
+    top: 1.15rem;
+    left: 0.75rem;
+    right: 0.75rem;
+    height: 1px;
+    background: var(--color-border);
+    overflow: hidden;
+  }
+  .steps-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--brand-accent);
+    transition: width 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .steps-progress.is-visible .steps-progress-fill {
+    width: 100%;
+  }
+
+  .btn-arrow {
+    transition: transform 0.2s ease;
+  }
+  .group\/cta:hover .btn-arrow,
+  a.btn-primary:hover .btn-arrow,
+  a.btn-secondary:hover .btn-arrow {
+    transform: translateX(3px);
   }
 
   .stagger-in-fast > * {
@@ -619,12 +661,14 @@
   .hero-reveal-delay-1,
   .hero-reveal-delay-2,
   .hero-reveal-delay-3,
-  .hero-reveal-delay-4 {
+  .hero-reveal-delay-4,
+  .hero-card-reveal {
     animation: none;
   }
   .hero-slide,
   .hero-overlay,
-  .hero-reveal {
+  .hero-reveal,
+  .hero-card-reveal {
     opacity: 1;
     transform: none;
   }
@@ -666,6 +710,10 @@
     opacity: 1 !important;
     transform: none !important;
     transition: none !important;
+  }
+  .steps-progress-fill {
+    transition: none !important;
+    width: 100% !important;
   }
 }
 

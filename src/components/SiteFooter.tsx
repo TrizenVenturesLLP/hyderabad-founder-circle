@@ -5,8 +5,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 const linkClassName =
   "inline-block whitespace-nowrap text-[14px] text-[var(--color-text-secondary)] transition-colors duration-200 hover:text-[var(--brand-accent)]";
 
-const labelClassName =
-  "text-[12px] font-medium tracking-[0.06em] text-[var(--brand-accent)]";
+const labelClassName = "text-[12px] font-medium tracking-[0.06em] text-[var(--brand-accent)]";
 
 export function SiteFooter() {
   return (
@@ -29,8 +28,8 @@ export function SiteFooter() {
               </span>
             </Link>
             <p className="mt-3 max-w-[38ch] text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
-              Discover events from communities across Hyderabad. Register per
-              event — no public attendee account required.
+              Discover events from communities across Hyderabad. Register per event — no public
+              attendee account required.
             </p>
           </div>
 
@@ -40,6 +39,16 @@ export function SiteFooter() {
               <li>
                 <Link to="/events" className={linkClassName}>
                   Events
+                </Link>
+              </li>
+              <li>
+                <Link to="/communities" className={linkClassName}>
+                  Communities
+                </Link>
+              </li>
+              <li>
+                <Link to="/host" className={linkClassName}>
+                  Host an Event
                 </Link>
               </li>
             </ul>
@@ -110,10 +119,7 @@ export function SiteFooter() {
             >
               Instagram
             </a>
-            <a
-              href={`mailto:${links.email}`}
-              className={linkClassName}
-            >
+            <a href={`mailto:${links.email}`} className={linkClassName}>
               {links.email}
             </a>
           </div>

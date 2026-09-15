@@ -18,14 +18,17 @@ import { Route as HostRouteImport } from './routes/host'
 import { Route as EventsRouteImport } from './routes/events'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CommunityRouteImport } from './routes/community'
+import { Route as CommunitiesRouteImport } from './routes/communities'
 import { Route as BadgeRouteImport } from './routes/badge'
 import { Route as AdminLoginRouteImport } from './routes/admin-login'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EventsIndexRouteImport } from './routes/events.index'
+import { Route as CommunitiesIndexRouteImport } from './routes/communities.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as EventsSlugRouteImport } from './routes/events.$slug'
+import { Route as CommunitiesSlugRouteImport } from './routes/communities.$slug'
 import { Route as AdminRegistrationsRouteImport } from './routes/admin.registrations'
 import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminContactsRouteImport } from './routes/admin.contacts'
@@ -77,6 +80,11 @@ const CommunityRoute = CommunityRouteImport.update({
   path: '/community',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CommunitiesRoute = CommunitiesRouteImport.update({
+  id: '/communities',
+  path: '/communities',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BadgeRoute = BadgeRouteImport.update({
   id: '/badge',
   path: '/badge',
@@ -107,6 +115,11 @@ const EventsIndexRoute = EventsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => EventsRoute,
 } as any)
+const CommunitiesIndexRoute = CommunitiesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CommunitiesRoute,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -116,6 +129,11 @@ const EventsSlugRoute = EventsSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
   getParentRoute: () => EventsRoute,
+} as any)
+const CommunitiesSlugRoute = CommunitiesSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => CommunitiesRoute,
 } as any)
 const AdminRegistrationsRoute = AdminRegistrationsRouteImport.update({
   id: '/registrations',
@@ -149,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/admin-login': typeof AdminLoginRoute
   '/badge': typeof BadgeRoute
+  '/communities': typeof CommunitiesRouteWithChildren
   '/community': typeof CommunityRoute
   '/contact': typeof ContactRoute
   '/events': typeof EventsRouteWithChildren
@@ -163,8 +182,10 @@ export interface FileRoutesByFullPath {
   '/admin/contacts': typeof AdminContactsRoute
   '/admin/events': typeof AdminEventsRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
+  '/communities/$slug': typeof CommunitiesSlugRoute
   '/events/$slug': typeof EventsSlugRoute
   '/admin/': typeof AdminIndexRoute
+  '/communities/': typeof CommunitiesIndexRoute
   '/events/': typeof EventsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -185,8 +206,10 @@ export interface FileRoutesByTo {
   '/admin/contacts': typeof AdminContactsRoute
   '/admin/events': typeof AdminEventsRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
+  '/communities/$slug': typeof CommunitiesSlugRoute
   '/events/$slug': typeof EventsSlugRoute
   '/admin': typeof AdminIndexRoute
+  '/communities': typeof CommunitiesIndexRoute
   '/events': typeof EventsIndexRoute
 }
 export interface FileRoutesById {
@@ -196,6 +219,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/admin-login': typeof AdminLoginRoute
   '/badge': typeof BadgeRoute
+  '/communities': typeof CommunitiesRouteWithChildren
   '/community': typeof CommunityRoute
   '/contact': typeof ContactRoute
   '/events': typeof EventsRouteWithChildren
@@ -210,8 +234,10 @@ export interface FileRoutesById {
   '/admin/contacts': typeof AdminContactsRoute
   '/admin/events': typeof AdminEventsRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
+  '/communities/$slug': typeof CommunitiesSlugRoute
   '/events/$slug': typeof EventsSlugRoute
   '/admin/': typeof AdminIndexRoute
+  '/communities/': typeof CommunitiesIndexRoute
   '/events/': typeof EventsIndexRoute
 }
 export interface FileRouteTypes {
@@ -222,6 +248,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin-login'
     | '/badge'
+    | '/communities'
     | '/community'
     | '/contact'
     | '/events'
@@ -236,8 +263,10 @@ export interface FileRouteTypes {
     | '/admin/contacts'
     | '/admin/events'
     | '/admin/registrations'
+    | '/communities/$slug'
     | '/events/$slug'
     | '/admin/'
+    | '/communities/'
     | '/events/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -258,8 +287,10 @@ export interface FileRouteTypes {
     | '/admin/contacts'
     | '/admin/events'
     | '/admin/registrations'
+    | '/communities/$slug'
     | '/events/$slug'
     | '/admin'
+    | '/communities'
     | '/events'
   id:
     | '__root__'
@@ -268,6 +299,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin-login'
     | '/badge'
+    | '/communities'
     | '/community'
     | '/contact'
     | '/events'
@@ -282,8 +314,10 @@ export interface FileRouteTypes {
     | '/admin/contacts'
     | '/admin/events'
     | '/admin/registrations'
+    | '/communities/$slug'
     | '/events/$slug'
     | '/admin/'
+    | '/communities/'
     | '/events/'
   fileRoutesById: FileRoutesById
 }
@@ -293,6 +327,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AdminLoginRoute: typeof AdminLoginRoute
   BadgeRoute: typeof BadgeRoute
+  CommunitiesRoute: typeof CommunitiesRouteWithChildren
   CommunityRoute: typeof CommunityRoute
   ContactRoute: typeof ContactRoute
   EventsRoute: typeof EventsRouteWithChildren
@@ -369,6 +404,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CommunityRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/communities': {
+      id: '/communities'
+      path: '/communities'
+      fullPath: '/communities'
+      preLoaderRoute: typeof CommunitiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/badge': {
       id: '/badge'
       path: '/badge'
@@ -411,6 +453,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsIndexRouteImport
       parentRoute: typeof EventsRoute
     }
+    '/communities/': {
+      id: '/communities/'
+      path: '/'
+      fullPath: '/communities/'
+      preLoaderRoute: typeof CommunitiesIndexRouteImport
+      parentRoute: typeof CommunitiesRoute
+    }
     '/admin/': {
       id: '/admin/'
       path: '/'
@@ -424,6 +473,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/events/$slug'
       preLoaderRoute: typeof EventsSlugRouteImport
       parentRoute: typeof EventsRoute
+    }
+    '/communities/$slug': {
+      id: '/communities/$slug'
+      path: '/$slug'
+      fullPath: '/communities/$slug'
+      preLoaderRoute: typeof CommunitiesSlugRouteImport
+      parentRoute: typeof CommunitiesRoute
     }
     '/admin/registrations': {
       id: '/admin/registrations'
@@ -483,6 +539,20 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface CommunitiesRouteChildren {
+  CommunitiesSlugRoute: typeof CommunitiesSlugRoute
+  CommunitiesIndexRoute: typeof CommunitiesIndexRoute
+}
+
+const CommunitiesRouteChildren: CommunitiesRouteChildren = {
+  CommunitiesSlugRoute: CommunitiesSlugRoute,
+  CommunitiesIndexRoute: CommunitiesIndexRoute,
+}
+
+const CommunitiesRouteWithChildren = CommunitiesRoute._addFileChildren(
+  CommunitiesRouteChildren,
+)
+
 interface EventsRouteChildren {
   EventsSlugRoute: typeof EventsSlugRoute
   EventsIndexRoute: typeof EventsIndexRoute
@@ -502,6 +572,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AdminLoginRoute: AdminLoginRoute,
   BadgeRoute: BadgeRoute,
+  CommunitiesRoute: CommunitiesRouteWithChildren,
   CommunityRoute: CommunityRoute,
   ContactRoute: ContactRoute,
   EventsRoute: EventsRouteWithChildren,

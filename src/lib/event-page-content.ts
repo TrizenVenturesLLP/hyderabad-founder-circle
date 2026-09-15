@@ -259,7 +259,7 @@ const EVENT_OVERRIDES: Record<string, EventPageOverrides> = {
       headline: "A corporate music break — not a networking meetup.",
       paragraphs: [
         "Band Explorers Vybe is an evening music experience at NanoSpace for people who want to unwind after work, enjoy a live set, and hang out in a relaxed room.",
-        "Tickets: ₹399 for 1 member or ₹699 for 2 members. No snacks are provided. Hosted by NanoSpace · Marketing partner: Trizen Community.",
+        "Tickets: ₹399 for 1 member or ₹699 for 2 members. No snacks are provided. Hosted by NanoSpace · Marketing partner: Trizen Community · Supporting partner: ExtraHand.",
       ],
       closingLine: "Come for the music. Stay for the vibe.",
     },
@@ -377,8 +377,8 @@ const EVENT_OVERRIDES: Record<string, EventPageOverrides> = {
         logo: nanospaceLogo,
       },
       {
-        name: "Fun Fusion @Work",
-        desc: "Corporate music & community experiences",
+        name: "Band Explorers",
+        desc: "Organised by",
       },
     ],
     partnerTiers: [
@@ -400,6 +400,17 @@ const EVENT_OVERRIDES: Record<string, EventPageOverrides> = {
             logo: trizenLogo,
             logoSquare: true,
             href: "https://trizenventures.com/",
+          },
+        ],
+      },
+      {
+        label: "Supporting partner",
+        partners: [
+          {
+            name: "ExtraHand",
+            logo: extrahandLogo,
+            logoSquare: true,
+            href: "https://extrahand.in/",
           },
         ],
       },

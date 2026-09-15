@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Menu } from "lucide-react";
+import { CalendarPlus, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -73,13 +73,13 @@ export function SiteHeader() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 border-b transition-[background-color,border-color,box-shadow] duration-300",
+        "sticky top-0 z-40 border-b transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 ease-out",
         scrolled
-          ? "border-[var(--color-border)] bg-white/90 shadow-[var(--shadow-small)] backdrop-blur-md"
-          : "border-transparent bg-white/80 backdrop-blur-sm",
+          ? "border-[var(--color-border)]/80 bg-white/92 shadow-[0_1px_0_rgba(15,23,42,0.04),0_8px_24px_-16px_rgba(15,23,42,0.12)] backdrop-blur-md"
+          : "border-transparent bg-white/75 backdrop-blur-[6px]",
       )}
     >
-      <div className="page-container flex h-[64px] items-center justify-between md:h-[68px]">
+      <div className="page-container flex h-[60px] items-center justify-between md:h-[64px]">
         <Link
           to="/"
           className="group flex min-w-0 items-center gap-2.5"
@@ -95,11 +95,7 @@ export function SiteHeader() {
               to={n.to}
               hash={n.hash}
               className="group/nav relative px-3.5 py-2 text-[14px] font-medium text-[var(--color-text-secondary)] transition-colors duration-250 hover:text-foreground lg:px-4 lg:text-[14.5px]"
-              activeOptions={
-                n.hash
-                  ? { exact: true, includeHash: true }
-                  : { exact: n.to === "/" }
-              }
+              activeOptions={n.hash ? { exact: true, includeHash: true } : { exact: n.to === "/" }}
               activeProps={
                 n.to === "/" && n.hash
                   ? undefined
@@ -120,6 +116,7 @@ export function SiteHeader() {
             to="/host"
             className="btn-primary ml-3 gap-1.5 !min-h-9 !rounded-full !px-4 !text-[12.5px]"
           >
+            <CalendarPlus className="size-3.5" strokeWidth={1.75} aria-hidden />
             Host an Event
           </Link>
         </nav>
@@ -147,9 +144,7 @@ export function SiteHeader() {
               <BrandMark compact />
             </div>
             <SheetTitle className="sr-only">Trizen Community</SheetTitle>
-            <SheetDescription className="sr-only">
-              Site navigation links
-            </SheetDescription>
+            <SheetDescription className="sr-only">Site navigation links</SheetDescription>
           </SheetHeader>
 
           <nav className="flex flex-1 flex-col justify-center px-6 py-10">
@@ -181,6 +176,7 @@ export function SiteHeader() {
               className="btn-primary w-full gap-2 !min-h-11 !rounded-full !text-[13.5px]"
               onClick={() => setOpen(false)}
             >
+              <CalendarPlus className="size-4" strokeWidth={1.75} aria-hidden />
               Host an Event
             </Link>
           </div>
