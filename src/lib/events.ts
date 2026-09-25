@@ -63,6 +63,12 @@ export type Meetup = {
     enabled?: boolean;
     amountInr?: number;
     currency?: string;
+    tickets?: {
+      id: string;
+      label: string;
+      amountInr: number;
+      memberCount: number;
+    }[];
     checkoutMode?: "razorpay" | "manual";
     hasRazorpay?: boolean;
     hasManualMethods?: boolean;
@@ -126,6 +132,21 @@ const venueDefaults = {
   seats: 40,
   format: "Offline" as const,
 };
+
+export const BAND_EXPLORERS_TICKETS = [
+  {
+    id: "solo",
+    label: "1 member",
+    amountInr: 299,
+    memberCount: 1,
+  },
+  {
+    id: "duo",
+    label: "2 members",
+    amountInr: 549,
+    memberCount: 2,
+  },
+];
 
 /** Fallback if API is unavailable. */
 export const fallbackMeetups: Meetup[] = [
@@ -220,7 +241,7 @@ export const fallbackMeetups: Meetup[] = [
     format: "Offline" as const,
     status: "open",
     blurb:
-      "Live music · Unwind · Connect. Tickets: ₹399 for 1 member or ₹699 for 2 members. 6–9 PM at NanoSpace. No snacks.",
+      "Live music · Unwind · Connect. Tickets: ₹299 for 1 member or ₹549 for 2 members. 6–9 PM at NanoSpace. No snacks.",
     speakers: [],
     hosts: [
       {
@@ -249,15 +270,29 @@ export const fallbackMeetups: Meetup[] = [
     },
     payment: {
       enabled: true,
-      amountInr: 399,
+      amountInr: 299,
       currency: "INR",
+      tickets: [
+        {
+          id: "solo",
+          label: "1 member",
+          amountInr: 299,
+          memberCount: 1,
+        },
+        {
+          id: "duo",
+          label: "2 members",
+          amountInr: 549,
+          memberCount: 2,
+        },
+      ],
       methods: [
         {
           type: "upi_qr",
           label: "Scan QR to pay",
           paymentNumber: "",
           instructions:
-            "Choose 1 member (₹399) or 2 members (₹699), scan the QR, pay the selected amount, then upload the payment screenshot.",
+            "Choose 1 member (₹299) or 2 members (₹549), scan the QR, pay the selected amount, then upload the payment screenshot.",
         },
       ],
     },
@@ -284,6 +319,8 @@ function resolveSpeakerPhoto(speaker: EventSpeaker): EventSpeaker {
 }
 
 export function mapApiEventToMeetup(raw: Record<string, unknown>): Meetup {
+  const slug = String(raw.slug || "");
+  const payment = raw.payment as Meetup["payment"] | undefined;
   const speakers = Array.isArray(raw.speakers)
     ? (raw.speakers as EventSpeaker[]).map(resolveSpeakerPhoto)
     : undefined;
@@ -292,7 +329,7 @@ export function mapApiEventToMeetup(raw: Record<string, unknown>): Meetup {
   const hasGuest = guest?.name;
 
   return {
-    slug: String(raw.slug || ""),
+    slug,
     title: String(raw.title || ""),
     dateISO: String(raw.dateISO || ""),
     dateLabel: String(raw.dateLabel || ""),
@@ -313,7 +350,15 @@ export function mapApiEventToMeetup(raw: Record<string, unknown>): Meetup {
     guestFounder: hasGuest ? guest : undefined,
     speakers,
     organization: (raw.organization as Meetup["organization"]) || null,
-    payment: (raw.payment as Meetup["payment"]) || undefined,
+    payment:
+      slug === "band-explorers-vybe"
+        ? {
+            ...payment,
+            tickets: payment?.tickets?.length
+              ? payment.tickets
+              : BAND_EXPLORERS_TICKETS,
+          }
+        : payment,
   };
 }
 

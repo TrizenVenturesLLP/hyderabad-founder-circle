@@ -316,7 +316,10 @@ export function RsvpDialog() {
   const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
   const [paymentProofName, setPaymentProofName] = useState("");
   const [paymentPendingReview, setPaymentPendingReview] = useState(false);
-  const tickets = paymentConfig?.tickets || [];
+  const tickets =
+    paymentConfig?.tickets?.length
+      ? paymentConfig.tickets
+      : event.payment?.tickets ?? [];
   const isMinimalRsvp =
     paymentConfig?.formMode === "minimal" ||
     event.slug === "band-explorers-vybe" ||

@@ -259,7 +259,7 @@ const EVENT_OVERRIDES: Record<string, EventPageOverrides> = {
       headline: "A corporate music break — not a networking meetup.",
       paragraphs: [
         "Band Explorers Vybe is an evening music experience at NanoSpace for people who want to unwind after work, enjoy a live set, and hang out in a relaxed room.",
-        "Tickets: ₹399 for 1 member or ₹699 for 2 members. No snacks are provided. Hosted by NanoSpace · Marketing partner: Trizen Community · Supporting partner: ExtraHand.",
+        "Tickets: ₹299 for 1 member or ₹549 for 2 members. No snacks are provided. Hosted by NanoSpace · Marketing partner: Trizen Community · Supporting partner: ExtraHand.",
       ],
       closingLine: "Come for the music. Stay for the vibe.",
     },
@@ -316,7 +316,7 @@ const EVENT_OVERRIDES: Record<string, EventPageOverrides> = {
         },
         {
           title: "Clear entry",
-          body: "₹399 for 1 member or ₹699 for 2 members. No snacks. Come ready for music.",
+          body: "₹299 for 1 member or ₹549 for 2 members. No snacks. Come ready for music.",
         },
       ],
     },
@@ -331,7 +331,7 @@ const EVENT_OVERRIDES: Record<string, EventPageOverrides> = {
       },
       {
         q: "What is the entry fee?",
-        a: "₹399 for 1 member, or ₹699 for 2 members. Registration needs name, email, and mobile, then payment.",
+        a: "₹299 for 1 member, or ₹549 for 2 members. Registration needs name, email, and mobile, then payment.",
       },
       {
         q: "What are the timings?",
