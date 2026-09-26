@@ -37,9 +37,7 @@ function AdminApplicationsPage() {
     setLoading(true);
     setError("");
     try {
-      const data = await fetchOrgApplications(
-        filter === "all" ? undefined : filter,
-      );
+      const data = await fetchOrgApplications(filter === "all" ? undefined : filter);
       setItems(data.items);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
@@ -56,7 +54,7 @@ function AdminApplicationsPage() {
   if (!isPlatform) {
     return (
       <div className="p-6">
-        <p className="text-sm text-[var(--color-text-secondary)]">
+        <p className="text-sm text-(--color-text-secondary)">
           Organization applications are only visible to platform admins.
         </p>
       </div>
@@ -104,8 +102,8 @@ function AdminApplicationsPage() {
             className={cn(
               "px-3 py-1.5 text-[12px] font-medium capitalize transition-colors",
               filter === f
-                ? "bg-[var(--brand-primary)] text-white"
-                : "bg-white text-[var(--color-text-secondary)] ring-1 ring-[var(--color-border)] hover:text-foreground",
+                ? "bg-brand-primary text-white"
+                : "bg-white text-(--color-text-secondary) ring-1 ring-(--color-border) hover:text-foreground",
             )}
           >
             {f}
@@ -137,53 +135,41 @@ function AdminApplicationsPage() {
 
       <ul className="mt-5 space-y-2.5">
         {loading ? (
-          <li className="text-sm text-[var(--color-text-muted)]">Loading…</li>
+          <li className="text-sm text-(--color-text-muted)">Loading…</li>
         ) : items.length === 0 ? (
-          <li className="border border-dashed border-[var(--color-border)] px-4 py-10 text-center text-sm text-[var(--color-text-muted)]">
+          <li className="border border-dashed border-(--color-border) px-4 py-10 text-center text-sm text-(--color-text-muted)">
             No applications in this view.
           </li>
         ) : (
           items.map((item) => (
-            <li
-              key={item._id}
-              className="border border-[var(--color-border)] bg-white p-4"
-            >
+            <li key={item._id} className="border border-(--color-border) bg-white p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-[14px] font-medium text-foreground">
-                    {item.organizationName}
-                  </p>
-                  <p className="mt-0.5 text-[13px] text-[var(--color-text-secondary)]">
+                  <p className="text-[14px] font-medium text-foreground">{item.organizationName}</p>
+                  <p className="mt-0.5 text-[13px] text-(--color-text-secondary)">
                     {item.email}
                     {item.website ? ` · ${item.website}` : ""}
                   </p>
                   {item.message ? (
-                    <p className="mt-2 text-[13px] text-[var(--color-text-muted)]">
-                      {item.message}
-                    </p>
+                    <p className="mt-2 text-[13px] text-(--color-text-muted)">{item.message}</p>
                   ) : null}
-                  <p className="mt-2 text-[11px] uppercase tracking-wide text-[var(--color-text-muted)]">
-                    {item.status} ·{" "}
-                    {new Date(item.createdAt).toLocaleString("en-IN")}
+                  <p className="mt-2 text-[11px] uppercase tracking-wide text-(--color-text-muted)">
+                    {item.status} · {new Date(item.createdAt).toLocaleString("en-IN")}
                   </p>
                 </div>
                 {item.status === "pending" ? (
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      className="btn-primary !min-h-9 !px-3 !text-xs"
-                      onClick={() =>
-                        void onApprove(item._id, item.organizationName)
-                      }
+                      className="btn-primary min-h-9! px-3! text-xs!"
+                      onClick={() => void onApprove(item._id, item.organizationName)}
                     >
                       Approve
                     </button>
                     <button
                       type="button"
-                      className="btn-secondary !min-h-9 !px-3 !text-xs"
-                      onClick={() =>
-                        void onReject(item._id, item.organizationName)
-                      }
+                      className="btn-secondary min-h-9! px-3! text-xs!"
+                      onClick={() => void onReject(item._id, item.organizationName)}
                     >
                       Reject
                     </button>

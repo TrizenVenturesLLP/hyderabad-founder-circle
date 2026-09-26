@@ -24,9 +24,7 @@ export function AdminPageHeader({
           {title}
         </h1>
         {description ? (
-          <p className="mt-1 text-[13px] text-[var(--color-text-secondary)]">
-            {description}
-          </p>
+          <p className="mt-1 text-[13px] text-(--color-text-secondary)">{description}</p>
         ) : null}
       </div>
       {actions ? (
@@ -38,21 +36,6 @@ export function AdminPageHeader({
   );
 }
 
-export function AdminPanel({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div
-      className={cn(
-        "border border-[var(--color-border)] bg-white",
-        className,
-      )}
-    >
-      {children}
-    </div>
-  );
+export function AdminPanel({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cn("border border-(--color-border) bg-white", className)}>{children}</div>;
 }

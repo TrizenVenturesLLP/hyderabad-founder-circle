@@ -30,6 +30,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as EventsSlugRouteImport } from './routes/events.$slug'
 import { Route as CommunitiesSlugRouteImport } from './routes/communities.$slug'
 import { Route as AdminRegistrationsRouteImport } from './routes/admin.registrations'
+import { Route as AdminHackathonsRouteImport } from './routes/admin.hackathons'
 import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminContactsRouteImport } from './routes/admin.contacts'
 import { Route as AdminApplicationsRouteImport } from './routes/admin.applications'
@@ -140,6 +141,11 @@ const AdminRegistrationsRoute = AdminRegistrationsRouteImport.update({
   path: '/registrations',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminHackathonsRoute = AdminHackathonsRouteImport.update({
+  id: '/hackathons',
+  path: '/hackathons',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminEventsRoute = AdminEventsRouteImport.update({
   id: '/events',
   path: '/events',
@@ -181,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/admin/applications': typeof AdminApplicationsRoute
   '/admin/contacts': typeof AdminContactsRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/hackathons': typeof AdminHackathonsRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/communities/$slug': typeof CommunitiesSlugRoute
   '/events/$slug': typeof EventsSlugRoute
@@ -205,6 +212,7 @@ export interface FileRoutesByTo {
   '/admin/applications': typeof AdminApplicationsRoute
   '/admin/contacts': typeof AdminContactsRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/hackathons': typeof AdminHackathonsRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/communities/$slug': typeof CommunitiesSlugRoute
   '/events/$slug': typeof EventsSlugRoute
@@ -233,6 +241,7 @@ export interface FileRoutesById {
   '/admin/applications': typeof AdminApplicationsRoute
   '/admin/contacts': typeof AdminContactsRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/hackathons': typeof AdminHackathonsRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/communities/$slug': typeof CommunitiesSlugRoute
   '/events/$slug': typeof EventsSlugRoute
@@ -262,6 +271,7 @@ export interface FileRouteTypes {
     | '/admin/applications'
     | '/admin/contacts'
     | '/admin/events'
+    | '/admin/hackathons'
     | '/admin/registrations'
     | '/communities/$slug'
     | '/events/$slug'
@@ -286,6 +296,7 @@ export interface FileRouteTypes {
     | '/admin/applications'
     | '/admin/contacts'
     | '/admin/events'
+    | '/admin/hackathons'
     | '/admin/registrations'
     | '/communities/$slug'
     | '/events/$slug'
@@ -313,6 +324,7 @@ export interface FileRouteTypes {
     | '/admin/applications'
     | '/admin/contacts'
     | '/admin/events'
+    | '/admin/hackathons'
     | '/admin/registrations'
     | '/communities/$slug'
     | '/events/$slug'
@@ -488,6 +500,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRegistrationsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/hackathons': {
+      id: '/admin/hackathons'
+      path: '/hackathons'
+      fullPath: '/admin/hackathons'
+      preLoaderRoute: typeof AdminHackathonsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/events': {
       id: '/admin/events'
       path: '/events'
@@ -524,6 +543,7 @@ interface AdminRouteChildren {
   AdminApplicationsRoute: typeof AdminApplicationsRoute
   AdminContactsRoute: typeof AdminContactsRoute
   AdminEventsRoute: typeof AdminEventsRoute
+  AdminHackathonsRoute: typeof AdminHackathonsRoute
   AdminRegistrationsRoute: typeof AdminRegistrationsRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -533,6 +553,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminApplicationsRoute: AdminApplicationsRoute,
   AdminContactsRoute: AdminContactsRoute,
   AdminEventsRoute: AdminEventsRoute,
+  AdminHackathonsRoute: AdminHackathonsRoute,
   AdminRegistrationsRoute: AdminRegistrationsRoute,
   AdminIndexRoute: AdminIndexRoute,
 }

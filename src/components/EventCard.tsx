@@ -57,14 +57,14 @@ export function EventCard({ meetup, className }: { meetup: Meetup; className?: s
   return (
     <article
       className={cn(
-        "group flex h-full flex-col overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[0_1px_0_rgba(15,23,42,0.03)] transition-[border-color,box-shadow,transform] duration-300 ease-out hover:-translate-y-1 hover:border-[var(--color-border-strong)] hover:shadow-[0_12px_28px_-18px_rgba(15,23,42,0.28)]",
+        "group flex h-full flex-col overflow-hidden border border-(--color-border) bg-(--color-surface) shadow-[0_1px_0_rgba(15,23,42,0.03)] transition-[border-color,box-shadow,transform] duration-300 ease-out hover:-translate-y-1 hover:border-(--color-border-strong) hover:shadow-[0_12px_28px_-18px_rgba(15,23,42,0.28)]",
         className,
       )}
     >
       <Link
         to="/events/$slug"
         params={{ slug: meetup.slug }}
-        className="relative block aspect-[4/3] overflow-hidden bg-[var(--color-background-alt)]"
+        className="relative block aspect-4/3 overflow-hidden bg-(--color-background-alt)"
       >
         <img
           src={cover}
@@ -110,18 +110,14 @@ export function EventCard({ meetup, className }: { meetup: Meetup; className?: s
       </Link>
 
       <div className="flex flex-1 flex-col gap-3 p-4 md:px-4 md:pb-4 md:pt-3.5">
-        <div className="space-y-1.5 text-[13px] text-[var(--color-text-secondary)]">
+        <div className="space-y-1.5 text-[13px] text-(--color-text-secondary)">
           <p className="inline-flex min-w-0 items-center gap-1.5">
-            <Clock
-              className="size-3.5 shrink-0 text-[var(--brand-accent)]"
-              strokeWidth={1.75}
-              aria-hidden
-            />
+            <Clock className="size-3.5 shrink-0 text-brand-accent" strokeWidth={1.75} aria-hidden />
             <span className="truncate">{meetup.time}</span>
           </p>
           <p className="inline-flex min-w-0 items-center gap-1.5">
             <MapPin
-              className="size-3.5 shrink-0 text-[var(--brand-accent)]"
+              className="size-3.5 shrink-0 text-brand-accent"
               strokeWidth={1.75}
               aria-hidden
             />
@@ -137,7 +133,7 @@ export function EventCard({ meetup, className }: { meetup: Meetup; className?: s
             to="/events/$slug"
             params={{ slug: meetup.slug }}
             className={cn(
-              "btn-secondary group/details min-w-0 flex-1 justify-center gap-1.5 !min-h-10 !px-3 !text-[13px]",
+              "btn-secondary group/details min-w-0 flex-1 justify-center gap-1.5 min-h-10! px-3! text-[13px]!",
               !open && "flex-none",
             )}
           >
@@ -151,7 +147,7 @@ export function EventCard({ meetup, className }: { meetup: Meetup; className?: s
           {open ? (
             <RsvpButton
               event={meetup}
-              className="btn-primary min-w-0 flex-1 justify-center gap-1.5 !min-h-10 !px-3 !text-[13px]"
+              className="btn-primary min-w-0 flex-1 justify-center gap-1.5 min-h-10! px-3! text-[13px]!"
             >
               <CalendarCheck className="size-3.5" strokeWidth={1.75} aria-hidden />
               RSVP
