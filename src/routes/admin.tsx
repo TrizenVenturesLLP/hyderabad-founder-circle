@@ -15,6 +15,7 @@ import {
   BarChart3,
   Users,
   X,
+  Trophy,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { adminMe } from "@/lib/admin-api";
@@ -58,6 +59,7 @@ function AdminLayout() {
     const base = [
       { to: "/admin/registrations", label: "Registrations", icon: Users },
       { to: "/admin/events", label: "Events", icon: CalendarDays },
+      { to: "/admin/hackathons", label: "Hackathons", icon: Trophy },
       { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
     ] as const;
     if (isPlatform) {
@@ -83,13 +85,10 @@ function AdminLayout() {
     void navigate({ to: loginPath });
   }
 
-  const currentLabel =
-    nav.find((n) => pathname.startsWith(n.to))?.label ?? "Dashboard";
+  const currentLabel = nav.find((n) => pathname.startsWith(n.to))?.label ?? "Dashboard";
 
   const displayName = admin?.name?.trim() || "Admin";
-  const workspaceLabel = isPlatform
-    ? "Platform"
-    : admin?.organization?.name || "Organization";
+  const workspaceLabel = isPlatform ? "Platform" : admin?.organization?.name || "Organization";
   const initials = displayName
     .split(/\s+/)
     .slice(0, 2)
@@ -156,10 +155,7 @@ function AdminLayout() {
                 )}
               >
                 <Icon
-                  className={cn(
-                    "size-4 shrink-0",
-                    active ? "opacity-95" : "opacity-70",
-                  )}
+                  className={cn("size-4 shrink-0", active ? "opacity-95" : "opacity-70")}
                   strokeWidth={1.75}
                 />
                 {label}
@@ -174,12 +170,8 @@ function AdminLayout() {
               {initials || "A"}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[12px] font-medium text-foreground">
-                {displayName}
-              </p>
-              <p className="truncate text-[11px] text-[var(--color-text-muted)]">
-                {admin?.email}
-              </p>
+              <p className="truncate text-[12px] font-medium text-foreground">{displayName}</p>
+              <p className="truncate text-[11px] text-[var(--color-text-muted)]">{admin?.email}</p>
             </div>
           </div>
           <button
@@ -204,12 +196,8 @@ function AdminLayout() {
             <Menu className="size-4" />
           </button>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] text-[var(--color-text-muted)]">
-              {workspaceLabel}
-            </p>
-            <p className="truncate text-[14px] font-semibold text-foreground">
-              {currentLabel}
-            </p>
+            <p className="text-[11px] text-[var(--color-text-muted)]">{workspaceLabel}</p>
+            <p className="truncate text-[14px] font-semibold text-foreground">{currentLabel}</p>
           </div>
         </header>
 
