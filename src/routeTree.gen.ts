@@ -15,6 +15,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as OrgLoginRouteImport } from './routes/org-login'
 import { Route as HostRouteImport } from './routes/host'
+import { Route as HackathonRouteImport } from './routes/hackathon'
 import { Route as EventsRouteImport } from './routes/events'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CommunityRouteImport } from './routes/community'
@@ -64,6 +65,11 @@ const OrgLoginRoute = OrgLoginRouteImport.update({
 const HostRoute = HostRouteImport.update({
   id: '/host',
   path: '/host',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HackathonRoute = HackathonRouteImport.update({
+  id: '/hackathon',
+  path: '/hackathon',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventsRoute = EventsRouteImport.update({
@@ -177,6 +183,7 @@ export interface FileRoutesByFullPath {
   '/community': typeof CommunityRoute
   '/contact': typeof ContactRoute
   '/events': typeof EventsRouteWithChildren
+  '/hackathon': typeof HackathonRoute
   '/host': typeof HostRoute
   '/org-login': typeof OrgLoginRoute
   '/privacy': typeof PrivacyRoute
@@ -202,6 +209,7 @@ export interface FileRoutesByTo {
   '/badge': typeof BadgeRoute
   '/community': typeof CommunityRoute
   '/contact': typeof ContactRoute
+  '/hackathon': typeof HackathonRoute
   '/host': typeof HostRoute
   '/org-login': typeof OrgLoginRoute
   '/privacy': typeof PrivacyRoute
@@ -231,6 +239,7 @@ export interface FileRoutesById {
   '/community': typeof CommunityRoute
   '/contact': typeof ContactRoute
   '/events': typeof EventsRouteWithChildren
+  '/hackathon': typeof HackathonRoute
   '/host': typeof HostRoute
   '/org-login': typeof OrgLoginRoute
   '/privacy': typeof PrivacyRoute
@@ -261,6 +270,7 @@ export interface FileRouteTypes {
     | '/community'
     | '/contact'
     | '/events'
+    | '/hackathon'
     | '/host'
     | '/org-login'
     | '/privacy'
@@ -286,6 +296,7 @@ export interface FileRouteTypes {
     | '/badge'
     | '/community'
     | '/contact'
+    | '/hackathon'
     | '/host'
     | '/org-login'
     | '/privacy'
@@ -314,6 +325,7 @@ export interface FileRouteTypes {
     | '/community'
     | '/contact'
     | '/events'
+    | '/hackathon'
     | '/host'
     | '/org-login'
     | '/privacy'
@@ -343,6 +355,7 @@ export interface RootRouteChildren {
   CommunityRoute: typeof CommunityRoute
   ContactRoute: typeof ContactRoute
   EventsRoute: typeof EventsRouteWithChildren
+  HackathonRoute: typeof HackathonRoute
   HostRoute: typeof HostRoute
   OrgLoginRoute: typeof OrgLoginRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -393,6 +406,13 @@ declare module '@tanstack/react-router' {
       path: '/host'
       fullPath: '/host'
       preLoaderRoute: typeof HostRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hackathon': {
+      id: '/hackathon'
+      path: '/hackathon'
+      fullPath: '/hackathon'
+      preLoaderRoute: typeof HackathonRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/events': {
@@ -597,6 +617,7 @@ const rootRouteChildren: RootRouteChildren = {
   CommunityRoute: CommunityRoute,
   ContactRoute: ContactRoute,
   EventsRoute: EventsRouteWithChildren,
+  HackathonRoute: HackathonRoute,
   HostRoute: HostRoute,
   OrgLoginRoute: OrgLoginRoute,
   PrivacyRoute: PrivacyRoute,
