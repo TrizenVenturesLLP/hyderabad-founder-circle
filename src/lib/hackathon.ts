@@ -1,5 +1,15 @@
 export type ProblemDifficulty = "Beginner" | "Intermediate" | "Advanced";
 
+export interface HackathonReleaseTimer {
+  releaseAt: string | null;
+}
+
+export interface HackathonStudentProfile {
+  name: string;
+  mobile: string;
+  email: string;
+}
+
 export interface ProblemStatement {
   id: string;
   domainId: "ui-ux" | "web-dev" | "vibe-coding" | "agentic-ai" | string;

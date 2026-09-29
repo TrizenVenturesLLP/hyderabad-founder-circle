@@ -17,6 +17,7 @@ import { Route as OrgLoginRouteImport } from './routes/org-login'
 import { Route as HostRouteImport } from './routes/host'
 import { Route as HackathonRouteImport } from './routes/hackathon'
 import { Route as EventsRouteImport } from './routes/events'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CommunityRouteImport } from './routes/community'
 import { Route as CommunitiesRouteImport } from './routes/communities'
@@ -28,7 +29,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as EventsIndexRouteImport } from './routes/events.index'
 import { Route as CommunitiesIndexRouteImport } from './routes/communities.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as HackathonRegisterRouteImport } from './routes/hackathon.register'
 import { Route as EventsSlugRouteImport } from './routes/events.$slug'
+import { Route as DashboardTeamRouteImport } from './routes/dashboard.team'
 import { Route as CommunitiesSlugRouteImport } from './routes/communities.$slug'
 import { Route as AdminRegistrationsRouteImport } from './routes/admin.registrations'
 import { Route as AdminHackathonsRouteImport } from './routes/admin.hackathons'
@@ -36,6 +39,7 @@ import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminContactsRouteImport } from './routes/admin.contacts'
 import { Route as AdminApplicationsRouteImport } from './routes/admin.applications'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
+import { Route as HackathonProblemsProblemIdRouteImport } from './routes/hackathon.problems.$problemId'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -75,6 +79,11 @@ const HackathonRoute = HackathonRouteImport.update({
 const EventsRoute = EventsRouteImport.update({
   id: '/events',
   path: '/events',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -132,10 +141,20 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const HackathonRegisterRoute = HackathonRegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => HackathonRoute,
+} as any)
 const EventsSlugRoute = EventsSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
   getParentRoute: () => EventsRoute,
+} as any)
+const DashboardTeamRoute = DashboardTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const CommunitiesSlugRoute = CommunitiesSlugRouteImport.update({
   id: '/$slug',
@@ -172,6 +191,12 @@ const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AdminRoute,
 } as any)
+const HackathonProblemsProblemIdRoute =
+  HackathonProblemsProblemIdRouteImport.update({
+    id: '/problems/$problemId',
+    path: '/problems/$problemId',
+    getParentRoute: () => HackathonRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -182,8 +207,9 @@ export interface FileRoutesByFullPath {
   '/communities': typeof CommunitiesRouteWithChildren
   '/community': typeof CommunityRoute
   '/contact': typeof ContactRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/events': typeof EventsRouteWithChildren
-  '/hackathon': typeof HackathonRoute
+  '/hackathon': typeof HackathonRouteWithChildren
   '/host': typeof HostRoute
   '/org-login': typeof OrgLoginRoute
   '/privacy': typeof PrivacyRoute
@@ -197,10 +223,13 @@ export interface FileRoutesByFullPath {
   '/admin/hackathons': typeof AdminHackathonsRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/communities/$slug': typeof CommunitiesSlugRoute
+  '/dashboard/team': typeof DashboardTeamRoute
   '/events/$slug': typeof EventsSlugRoute
+  '/hackathon/register': typeof HackathonRegisterRoute
   '/admin/': typeof AdminIndexRoute
   '/communities/': typeof CommunitiesIndexRoute
   '/events/': typeof EventsIndexRoute
+  '/hackathon/problems/$problemId': typeof HackathonProblemsProblemIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -209,7 +238,8 @@ export interface FileRoutesByTo {
   '/badge': typeof BadgeRoute
   '/community': typeof CommunityRoute
   '/contact': typeof ContactRoute
-  '/hackathon': typeof HackathonRoute
+  '/dashboard': typeof DashboardRouteWithChildren
+  '/hackathon': typeof HackathonRouteWithChildren
   '/host': typeof HostRoute
   '/org-login': typeof OrgLoginRoute
   '/privacy': typeof PrivacyRoute
@@ -223,10 +253,13 @@ export interface FileRoutesByTo {
   '/admin/hackathons': typeof AdminHackathonsRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/communities/$slug': typeof CommunitiesSlugRoute
+  '/dashboard/team': typeof DashboardTeamRoute
   '/events/$slug': typeof EventsSlugRoute
+  '/hackathon/register': typeof HackathonRegisterRoute
   '/admin': typeof AdminIndexRoute
   '/communities': typeof CommunitiesIndexRoute
   '/events': typeof EventsIndexRoute
+  '/hackathon/problems/$problemId': typeof HackathonProblemsProblemIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -238,8 +271,9 @@ export interface FileRoutesById {
   '/communities': typeof CommunitiesRouteWithChildren
   '/community': typeof CommunityRoute
   '/contact': typeof ContactRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/events': typeof EventsRouteWithChildren
-  '/hackathon': typeof HackathonRoute
+  '/hackathon': typeof HackathonRouteWithChildren
   '/host': typeof HostRoute
   '/org-login': typeof OrgLoginRoute
   '/privacy': typeof PrivacyRoute
@@ -253,10 +287,13 @@ export interface FileRoutesById {
   '/admin/hackathons': typeof AdminHackathonsRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/communities/$slug': typeof CommunitiesSlugRoute
+  '/dashboard/team': typeof DashboardTeamRoute
   '/events/$slug': typeof EventsSlugRoute
+  '/hackathon/register': typeof HackathonRegisterRoute
   '/admin/': typeof AdminIndexRoute
   '/communities/': typeof CommunitiesIndexRoute
   '/events/': typeof EventsIndexRoute
+  '/hackathon/problems/$problemId': typeof HackathonProblemsProblemIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -269,6 +306,7 @@ export interface FileRouteTypes {
     | '/communities'
     | '/community'
     | '/contact'
+    | '/dashboard'
     | '/events'
     | '/hackathon'
     | '/host'
@@ -284,10 +322,13 @@ export interface FileRouteTypes {
     | '/admin/hackathons'
     | '/admin/registrations'
     | '/communities/$slug'
+    | '/dashboard/team'
     | '/events/$slug'
+    | '/hackathon/register'
     | '/admin/'
     | '/communities/'
     | '/events/'
+    | '/hackathon/problems/$problemId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -296,6 +337,7 @@ export interface FileRouteTypes {
     | '/badge'
     | '/community'
     | '/contact'
+    | '/dashboard'
     | '/hackathon'
     | '/host'
     | '/org-login'
@@ -310,10 +352,13 @@ export interface FileRouteTypes {
     | '/admin/hackathons'
     | '/admin/registrations'
     | '/communities/$slug'
+    | '/dashboard/team'
     | '/events/$slug'
+    | '/hackathon/register'
     | '/admin'
     | '/communities'
     | '/events'
+    | '/hackathon/problems/$problemId'
   id:
     | '__root__'
     | '/'
@@ -324,6 +369,7 @@ export interface FileRouteTypes {
     | '/communities'
     | '/community'
     | '/contact'
+    | '/dashboard'
     | '/events'
     | '/hackathon'
     | '/host'
@@ -339,10 +385,13 @@ export interface FileRouteTypes {
     | '/admin/hackathons'
     | '/admin/registrations'
     | '/communities/$slug'
+    | '/dashboard/team'
     | '/events/$slug'
+    | '/hackathon/register'
     | '/admin/'
     | '/communities/'
     | '/events/'
+    | '/hackathon/problems/$problemId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -354,8 +403,9 @@ export interface RootRouteChildren {
   CommunitiesRoute: typeof CommunitiesRouteWithChildren
   CommunityRoute: typeof CommunityRoute
   ContactRoute: typeof ContactRoute
+  DashboardRoute: typeof DashboardRouteWithChildren
   EventsRoute: typeof EventsRouteWithChildren
-  HackathonRoute: typeof HackathonRoute
+  HackathonRoute: typeof HackathonRouteWithChildren
   HostRoute: typeof HostRoute
   OrgLoginRoute: typeof OrgLoginRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -420,6 +470,13 @@ declare module '@tanstack/react-router' {
       path: '/events'
       fullPath: '/events'
       preLoaderRoute: typeof EventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -499,12 +556,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/hackathon/register': {
+      id: '/hackathon/register'
+      path: '/register'
+      fullPath: '/hackathon/register'
+      preLoaderRoute: typeof HackathonRegisterRouteImport
+      parentRoute: typeof HackathonRoute
+    }
     '/events/$slug': {
       id: '/events/$slug'
       path: '/$slug'
       fullPath: '/events/$slug'
       preLoaderRoute: typeof EventsSlugRouteImport
       parentRoute: typeof EventsRoute
+    }
+    '/dashboard/team': {
+      id: '/dashboard/team'
+      path: '/team'
+      fullPath: '/dashboard/team'
+      preLoaderRoute: typeof DashboardTeamRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/communities/$slug': {
       id: '/communities/$slug'
@@ -555,6 +626,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAnalyticsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/hackathon/problems/$problemId': {
+      id: '/hackathon/problems/$problemId'
+      path: '/problems/$problemId'
+      fullPath: '/hackathon/problems/$problemId'
+      preLoaderRoute: typeof HackathonProblemsProblemIdRouteImport
+      parentRoute: typeof HackathonRoute
+    }
   }
 }
 
@@ -594,6 +672,18 @@ const CommunitiesRouteWithChildren = CommunitiesRoute._addFileChildren(
   CommunitiesRouteChildren,
 )
 
+interface DashboardRouteChildren {
+  DashboardTeamRoute: typeof DashboardTeamRoute
+}
+
+const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardTeamRoute: DashboardTeamRoute,
+}
+
+const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
+  DashboardRouteChildren,
+)
+
 interface EventsRouteChildren {
   EventsSlugRoute: typeof EventsSlugRoute
   EventsIndexRoute: typeof EventsIndexRoute
@@ -607,6 +697,20 @@ const EventsRouteChildren: EventsRouteChildren = {
 const EventsRouteWithChildren =
   EventsRoute._addFileChildren(EventsRouteChildren)
 
+interface HackathonRouteChildren {
+  HackathonRegisterRoute: typeof HackathonRegisterRoute
+  HackathonProblemsProblemIdRoute: typeof HackathonProblemsProblemIdRoute
+}
+
+const HackathonRouteChildren: HackathonRouteChildren = {
+  HackathonRegisterRoute: HackathonRegisterRoute,
+  HackathonProblemsProblemIdRoute: HackathonProblemsProblemIdRoute,
+}
+
+const HackathonRouteWithChildren = HackathonRoute._addFileChildren(
+  HackathonRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
@@ -616,8 +720,9 @@ const rootRouteChildren: RootRouteChildren = {
   CommunitiesRoute: CommunitiesRouteWithChildren,
   CommunityRoute: CommunityRoute,
   ContactRoute: ContactRoute,
+  DashboardRoute: DashboardRouteWithChildren,
   EventsRoute: EventsRouteWithChildren,
-  HackathonRoute: HackathonRoute,
+  HackathonRoute: HackathonRouteWithChildren,
   HostRoute: HostRoute,
   OrgLoginRoute: OrgLoginRoute,
   PrivacyRoute: PrivacyRoute,

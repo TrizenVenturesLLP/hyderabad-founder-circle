@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Check, Copy, ChevronDown, ChevronUp, Layers, Target } from "lucide-react";
 import { toast } from "sonner";
@@ -12,11 +13,12 @@ export function ProblemStatementCard({ statement, domainName }: ProblemStatement
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(true);
 
-  const difficultyStyles = {
-    Beginner: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
-    Intermediate: "bg-amber-500/10 text-amber-700 border-amber-500/20",
-    Advanced: "bg-purple-500/10 text-purple-700 border-purple-500/20",
-  }[statement.difficulty] || "bg-muted text-foreground border-border";
+  const difficultyStyles =
+    {
+      Beginner: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
+      Intermediate: "bg-amber-500/10 text-amber-700 border-amber-500/20",
+      Advanced: "bg-purple-500/10 text-purple-700 border-purple-500/20",
+    }[statement.difficulty] || "bg-muted text-foreground border-border";
 
   function handleCopyId() {
     navigator.clipboard.writeText(`${statement.id}: ${statement.title}`);
@@ -26,8 +28,14 @@ export function ProblemStatementCard({ statement, domainName }: ProblemStatement
   }
 
   return (
-    <article className="group flex flex-col justify-between rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:border-primary/40 hover:shadow-card">
-      <div>
+    <article className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:border-primary/40 hover:shadow-card">
+      <Link
+        to="/hackathon/problems/$problemId"
+        params={{ problemId: statement.id }}
+        aria-label={`View full details for ${statement.title}`}
+        className="absolute inset-0 z-0 rounded-2xl"
+      />
+      <div className="relative z-10 pointer-events-none">
         {/* Header Badges */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -50,9 +58,13 @@ export function ProblemStatementCard({ statement, domainName }: ProblemStatement
               type="button"
               onClick={handleCopyId}
               title="Copy ID & Title"
-              className="inline-flex size-7 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:border-primary hover:text-primary active:scale-95"
+              className="pointer-events-auto inline-flex size-7 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:border-primary hover:text-primary active:scale-95"
             >
-              {copied ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5" />}
+              {copied ? (
+                <Check className="size-3.5 text-emerald-600" />
+              ) : (
+                <Copy className="size-3.5" />
+              )}
             </button>
           </div>
         </div>
@@ -73,7 +85,7 @@ export function ProblemStatementCard({ statement, domainName }: ProblemStatement
             <button
               type="button"
               onClick={() => setExpanded(!expanded)}
-              className="flex w-full items-center justify-between text-xs font-semibold text-foreground/80 hover:text-foreground"
+              className="pointer-events-auto flex w-full items-center justify-between text-xs font-semibold text-foreground/80 hover:text-foreground"
             >
               <span className="inline-flex items-center gap-1.5">
                 <Target className="size-3.5 text-primary" />
@@ -97,7 +109,7 @@ export function ProblemStatementCard({ statement, domainName }: ProblemStatement
       </div>
 
       {/* Footer Info */}
-      <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-3 text-[11px] text-muted-foreground">
+      <div className="relative z-10 mt-4 flex items-center justify-between border-t border-border/50 pt-3 text-[11px] text-muted-foreground">
         <span>Domain: {domainName}</span>
         <button
           type="button"

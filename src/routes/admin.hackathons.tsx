@@ -9,6 +9,10 @@ import {
   X,
   FileText,
   Upload,
+  CalendarClock,
+  ArrowLeft,
+  Users,
+  Eye,
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
@@ -25,6 +29,19 @@ import {
   getHackathonDetails,
 } from "@/lib/hackathon-storage";
 import type { ProblemDifficulty, ProblemStatement } from "@/lib/hackathon";
+import {
+  activateHackathonUser,
+  getHackathonRegisteredUsers,
+  removeHackathonUser,
+  suspendHackathonUser,
+  getHackathonReleaseTimer as getServerReleaseTimer,
+  saveHackathonReleaseTimer as saveServerReleaseTimer,
+  clearHackathonReleaseTimer,
+  getHackathonProblemStatements,
+  saveHackathonProblemStatement,
+  deleteHackathonProblemStatement,
+  type HackathonRegisteredUser,
+} from "@/lib/hackathon-api";
 
 export const Route = createFileRoute("/admin/hackathons")({
   component: AdminHackathonsPage,
@@ -52,7 +69,47 @@ const emptyForm: FormState = {
   deliverablesText: "",
 };
 
+type HackathonCard = {
+  id: string;
+  title: string;
+  date: string;
+  venue: string;
+  status: "Upcoming" | "Ongoing" | "Completed";
+  prizePool: string;
+};
+
+const hackathons: HackathonCard[] = [
+  {
+    id: "ai-hack-x-mrdu-2026",
+    title: "AI HACK X MRDU 2026",
+    date: "October 3–4, 2026",
+    venue: "Malla Reddy Deemed to be University",
+    status: "Upcoming",
+    prizePool: "₹2,00,000",
+  },
+];
+
+type RegisteredUserWithStatus = HackathonRegisteredUser & {
+  status?: "active" | "suspended";
+};
+
+function toDateTimeInputValue(isoValue: string | null): string {
+  if (!isoValue) return "";
+  const date = new Date(isoValue);
+  if (Number.isNaN(date.getTime())) return "";
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+
 function AdminHackathonsPage() {
+  const [selectedHackathon, setSelectedHackathon] = useState<HackathonCard | null>(null);
+  const [showRegisteredStudents, setShowRegisteredStudents] = useState(false);
+  const [registeredUsers, setRegisteredUsers] = useState<RegisteredUserWithStatus[]>([]);
+  const [registeredUsersLoading, setRegisteredUsersLoading] = useState(false);
+  const [registeredUsersError, setRegisteredUsersError] = useState<string | null>(null);
+  const [registeredSearch, setRegisteredSearch] = useState("");
+  const [registeredActionId, setRegisteredActionId] = useState<string | null>(null);
+
   const details = getHackathonDetails();
   const domains = details.domains;
 
@@ -60,6 +117,8 @@ function AdminHackathonsPage() {
   const [selectedDomain, setSelectedDomain] = useState<string>("ui-ux");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
+  const [releaseAt, setReleaseAt] = useState<string | null>(null);
+  const [releaseAtInput, setReleaseAtInput] = useState<string>("");
 
   // Single Add / Edit Modal
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -74,13 +133,178 @@ function AdminHackathonsPage() {
   const [bulkDifficulty, setBulkDifficulty] = useState<ProblemDifficulty>("Intermediate");
 
   useEffect(() => {
-    function load() {
-      setStatements(getAllProblemStatements());
+    async function load() {
+      try {
+        const data = await getHackathonProblemStatements();
+        setStatements(data.statements || []);
+      } catch (error) {
+        console.error("Failed to load problem statements:", error);
+        toast.error("Failed to load problem statements");
+      }
+
+      try {
+        const timer = await getServerReleaseTimer();
+        setReleaseAt(timer.releaseAt);
+        setReleaseAtInput(toDateTimeInputValue(timer.releaseAt));
+      } catch (error) {
+        console.error("Failed to load release timer:", error);
+      }
     }
-    load();
-    const unsubscribe = subscribeToHackathonData(load);
+
+    void load();
+
+    const unsubscribe = subscribeToHackathonData(() => {
+      // Keep this subscription for now.
+      // Problem statements are now loaded from the backend.
+    });
+
     return () => unsubscribe();
   }, []);
+
+  async function handleSaveReleaseTimer(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!releaseAtInput) {
+      toast.error("Choose a release date and time");
+      return;
+    }
+
+    const releaseDate = new Date(releaseAtInput);
+
+    if (Number.isNaN(releaseDate.getTime())) {
+      toast.error("Choose a valid release date and time");
+      return;
+    }
+
+    try {
+      const timer = await saveServerReleaseTimer(releaseDate.toISOString());
+
+      setReleaseAt(timer.releaseAt);
+      toast.success("Problem statement release timer saved");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to save release timer");
+    }
+  }
+
+  async function handleClearReleaseTimer() {
+    try {
+      await clearHackathonReleaseTimer();
+
+      setReleaseAt(null);
+      setReleaseAtInput("");
+
+      toast.success("Problem statements are now available");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to release problem statements");
+    }
+  }
+
+  async function handleResetReleaseTimer() {
+    if (!window.confirm("Reset the problem statement release timer?")) return;
+
+    try {
+      await clearHackathonReleaseTimer();
+
+      setReleaseAt(null);
+      setReleaseAtInput("");
+
+      toast.success("Problem statement release timer reset");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to reset problem statement release timer");
+    }
+  }
+
+  async function handleOpenRegisteredStudents() {
+    setShowRegisteredStudents(true);
+    setRegisteredUsersLoading(true);
+    setRegisteredUsersError(null);
+
+    try {
+      const data = await getHackathonRegisteredUsers();
+      setRegisteredUsers(data.users || []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not load registered teams.";
+      setRegisteredUsersError(message);
+      toast.error(message);
+    } finally {
+      setRegisteredUsersLoading(false);
+    }
+  }
+
+  async function handleSuspendTeam(team: RegisteredUserWithStatus) {
+    if (!window.confirm(`Suspend team "${team.team_name}"?`)) return;
+
+    setRegisteredActionId(team._id);
+    try {
+      await suspendHackathonUser(team._id);
+      toast.success("Team suspended successfully");
+      await handleOpenRegisteredStudents();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not suspend team.");
+    } finally {
+      setRegisteredActionId(null);
+    }
+  }
+
+  async function handleActivateTeam(team: RegisteredUserWithStatus) {
+    setRegisteredActionId(team._id);
+    try {
+      await activateHackathonUser(team._id);
+      toast.success("Team reactivated successfully");
+      await handleOpenRegisteredStudents();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not reactivate team.");
+    } finally {
+      setRegisteredActionId(null);
+    }
+  }
+
+  async function handleRemoveTeam(team: RegisteredUserWithStatus) {
+    if (!window.confirm(`Remove team "${team.team_name}" permanently? This cannot be undone.`)) {
+      return;
+    }
+
+    setRegisteredActionId(team._id);
+    try {
+      await removeHackathonUser(team._id);
+      toast.success("Team removed successfully");
+      await handleOpenRegisteredStudents();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not remove team.");
+    } finally {
+      setRegisteredActionId(null);
+    }
+  }
+
+  const filteredRegisteredUsers = useMemo(() => {
+    const query = registeredSearch.trim().toLowerCase();
+    if (!query) return registeredUsers;
+
+    return registeredUsers.filter((team) => {
+      const memberText = team.members
+        .map((member) => `${member.full_name} ${member.email} ${member.phone}`)
+        .join(" ");
+
+      return `${team.team_name} ${team.lead_name} ${team.email} ${team.phone} ${
+        team.problem_statement_id || ""
+      } ${memberText}`
+        .toLowerCase()
+        .includes(query);
+    });
+  }, [registeredUsers, registeredSearch]);
+
+  const registeredStats = useMemo(() => {
+    const selected = registeredUsers.filter((team) => Boolean(team.problem_statement_id)).length;
+
+    return {
+      total: registeredUsers.length,
+      selected,
+      pending: registeredUsers.length - selected,
+    };
+  }, [registeredUsers]);
 
   const domainStatements = useMemo(() => {
     return statements.filter((s) => s.domainId === selectedDomain);
@@ -96,7 +320,8 @@ function AdminHackathonsPage() {
         (item.category && item.category.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchesDifficulty =
-        difficultyFilter === "all" || item.difficulty.toLowerCase() === difficultyFilter.toLowerCase();
+        difficultyFilter === "all" ||
+        item.difficulty.toLowerCase() === difficultyFilter.toLowerCase();
 
       return matchesSearch && matchesDifficulty;
     });
@@ -125,50 +350,54 @@ function AdminHackathonsPage() {
     setIsModalOpen(true);
   }
 
-  function handleSave(e: React.FormEvent) {
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault();
+
     if (!formData.title.trim()) {
       toast.error("Title is required");
       return;
     }
+
     if (!formData.description.trim()) {
       toast.error("Description is required");
       return;
     }
 
+    if (!formData.id?.trim()) {
+      toast.error("Problem statement ID is required");
+      return;
+    }
+
     const deliverables = formData.deliverablesText
       .split("\n")
-      .map((l) => l.trim())
+      .map((line) => line.trim())
       .filter(Boolean);
 
-    if (editingId) {
-      const updated = updateProblemStatement({
-        id: editingId,
+    try {
+      await saveHackathonProblemStatement({
+        id: formData.id.trim(),
         domainId: formData.domainId,
-        title: formData.title,
-        category: formData.category || "General",
+        title: formData.title.trim(),
+        category: formData.category.trim() || "General",
         difficulty: formData.difficulty,
-        description: formData.description,
+        description: formData.description.trim(),
         deliverables,
       });
-      if (updated) {
-        toast.success(`Problem statement ${editingId} updated`);
-        setIsModalOpen(false);
-      } else {
-        toast.error("Failed to update statement");
-      }
-    } else {
-      const created = addProblemStatement({
-        id: formData.id,
-        domainId: formData.domainId,
-        title: formData.title,
-        category: formData.category || "General",
-        difficulty: formData.difficulty,
-        description: formData.description,
-        deliverables,
-      });
-      toast.success(`Created problem statement ${created.id}`);
+
+      const data = await getHackathonProblemStatements();
+      setStatements(data.statements || []);
+
+      toast.success(
+        editingId
+          ? `Problem statement ${editingId} updated`
+          : "Problem statement created successfully",
+      );
+
       setIsModalOpen(false);
+    } catch (error) {
+      console.error("Save problem statement error:", error);
+
+      toast.error(error instanceof Error ? error.message : "Failed to save problem statement");
     }
   }
 
@@ -184,10 +413,18 @@ function AdminHackathonsPage() {
       .map((b) => b.trim())
       .filter(Boolean);
 
-    const parsedItems: { domainId: string; title: string; description: string; difficulty: ProblemDifficulty }[] = [];
+    const parsedItems: {
+      domainId: string;
+      title: string;
+      description: string;
+      difficulty: ProblemDifficulty;
+    }[] = [];
 
     for (const block of rawBlocks) {
-      const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
+      const lines = block
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean);
       if (lines.length === 0) continue;
       const title = lines[0].replace(/^(\d+[\.\)]|\-|\*)\s*/, "");
       const description = lines.slice(1).join(" ") || title;
@@ -210,39 +447,443 @@ function AdminHackathonsPage() {
     setBulkText("");
   }
 
-  function handleDelete(id: string) {
-    const success = deleteProblemStatement(id);
-    if (success) {
+  async function handleDelete(id: string) {
+    try {
+      await deleteHackathonProblemStatement(id);
+
+      const data = await getHackathonProblemStatements();
+      setStatements(data.statements || []);
+
       toast.success(`Deleted statement ${id}`);
       setDeleteConfirmId(null);
-    } else {
-      toast.error("Could not delete statement");
+    } catch (error) {
+      console.error("Delete problem statement error:", error);
+
+      toast.error(error instanceof Error ? error.message : "Could not delete statement");
     }
   }
 
   function handleReset() {
-    if (window.confirm("Reset problem statements to the starter set? This will replace current entries.")) {
+    if (
+      window.confirm(
+        "Reset problem statements to the starter set? This will replace current entries.",
+      )
+    ) {
       resetProblemStatementsToStarter();
       toast.success("Problem statements reset to starter templates");
     }
   }
 
+  if (!selectedHackathon) {
+    return (
+      <div className="space-y-6 pl-4">
+        <AdminPageHeader
+          title="Hackathons"
+          description="Select a hackathon to manage its problem statements."
+        />
+
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {hackathons.map((hackathon) => (
+            <button
+              key={hackathon.id}
+              type="button"
+              onClick={() => setSelectedHackathon(hackathon)}
+              className="group rounded-xl border border-border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+            >
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-bold text-foreground">{hackathon.title}</h2>
+                  <p className="mt-1 text-xs text-muted-foreground">{hackathon.date}</p>
+                </div>
+
+                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                  {hackathon.status}
+                </span>
+              </div>
+
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>📍 {hackathon.venue}</p>
+                <p>🏆 Prize Pool: {hackathon.prizePool}</p>
+              </div>
+
+              <div className="mt-5 text-sm font-semibold text-primary">Open Hackathon →</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (showRegisteredStudents) {
+    return (
+      <div className="space-y-6 pl-4">
+        <AdminPageHeader
+          title="AI HACK X MRDU — Registered Teams"
+          description="View registered teams, team leads, members, and problem statement selections."
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowRegisteredStudents(false)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted"
+              >
+                <ArrowLeft className="size-3.5" />
+                Back to Problem Statements
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenRegisteredStudents}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-95"
+              >
+                <RotateCcw className="size-3.5" />
+                Refresh
+              </button>
+            </div>
+          }
+        />
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <AdminPanel className="rounded-xl border-border bg-white p-4">
+            <p className="text-xs font-medium text-muted-foreground">Total Teams</p>
+            <p className="mt-1 text-2xl font-bold text-foreground">{registeredStats.total}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">Registered teams</p>
+          </AdminPanel>
+
+          <AdminPanel className="rounded-xl border-border bg-white p-4">
+            <p className="text-xs font-medium text-muted-foreground">Problem Selected</p>
+            <p className="mt-1 text-2xl font-bold text-primary">{registeredStats.selected}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">Confirmed challenges</p>
+          </AdminPanel>
+
+          <AdminPanel className="rounded-xl border-border bg-white p-4">
+            <p className="text-xs font-medium text-muted-foreground">Awaiting Selection</p>
+            <p className="mt-1 text-2xl font-bold text-foreground">{registeredStats.pending}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">No problem selected</p>
+          </AdminPanel>
+        </div>
+
+        <AdminPanel className="rounded-xl p-4">
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={registeredSearch}
+              onChange={(e) => setRegisteredSearch(e.target.value)}
+              placeholder="Search team, lead, email, phone, member, or problem ID..."
+              className="w-full rounded-lg border border-border bg-white py-2.5 pl-9 pr-9 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
+            />
+            {registeredSearch && (
+              <button
+                type="button"
+                onClick={() => setRegisteredSearch("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
+        </AdminPanel>
+
+        {registeredUsersLoading ? (
+          <AdminPanel className="rounded-xl p-10 text-center">
+            <Users className="mx-auto size-7 animate-pulse text-primary" />
+            <p className="mt-3 text-sm font-semibold text-foreground">
+              Loading registered teams...
+            </p>
+          </AdminPanel>
+        ) : registeredUsersError ? (
+          <AdminPanel className="rounded-xl border-destructive/20 bg-destructive/5 p-8 text-center">
+            <p className="text-sm font-semibold text-destructive">
+              Could not load registered teams
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">{registeredUsersError}</p>
+            <button
+              type="button"
+              onClick={handleOpenRegisteredStudents}
+              className="mt-4 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:opacity-95"
+            >
+              Try Again
+            </button>
+          </AdminPanel>
+        ) : filteredRegisteredUsers.length === 0 ? (
+          <AdminPanel className="rounded-xl p-10 text-center">
+            <Users className="mx-auto size-8 text-muted-foreground" />
+            <p className="mt-3 text-sm font-semibold text-foreground">
+              {registeredUsers.length === 0 ? "No registered teams yet" : "No matching teams"}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {registeredUsers.length === 0
+                ? "Teams registered for the hackathon will appear here."
+                : "Try a different search term."}
+            </p>
+          </AdminPanel>
+        ) : (
+          <AdminPanel className="overflow-hidden rounded-xl">
+            <div className="flex items-center justify-between border-b border-border bg-muted/40 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <Users className="size-4 text-primary" />
+                <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                  Registered Teams
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  ({filteredRegisteredUsers.length})
+                </span>
+              </div>
+            </div>
+
+            <div className="divide-y divide-border">
+              {filteredRegisteredUsers.map((team) => (
+                <details key={team._id} className="group">
+                  <summary className="flex cursor-pointer list-none flex-col gap-3 px-4 py-4 transition-colors hover:bg-muted/30 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <Users className="size-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="truncate text-sm font-bold text-foreground">
+                            {team.team_name}
+                          </h3>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                              team.status === "suspended"
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-emerald-100 text-emerald-700"
+                            }`}
+                          >
+                            {team.status === "suspended" ? "Suspended" : "Active"}
+                          </span>
+
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                              team.problem_statement_id
+                                ? "bg-primary/10 text-primary"
+                                : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            {team.problem_statement_id ? "Problem Selected" : "Awaiting Selection"}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Lead:{" "}
+                          <span className="font-medium text-foreground">{team.lead_name}</span>
+                          {" · "}
+                          {team.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
+                      <span>
+                        {team.members.length} member
+                        {team.members.length === 1 ? "" : "s"}
+                      </span>
+                      <Eye className="size-4 transition-transform group-open:rotate-180" />
+                    </div>
+                  </summary>
+
+                  <div className="border-t border-border bg-muted/10 px-4 py-4">
+                    <div className="grid gap-4 lg:grid-cols-3">
+                      <div className="rounded-lg border border-border bg-white p-4">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          Team Lead
+                        </p>
+                        <p className="mt-2 text-sm font-bold text-foreground">{team.lead_name}</p>
+                        <p className="mt-1 break-all text-xs text-muted-foreground">{team.email}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{team.phone}</p>
+                      </div>
+
+                      <div className="rounded-lg border border-border bg-white p-4">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          Problem Statement
+                        </p>
+                        <p className="mt-2 text-sm font-bold text-foreground">
+                          {team.problem_statement_id || "Not selected"}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {team.problem_statement_id
+                            ? "Team lead has confirmed a problem statement."
+                            : "Team is still awaiting problem selection."}
+                        </p>
+                      </div>
+
+                      <div className="rounded-lg border border-border bg-white p-4">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          Registration
+                        </p>
+                        <p className="mt-2 text-sm font-bold text-foreground">
+                          {team.createdAt ? new Date(team.createdAt).toLocaleDateString() : "—"}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {team.members.length} registered member
+                          {team.members.length === 1 ? "" : "s"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 rounded-lg border border-border bg-white">
+                      <div className="border-b border-border px-4 py-3">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          Team Members
+                        </p>
+                      </div>
+
+                      <div className="divide-y divide-border">
+                        {team.members.map((member, index) => (
+                          <div
+                            key={`${team._id}-${member.email}-${index}`}
+                            className="grid gap-1 px-4 py-3 text-xs sm:grid-cols-3 sm:gap-4"
+                          >
+                            <p className="font-semibold text-foreground">{member.full_name}</p>
+                            <p className="break-all text-muted-foreground">{member.email}</p>
+                            <p className="text-muted-foreground">{member.phone}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 rounded-lg border border-border bg-white p-4">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Project Submission
+                      </p>
+
+                      {team.submission?.github_repo ||
+                      team.submission?.description ||
+                      team.submission?.ppt_url ||
+                      team.submission?.video_url ? (
+                        <div className="mt-3 space-y-3">
+                          {team.submission.github_repo && (
+                            <div>
+                              <p className="text-xs font-semibold text-foreground">
+                                GitHub Repository
+                              </p>
+                              <a
+                                href={team.submission.github_repo}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-1 block break-all text-xs text-primary hover:underline"
+                              >
+                                {team.submission.github_repo}
+                              </a>
+                            </div>
+                          )}
+
+                          {team.submission.description && (
+                            <div>
+                              <p className="text-xs font-semibold text-foreground">Description</p>
+                              <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground">
+                                {team.submission.description}
+                              </p>
+                            </div>
+                          )}
+
+                          {team.submission.ppt_url && (
+                            <div>
+                              <p className="text-xs font-semibold text-foreground">Presentation</p>
+                              <a
+                                href={team.submission.ppt_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-1 inline-flex text-xs font-semibold text-primary hover:underline"
+                              >
+                                View PPT / PDF
+                              </a>
+                            </div>
+                          )}
+
+                          {team.submission.video_url && (
+                            <div>
+                              <p className="text-xs font-semibold text-foreground">
+                                Recorded Video
+                              </p>
+                              <a
+                                href={team.submission.video_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-1 inline-flex text-xs font-semibold text-primary hover:underline"
+                              >
+                                View Recorded Video
+                              </a>
+                            </div>
+                          )}
+
+                          {team.submission.submitted_at && (
+                            <p className="pt-1 text-[11px] text-muted-foreground">
+                              Submitted: {new Date(team.submission.submitted_at).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          No project submitted yet.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
+                      {team.status === "suspended" ? (
+                        <button
+                          type="button"
+                          disabled={registeredActionId === team._id}
+                          onClick={() => handleActivateTeam(team)}
+                          className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {registeredActionId === team._id ? "Please wait..." : "Reactivate"}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={registeredActionId === team._id}
+                          onClick={() => handleSuspendTeam(team)}
+                          className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {registeredActionId === team._id ? "Please wait..." : "Suspend"}
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        disabled={registeredActionId === team._id}
+                        onClick={() => handleRemoveTeam(team)}
+                        className="rounded-lg border border-destructive/20 bg-white px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                </details>
+              ))}
+            </div>
+          </AdminPanel>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pl-4">
       {/* Top Header */}
       <AdminPageHeader
         title="AI HACK X MRDU — Problem Statements"
         description="Add and manage live challenge problem statements for the 4 competition tracks."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Link
-              to="/hackathon"
-              target="_blank"
+            <button
+              type="button"
+              onClick={() => setSelectedHackathon(null)}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted"
             >
-              <ExternalLink className="size-3.5" />
-              View Public Page
-            </Link>
+              <ArrowLeft className="size-3.5" />
+              Back to Hackathons
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenRegisteredStudents}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted"
+            >
+              <Users className="size-3.5" />
+              Registered Students
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -274,6 +915,62 @@ function AdminHackathonsPage() {
           </div>
         }
       />
+
+      <AdminPanel className="rounded-xl border-primary/20 bg-primary/5 p-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <CalendarClock className="size-4 text-primary" />
+              <h2 className="text-sm font-bold text-foreground">Problem Statement Release</h2>
+            </div>
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+              Keep problem statements hidden from students until the scheduled time.
+            </p>
+            <p className="mt-2 text-xs font-semibold text-primary">
+              {releaseAt
+                ? `Scheduled for ${new Date(releaseAt).toLocaleString()}`
+                : "No timer set — problem statements are available"}
+            </p>
+          </div>
+
+          <form
+            onSubmit={handleSaveReleaseTimer}
+            className="flex flex-col gap-2 sm:flex-row sm:items-end"
+          >
+            <label className="text-xs font-medium text-foreground">
+              Release date and time
+              <input
+                type="datetime-local"
+                value={releaseAtInput}
+                onChange={(e) => setReleaseAtInput(e.target.value)}
+                className="mt-1 block rounded-lg border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden"
+              />
+            </label>
+            <button
+              type="submit"
+              className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-95"
+            >
+              Save Timer
+            </button>
+            {releaseAt && (
+              <button
+                type="button"
+                onClick={handleClearReleaseTimer}
+                className="rounded-lg border border-border bg-white px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted"
+              >
+                Release Now
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleResetReleaseTimer}
+              className="rounded-lg border border-destructive/30 bg-white px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10"
+            >
+              Reset Timer
+            </button>
+          </form>
+        </div>
+      </AdminPanel>
 
       {/* Domain Selection Tabs (4 Tracks) */}
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
@@ -457,7 +1154,8 @@ function AdminHackathonsPage() {
           </div>
         ) : (
           <div className="p-8 text-center text-xs text-muted-foreground">
-            No problem statements found in this track. Click "Add Statement" or "Bulk Add" to create challenges.
+            No problem statements found in this track. Click "Add Statement" or "Bulk Add" to create
+            challenges.
           </div>
         )}
       </AdminPanel>
@@ -512,7 +1210,9 @@ function AdminHackathonsPage() {
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-medium text-foreground">Sub-Category / Topic</label>
+                  <label className="block text-xs font-medium text-foreground">
+                    Sub-Category / Topic
+                  </label>
                   <input
                     type="text"
                     value={formData.category}
@@ -523,7 +1223,9 @@ function AdminHackathonsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-foreground">Difficulty Level</label>
+                  <label className="block text-xs font-medium text-foreground">
+                    Difficulty Level
+                  </label>
                   <select
                     value={formData.difficulty}
                     onChange={(e) =>
@@ -617,7 +1319,9 @@ function AdminHackathonsPage() {
             <form onSubmit={handleBulkImport} className="mt-4 space-y-4">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-medium text-foreground">Target Domain Track</label>
+                  <label className="block text-xs font-medium text-foreground">
+                    Target Domain Track
+                  </label>
                   <select
                     value={bulkDomain}
                     onChange={(e) => setBulkDomain(e.target.value)}
@@ -632,7 +1336,9 @@ function AdminHackathonsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-foreground">Default Difficulty</label>
+                  <label className="block text-xs font-medium text-foreground">
+                    Default Difficulty
+                  </label>
                   <select
                     value={bulkDifficulty}
                     onChange={(e) => setBulkDifficulty(e.target.value as ProblemDifficulty)}
@@ -650,7 +1356,8 @@ function AdminHackathonsPage() {
                   Paste Problem Statements (Separated by empty lines)
                 </label>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  First line of each block becomes the Title, subsequent lines become the Description.
+                  First line of each block becomes the Title, subsequent lines become the
+                  Description.
                 </p>
                 <textarea
                   required

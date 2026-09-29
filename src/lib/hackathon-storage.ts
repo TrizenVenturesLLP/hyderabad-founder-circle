@@ -3,10 +3,19 @@ import {
   POSTER_HACKATHON_DETAILS,
   STARTER_PROBLEM_STATEMENTS,
 } from "./hackathon-data";
-import type { HackathonDetails, HackathonDomain, ProblemStatement } from "./hackathon";
+import type {
+  HackathonDetails,
+  HackathonDomain,
+  HackathonReleaseTimer,
+  HackathonStudentProfile,
+  ProblemStatement,
+} from "./hackathon";
 
 const STORAGE_KEY_STATEMENTS = "trizen_hackathon_problem_statements";
 const STORAGE_KEY_DETAILS = "trizen_hackathon_details";
+const STORAGE_KEY_RELEASE_TIMER = "trizen_hackathon_release_timer";
+const STORAGE_KEY_SELECTED_STATEMENT = "trizen_hackathon_selected_statement";
+const STORAGE_KEY_STUDENT_PROFILE = "trizen_hackathon_student_profile";
 const CHANGE_EVENT_NAME = "trizen_hackathon_data_change";
 
 function isBrowser(): boolean {
@@ -53,6 +62,79 @@ export function saveHackathonDetails(details: Partial<HackathonDetails>): Hackat
     }
   }
   return updated;
+}
+
+export function getHackathonReleaseTimer(): HackathonReleaseTimer {
+  if (!isBrowser()) return { releaseAt: null };
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_RELEASE_TIMER);
+    if (!raw) return { releaseAt: null };
+    const parsed = JSON.parse(raw) as Partial<HackathonReleaseTimer>;
+    return { releaseAt: typeof parsed.releaseAt === "string" ? parsed.releaseAt : null };
+  } catch {
+    return { releaseAt: null };
+  }
+}
+
+export function saveHackathonReleaseTimer(releaseAt: string | null): HackathonReleaseTimer {
+  const timer = { releaseAt } satisfies HackathonReleaseTimer;
+  if (isBrowser()) {
+    try {
+      localStorage.setItem(STORAGE_KEY_RELEASE_TIMER, JSON.stringify(timer));
+      window.dispatchEvent(new CustomEvent(CHANGE_EVENT_NAME));
+    } catch (err) {
+      console.error("Failed to save hackathon release timer", err);
+    }
+  }
+  return timer;
+}
+
+export function areProblemStatementsReleased(now = Date.now()): boolean {
+  const releaseAt = getHackathonReleaseTimer().releaseAt;
+  return !releaseAt || Date.parse(releaseAt) <= now;
+}
+
+export function getSelectedProblemStatementId(): string | null {
+  if (!isBrowser()) return null;
+  return localStorage.getItem(STORAGE_KEY_SELECTED_STATEMENT);
+}
+
+export function saveSelectedProblemStatementId(id: string): void {
+  if (!isBrowser()) return;
+  try {
+    localStorage.setItem(STORAGE_KEY_SELECTED_STATEMENT, id);
+    window.dispatchEvent(new CustomEvent(CHANGE_EVENT_NAME));
+  } catch (err) {
+    console.error("Failed to save selected problem statement", err);
+  }
+}
+
+export function getHackathonStudentProfile(): HackathonStudentProfile | null {
+  if (!isBrowser()) return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_STUDENT_PROFILE);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<HackathonStudentProfile>;
+    if (
+      typeof parsed.name !== "string" ||
+      typeof parsed.mobile !== "string" ||
+      typeof parsed.email !== "string"
+    ) {
+      return null;
+    }
+    return { name: parsed.name, mobile: parsed.mobile, email: parsed.email };
+  } catch {
+    return null;
+  }
+}
+
+export function saveHackathonStudentProfile(profile: HackathonStudentProfile): void {
+  if (!isBrowser()) return;
+  try {
+    localStorage.setItem(STORAGE_KEY_STUDENT_PROFILE, JSON.stringify(profile));
+  } catch (err) {
+    console.error("Failed to save hackathon student profile", err);
+  }
 }
 
 export function getAllProblemStatements(): ProblemStatement[] {
@@ -202,4 +284,11 @@ export function subscribeToHackathonData(callback: () => void): () => void {
     window.removeEventListener(CHANGE_EVENT_NAME, handler);
     window.removeEventListener("storage", handler);
   };
+}
+
+export function logoutHackathonStudent(): void {
+  if (!isBrowser()) return;
+
+  localStorage.removeItem(STORAGE_KEY_STUDENT_PROFILE);
+  localStorage.removeItem(STORAGE_KEY_SELECTED_STATEMENT);
 }

@@ -59,9 +59,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
           This page didn't load
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Try again, or head back home.
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">Try again, or head back home.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
@@ -172,7 +170,9 @@ function RootComponent() {
     pathname.startsWith("/admin") ||
     pathname.startsWith("/admin-login") ||
     pathname === "/org-login" ||
-    pathname === "/host";
+    pathname === "/host" ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/hackathon/problems/");
 
   useEffect(() => {
     if (

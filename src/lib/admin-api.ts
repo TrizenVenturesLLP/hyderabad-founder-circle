@@ -88,13 +88,10 @@ export async function approveOrgApplication(id: string) {
 }
 
 export async function rejectOrgApplication(id: string, reason?: string) {
-  return adminFetch<{ ok: boolean }>(
-    `/api/admin/org-applications/${id}/reject`,
-    {
-      method: "POST",
-      body: JSON.stringify({ reason: reason || "" }),
-    },
-  );
+  return adminFetch<{ ok: boolean }>(`/api/admin/org-applications/${id}/reject`, {
+    method: "POST",
+    body: JSON.stringify({ reason: reason || "" }),
+  });
 }
 
 export type OrgApplicationItem = {
@@ -134,24 +131,16 @@ export async function fetchAdminRsvps(params?: {
 
 export async function fetchAdminContacts(q?: string) {
   const qs = q ? `?q=${encodeURIComponent(q)}` : "";
-  return adminFetch<{ items: AdminContact[]; total: number }>(
-    `/api/admin/contacts${qs}`,
-  );
+  return adminFetch<{ items: AdminContact[]; total: number }>(`/api/admin/contacts${qs}`);
 }
 
 export async function fetchAdminOrganizations() {
-  return adminFetch<{ items: AdminOrganization[] }>(
-    "/api/admin/events/organizations",
-  );
+  return adminFetch<{ items: AdminOrganization[] }>("/api/admin/events/organizations");
 }
 
 export async function fetchAdminEvents(organizationId?: string) {
-  const qs = organizationId
-    ? `?organizationId=${encodeURIComponent(organizationId)}`
-    : "";
-  return adminFetch<{ items: AdminEvent[]; total: number }>(
-    `/api/admin/events${qs}`,
-  );
+  const qs = organizationId ? `?organizationId=${encodeURIComponent(organizationId)}` : "";
+  return adminFetch<{ items: AdminEvent[]; total: number }>(`/api/admin/events${qs}`);
 }
 
 export async function uploadAdminPaymentQr(file: File) {
@@ -170,10 +159,7 @@ export async function createAdminEvent(payload: Partial<AdminEvent>) {
   });
 }
 
-export async function updateAdminEvent(
-  id: string,
-  payload: Partial<AdminEvent>,
-) {
+export async function updateAdminEvent(id: string, payload: Partial<AdminEvent>) {
   return adminFetch<{ item: AdminEvent }>(`/api/admin/events/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
@@ -196,13 +182,10 @@ export async function updateAdminRsvpPaymentStatus(
   id: string,
   status: "paid" | "unpaid" | "failed" | "pending_review",
 ) {
-  return adminFetch<{ item: AdminRsvp }>(
-    `/api/admin/rsvps/${id}/payment-status`,
-    {
-      method: "PATCH",
-      body: JSON.stringify({ status }),
-    },
-  );
+  return adminFetch<{ item: AdminRsvp }>(`/api/admin/rsvps/${id}/payment-status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
 }
 
 export async function sendReminderEmails(payload: {
@@ -244,13 +227,7 @@ export type AdminOrganization = {
 };
 
 export type AdminPaymentMethod = {
-  type:
-    | "razorpay"
-    | "upi_qr"
-    | "upi_id"
-    | "payment_link"
-    | "qiyu"
-    | "other";
+  type: "razorpay" | "upi_qr" | "upi_id" | "payment_link" | "qiyu" | "other";
   enabled?: boolean;
   label?: string;
   upiId?: string;
@@ -311,22 +288,22 @@ export type AdminRsvp = {
     email: string;
   }>;
   createdAt: string;
-    payment?: {
-      status?: string;
-      amountInr?: number;
-      amountPaise?: number;
-      currency?: string;
-      method?: string;
-      provider?: string;
-      proofUrl?: string;
-      note?: string;
-      ticketId?: string;
-      ticketLabel?: string;
-      memberCount?: number;
-      razorpayOrderId?: string;
-      razorpayPaymentId?: string;
-      paidAt?: string;
-    };
+  payment?: {
+    status?: string;
+    amountInr?: number;
+    amountPaise?: number;
+    currency?: string;
+    method?: string;
+    provider?: string;
+    proofUrl?: string;
+    note?: string;
+    ticketId?: string;
+    ticketLabel?: string;
+    memberCount?: number;
+    razorpayOrderId?: string;
+    razorpayPaymentId?: string;
+    paidAt?: string;
+  };
   event: {
     slug: string;
     title: string;
@@ -440,7 +417,5 @@ export type AdminAnalyticsSummary = {
 export async function fetchAdminAnalytics(days = 7, eventSlug?: string) {
   const params = new URLSearchParams({ days: String(days) });
   if (eventSlug) params.set("eventSlug", eventSlug);
-  return adminFetch<AdminAnalyticsSummary>(
-    `/api/admin/analytics/summary?${params.toString()}`,
-  );
+  return adminFetch<AdminAnalyticsSummary>(`/api/admin/analytics/summary?${params.toString()}`);
 }

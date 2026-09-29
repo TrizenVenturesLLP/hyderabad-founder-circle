@@ -14,13 +14,12 @@ import {
   Zap,
 } from "lucide-react";
 import type { HackathonDetails } from "@/lib/hackathon";
-
+import { Link } from "@tanstack/react-router";
 interface HackathonHeroProps {
   details: HackathonDetails;
-  totalStatements: number;
 }
 
-export function HackathonHero({ details, totalStatements }: HackathonHeroProps) {
+export function HackathonHero({ details }: HackathonHeroProps) {
   const {
     university,
     accreditation,
@@ -113,21 +112,21 @@ export function HackathonHero({ details, totalStatements }: HackathonHeroProps) 
                 <p className="text-[11px] font-medium text-muted-foreground uppercase">Team Size</p>
                 <p className="mt-0.5 text-xs font-bold text-foreground">{venue.teamSize}</p>
               </div>
-              <div className="rounded-xl border border-border bg-card p-3 shadow-2xs">
-                <p className="text-[11px] font-medium text-muted-foreground uppercase">
-                  Challenges
-                </p>
-                <p className="mt-0.5 text-xs font-bold text-primary">{totalStatements} Active</p>
-              </div>
             </div>
 
             {/* CTA Buttons */}
             <div className="mt-6 flex flex-wrap items-center gap-3">
-              <a
-                href="#problem-statements"
+              <Link
+                to="/hackathon/register"
                 className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-opacity hover:opacity-95"
               >
-                Explore 4 Domain Challenges
+                Register for Hackathon
+              </Link>
+              <a
+                href="#domains"
+                className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-opacity hover:opacity-95"
+              >
+                Explore 4 Domains
               </a>
               <a
                 href="#venue"
