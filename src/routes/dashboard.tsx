@@ -46,6 +46,10 @@ import type { HackathonDetails, ProblemStatement } from "@/lib/hackathon";
 
 export const Route = createFileRoute("/dashboard")({
   beforeLoad: () => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
     const profile = getHackathonStudentProfile();
 
     if (!profile) {
