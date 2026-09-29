@@ -925,19 +925,6 @@ function DashboardPage() {
                       )}
                     </div>
                   </div>
-
-                  {/* Track */}
-                  <div className="flex items-start gap-3">
-                    <Code2 className="mt-0.5 size-5 shrink-0 text-[#5b52e8]" />
-
-                    <div>
-                      <p className="text-sm font-semibold text-[#151934]">
-                        {activeDomain?.name || "Choose a domain"}
-                      </p>
-
-                      <p className="text-xs text-[#7c82a1]">Selected track</p>
-                    </div>
-                  </div>
                 </div>
               </aside>
             </section>
