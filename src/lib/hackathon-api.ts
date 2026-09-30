@@ -64,11 +64,41 @@ export function loginHackathonStudent(payload: { email: string; phone: string })
     ok?: boolean;
     message?: string;
     token?: string;
+    profile?: {
+      name: string;
+      email: string;
+      phone: string;
+      role: "lead" | "member";
+    };
+    team?: HackathonRegisteredUser;
   }>("/api/hackathon/login", payload);
 }
 
 export function getHackathonUserDetails(payload: { email: string; phone: string }) {
   return hackathonFetch<{ message?: string; user?: any }>("/api/hackathon/user", payload);
+}
+
+export function addHackathonTeamMember(payload: {
+  email: string;
+  phone: string;
+  member: HackathonTeamMemberPayload;
+}) {
+  return hackathonFetch<{
+    message: string;
+    invitationSent: boolean;
+    user?: HackathonRegisteredUser;
+  }>("/api/hackathon/team/members", payload);
+}
+
+export function resendHackathonTeamInvitation(payload: {
+  email: string;
+  phone: string;
+  member_email: string;
+}) {
+  return hackathonFetch<{
+    message: string;
+    invitationSent: boolean;
+  }>("/api/hackathon/team/members/invite", payload);
 }
 
 export function confirmHackathonProblem(payload: {
@@ -98,10 +128,50 @@ export type HackathonRegisteredUser = {
     video_url: string | null;
     submitted_at: string | null;
   };
+  evaluation?: HackathonEvaluation | null;
 
   createdAt: string;
   updatedAt: string;
 };
+
+export type HackathonEvaluationScores = {
+  problem_understanding: number;
+  innovation_creativity: number;
+  technical_implementation: number;
+  functionality_execution: number;
+  communication_presentation: number;
+};
+
+export type HackathonEvaluation = {
+  scores: HackathonEvaluationScores;
+  comments: string;
+  evaluated_at: string | null;
+};
+
+export async function saveHackathonEvaluation(
+  id: string,
+  evaluation: { scores: HackathonEvaluationScores; comments: string },
+) {
+  const response = await fetch(`${API_BASE}/api/hackathon/users/${id}/evaluation`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(evaluation),
+  });
+  const responseText = await response.text();
+  let data: { message?: string; user?: HackathonRegisteredUser } = {};
+
+  try {
+    data = JSON.parse(responseText);
+  } catch {}
+
+  if (!response.ok) {
+    throw new Error(
+      data.message || responseText.trim() || `Request failed with status ${response.status}.`,
+    );
+  }
+
+  return data;
+}
 
 export async function getHackathonRegisteredUsers() {
   const response = await fetch(`${API_BASE}/api/hackathon/users`, {

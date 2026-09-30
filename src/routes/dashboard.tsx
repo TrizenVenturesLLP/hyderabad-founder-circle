@@ -311,15 +311,19 @@ function DashboardPage() {
         <div className="shrink-0 border-t border-[#e4e6ef] p-4">
           <div className="flex items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#eeeeff] text-sm font-bold text-[#4f46e5]">
-              {(backendUser?.lead_name || localProfile?.name)?.charAt(0).toUpperCase() || "A"}
+              {(localProfile?.name || backendUser?.lead_name)?.charAt(0).toUpperCase() || "A"}
             </div>
 
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-[#25205c]">
-                {backendUser?.lead_name || localProfile?.name || "Participant"}
+                {localProfile?.name || backendUser?.lead_name || "Participant"}
               </p>
 
-              <p className="text-xs text-[#7c82a1]">Team Lead</p>
+              <p className="text-xs text-[#7c82a1]">
+                {backendUser?.email?.toLowerCase() === localProfile?.email?.toLowerCase()
+                  ? "Team Lead"
+                  : "Team Member"}
+              </p>
             </div>
           </div>
 
@@ -405,13 +409,17 @@ function DashboardPage() {
             <div className="shrink-0 border-t border-[#e4e6ef] p-4">
               <div className="mb-3 flex items-center gap-3">
                 <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#eeeeff] text-sm font-bold text-[#4f46e5]">
-                  {(backendUser?.lead_name || localProfile?.name)?.charAt(0).toUpperCase() || "A"}
+                  {(localProfile?.name || backendUser?.lead_name)?.charAt(0).toUpperCase() || "A"}
                 </div>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-[#25205c]">
-                    {backendUser?.lead_name || localProfile?.name || "Participant"}
+                    {localProfile?.name || backendUser?.lead_name || "Participant"}
                   </p>
-                  <p className="text-xs text-[#7c82a1]">Team Lead</p>
+                  <p className="text-xs text-[#7c82a1]">
+                    {backendUser?.email?.toLowerCase() === localProfile?.email?.toLowerCase()
+                      ? "Team Lead"
+                      : "Team Member"}
+                  </p>
                 </div>
               </div>
 
@@ -451,14 +459,18 @@ function DashboardPage() {
             <div className="flex items-center gap-3">
               <div className="hidden text-right sm:block">
                 <p className="text-sm font-semibold text-[#25205c]">
-                  {backendUser?.lead_name || localProfile?.name || "Participant"}
+                  {localProfile?.name || backendUser?.lead_name || "Participant"}
                 </p>
 
-                <p className="text-xs text-[#7c82a1]">Team Lead</p>
+                <p className="text-xs text-[#7c82a1]">
+                  {backendUser?.email?.toLowerCase() === localProfile?.email?.toLowerCase()
+                    ? "Team Lead"
+                    : "Team Member"}
+                </p>
               </div>
 
               <div className="flex size-10 items-center justify-center rounded-full bg-[#eeeeff] font-bold text-[#4f46e5]">
-                {(backendUser?.lead_name || localProfile?.name)?.charAt(0).toUpperCase() || "A"}
+                {(localProfile?.name || backendUser?.lead_name)?.charAt(0).toUpperCase() || "A"}
               </div>
             </div>
           </div>

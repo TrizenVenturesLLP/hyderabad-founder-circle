@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   Users,
   Eye,
+  Save,
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
@@ -40,6 +41,8 @@ import {
   getHackathonProblemStatements,
   saveHackathonProblemStatement,
   deleteHackathonProblemStatement,
+  saveHackathonEvaluation,
+  type HackathonEvaluationScores,
   type HackathonRegisteredUser,
 } from "@/lib/hackathon-api";
 
@@ -93,6 +96,32 @@ type RegisteredUserWithStatus = HackathonRegisteredUser & {
   status?: "active" | "suspended";
 };
 
+const evaluationCriteria: {
+  key: keyof HackathonEvaluationScores;
+  label: string;
+  weight: number;
+}[] = [
+  { key: "problem_understanding", label: "Problem Understanding & Impact", weight: 20 },
+  { key: "innovation_creativity", label: "Innovation & Creativity", weight: 20 },
+  { key: "technical_implementation", label: "Technical Implementation", weight: 25 },
+  { key: "functionality_execution", label: "Functionality & Execution", weight: 20 },
+  { key: "communication_presentation", label: "Communication & Presentation", weight: 15 },
+];
+
+type EvaluationDraft = {
+  scores: Partial<Record<keyof HackathonEvaluationScores, number | "">>;
+  comments: string;
+};
+
+function toEvaluationDraft(team: HackathonRegisteredUser): EvaluationDraft {
+  return {
+    scores: Object.fromEntries(
+      evaluationCriteria.map(({ key }) => [key, team.evaluation?.scores?.[key] ?? ""]),
+    ),
+    comments: team.evaluation?.comments ?? "",
+  };
+}
+
 function toDateTimeInputValue(isoValue: string | null): string {
   if (!isoValue) return "";
   const date = new Date(isoValue);
@@ -108,7 +137,12 @@ function AdminHackathonsPage() {
   const [registeredUsersLoading, setRegisteredUsersLoading] = useState(false);
   const [registeredUsersError, setRegisteredUsersError] = useState<string | null>(null);
   const [registeredSearch, setRegisteredSearch] = useState("");
+  const [registeredSort, setRegisteredSort] = useState<
+    "registration-date" | "team-name" | "score-high-low" | "score-low-high"
+  >("registration-date");
   const [registeredActionId, setRegisteredActionId] = useState<string | null>(null);
+  const [evaluationDrafts, setEvaluationDrafts] = useState<Record<string, EvaluationDraft>>({});
+  const [savingEvaluationId, setSavingEvaluationId] = useState<string | null>(null);
 
   const details = getHackathonDetails();
   const domains = details.domains;
@@ -224,13 +258,51 @@ function AdminHackathonsPage() {
 
     try {
       const data = await getHackathonRegisteredUsers();
-      setRegisteredUsers(data.users || []);
+      const users = data.users || [];
+      setRegisteredUsers(users);
+      setEvaluationDrafts(
+        Object.fromEntries(users.map((team) => [team._id, toEvaluationDraft(team)])),
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not load registered teams.";
       setRegisteredUsersError(message);
       toast.error(message);
     } finally {
       setRegisteredUsersLoading(false);
+    }
+  }
+
+  async function handleSaveEvaluation(team: RegisteredUserWithStatus) {
+    const draft = evaluationDrafts[team._id] ?? toEvaluationDraft(team);
+    const scores = Object.fromEntries(
+      evaluationCriteria.map(({ key }) => [key, draft.scores[key]]),
+    ) as Partial<HackathonEvaluationScores>;
+
+    if (evaluationCriteria.some(({ key }) => scores[key] === "" || scores[key] === undefined)) {
+      toast.error("Enter a score for every evaluation criterion");
+      return;
+    }
+
+    setSavingEvaluationId(team._id);
+    try {
+      const result = await saveHackathonEvaluation(team._id, {
+        scores: scores as HackathonEvaluationScores,
+        comments: draft.comments,
+      });
+      if (result.user) {
+        setRegisteredUsers((users) =>
+          users.map((user) => (user._id === result.user?._id ? result.user! : user)),
+        );
+        setEvaluationDrafts((drafts) => ({
+          ...drafts,
+          [team._id]: toEvaluationDraft(result.user!),
+        }));
+      }
+      toast.success("Team evaluation saved");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save team evaluation.");
+    } finally {
+      setSavingEvaluationId(null);
     }
   }
 
@@ -279,22 +351,58 @@ function AdminHackathonsPage() {
     }
   }
 
+  function getTeamWeightedScore(team: HackathonRegisteredUser) {
+    const scores = team.evaluation?.scores;
+    if (!scores) return 0;
+
+    return evaluationCriteria.reduce(
+      (total, criterion) =>
+        total + ((scores[criterion.key] ?? 0) * criterion.weight) / 10,
+      0,
+    );
+  }
+
   const filteredRegisteredUsers = useMemo(() => {
     const query = registeredSearch.trim().toLowerCase();
-    if (!query) return registeredUsers;
+    let filtered = registeredUsers;
 
-    return registeredUsers.filter((team) => {
-      const memberText = team.members
-        .map((member) => `${member.full_name} ${member.email} ${member.phone}`)
-        .join(" ");
+    if (query) {
+      filtered = registeredUsers.filter((team) => {
+        const memberText = team.members
+          .map((member) => `${member.full_name} ${member.email} ${member.phone}`)
+          .join(" ");
 
-      return `${team.team_name} ${team.lead_name} ${team.email} ${team.phone} ${
-        team.problem_statement_id || ""
-      } ${memberText}`
-        .toLowerCase()
-        .includes(query);
+        return `${team.team_name} ${team.lead_name} ${team.email} ${team.phone} ${
+          team.problem_statement_id || ""
+        } ${memberText}`
+          .toLowerCase()
+          .includes(query);
+      });
+    }
+
+    return [...filtered].sort((left, right) => {
+      switch (registeredSort) {
+        case "team-name":
+          return (left.team_name || "").localeCompare(right.team_name || "");
+        case "score-high-low": {
+          const leftScore = getTeamWeightedScore(left);
+          const rightScore = getTeamWeightedScore(right);
+          return rightScore - leftScore;
+        }
+        case "score-low-high": {
+          const leftScore = getTeamWeightedScore(left);
+          const rightScore = getTeamWeightedScore(right);
+          return leftScore - rightScore;
+        }
+        case "registration-date":
+        default: {
+          const leftDate = new Date(left.createdAt || 0).getTime();
+          const rightDate = new Date(right.createdAt || 0).getTime();
+          return rightDate - leftDate;
+        }
+      }
     });
-  }, [registeredUsers, registeredSearch]);
+  }, [registeredUsers, registeredSearch, registeredSort]);
 
   const registeredStats = useMemo(() => {
     const selected = registeredUsers.filter((team) => Boolean(team.problem_statement_id)).length;
@@ -581,6 +689,30 @@ function AdminHackathonsPage() {
               </button>
             )}
           </div>
+
+          <div className="mt-3 flex justify-end">
+            <label className="flex items-center gap-2 text-xs font-medium text-foreground">
+              <span>Sort by</span>
+              <select
+                value={registeredSort}
+                onChange={(e) =>
+                  setRegisteredSort(
+                    e.target.value as
+                      | "registration-date"
+                      | "team-name"
+                      | "score-high-low"
+                      | "score-low-high",
+                  )
+                }
+                className="rounded-lg border border-border bg-white px-2.5 py-2 text-xs font-medium text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
+              >
+                <option value="registration-date">Registration date</option>
+                <option value="team-name">Team name</option>
+                <option value="score-high-low">Score: High → Low</option>
+                <option value="score-low-high">Score: Low → High</option>
+              </select>
+            </label>
+          </div>
         </AdminPanel>
 
         {registeredUsersLoading ? (
@@ -817,6 +949,120 @@ function AdminHackathonsPage() {
                           No project submitted yet.
                         </p>
                       )}
+
+                      {team.submission?.submitted_at && (() => {
+                        const draft = evaluationDrafts[team._id] ?? toEvaluationDraft(team);
+                        const weightedScore = evaluationCriteria.reduce(
+                          (total, criterion) =>
+                            total +
+                            (Number(draft.scores[criterion.key] || 0) * criterion.weight) / 10,
+                          0,
+                        );
+
+                        return (
+                          <form
+                            className="mt-4 border-t border-border pt-4"
+                            onSubmit={(event) => {
+                              event.preventDefault();
+                              void handleSaveEvaluation(team);
+                            }}
+                          >
+                            <div className="mb-2 flex items-center justify-between gap-3">
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                Team Evaluation
+                              </p>
+                              <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+                                {team.evaluation?.evaluated_at ? "Evaluated" : "Not Evaluated"}
+                              </span>
+                            </div>
+
+                            <div className="divide-y divide-border">
+                              {evaluationCriteria.map((criterion) => (
+                                <label
+                                  key={criterion.key}
+                                  className="grid grid-cols-[minmax(0,1fr)_auto_5rem] items-center gap-3 py-3"
+                                >
+                                  <span>
+                                    <span className="block text-xs font-semibold text-foreground">
+                                      {criterion.label}
+                                    </span>
+                                    <span className="mt-1 block text-[11px] text-muted-foreground">
+                                      Score from 0 to 10
+                                    </span>
+                                  </span>
+                                  <span className="text-[11px] text-muted-foreground">
+                                    {criterion.weight}%
+                                  </span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="10"
+                                    step="1"
+                                    required
+                                    aria-label={`${criterion.label} score`}
+                                    value={draft.scores[criterion.key]}
+                                    onChange={(event) => {
+                                      const value = event.target.value;
+                                      setEvaluationDrafts((drafts) => ({
+                                        ...drafts,
+                                        [team._id]: {
+                                          ...draft,
+                                          scores: {
+                                            ...draft.scores,
+                                            [criterion.key]: value === "" ? "" : Number(value),
+                                          },
+                                        },
+                                      }));
+                                    }}
+                                    className="h-10 w-20 rounded-lg border border-border bg-white px-3 text-sm font-semibold text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
+                                  />
+                                </label>
+                              ))}
+                            </div>
+
+                            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-primary/10 p-3">
+                              <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                  Weighted Score
+                                </p>
+                                <p className="mt-1 text-lg font-bold text-foreground">
+                                  {weightedScore.toFixed(1)}{" "}
+                                  <span className="text-xs font-medium">/ 100</span>
+                                </p>
+                              </div>
+                              <button
+                                type="submit"
+                                disabled={savingEvaluationId === team._id}
+                                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                <Save className="size-3.5" />
+                                {savingEvaluationId === team._id
+                                  ? "Saving..."
+                                  : team.evaluation?.evaluated_at
+                                    ? "Update Evaluation"
+                                    : "Save Evaluation"}
+                              </button>
+                            </div>
+
+                            <label className="mt-4 block text-xs font-semibold text-foreground">
+                              Judge Comments
+                              <textarea
+                                rows={3}
+                                maxLength={2000}
+                                value={draft.comments}
+                                onChange={(event) =>
+                                  setEvaluationDrafts((drafts) => ({
+                                    ...drafts,
+                                    [team._id]: { ...draft, comments: event.target.value },
+                                  }))
+                                }
+                                placeholder="Add feedback about the team's submission..."
+                                className="mt-2 w-full resize-y rounded-lg border border-border bg-white px-3 py-2.5 text-xs font-normal text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
+                              />
+                            </label>
+                          </form>
+                        );
+                      })()}
                     </div>
 
                     <div className="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">

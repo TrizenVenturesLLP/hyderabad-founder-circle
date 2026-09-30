@@ -34,7 +34,15 @@ type FieldProps = InputHTMLAttributes<HTMLInputElement> & {
 function HackathonRegistrationPage() {
   const navigate = useNavigate();
 
-  const [step, setStep] = useState<Step>("register");
+  const [step, setStep] = useState<Step>(() => {
+    if (typeof window === "undefined") {
+      return "register";
+    }
+
+    const search = new URLSearchParams(window.location.search);
+    const invitedEmail = search.get("email")?.trim().toLowerCase();
+    return search.get("mode") === "login" && invitedEmail ? "login" : "register";
+  });
 
   const [teamName, setTeamName] = useState("");
 
@@ -54,18 +62,25 @@ function HackathonRegistrationPage() {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isInvitation, setIsInvitation] = useState(false);
 
   useEffect(() => {
     const existingProfile = getHackathonStudentProfile();
+    if (existingProfile) {
+      setLogin({
+        mobile: existingProfile.mobile,
+        email: existingProfile.email ?? "",
+      });
+      setStep("login");
+    }
 
-    if (!existingProfile) return;
-
-    setLogin({
-      mobile: existingProfile.mobile,
-      email: existingProfile.email ?? "",
-    });
-
-    setStep("login");
+    const search = new URLSearchParams(window.location.search);
+    const invitedEmail = search.get("email")?.trim().toLowerCase();
+    if (search.get("mode") === "login" && invitedEmail) {
+      setIsInvitation(true);
+      setStep("login");
+      setLogin({ mobile: "", email: invitedEmail });
+    }
   }, []);
 
   function updateLead(event: ChangeEvent<HTMLInputElement>) {
@@ -229,14 +244,14 @@ function HackathonRegistrationPage() {
     setIsSubmitting(true);
 
     try {
-      await loginHackathonStudent({
+      const response = await loginHackathonStudent({
         email: login.email.trim().toLowerCase(),
         phone: login.mobile.trim(),
       });
       saveHackathonStudentProfile({
-        name: getHackathonStudentProfile()?.name || "Participant",
-        email: login.email.trim().toLowerCase(),
-        mobile: login.mobile.trim(),
+        name: response.profile?.name || "Participant",
+        email: response.profile?.email || login.email.trim().toLowerCase(),
+        mobile: response.profile?.phone || login.mobile.trim(),
       });
 
       void navigate({ to: "/dashboard", replace: true });
@@ -272,7 +287,9 @@ function HackathonRegistrationPage() {
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
             {step === "register"
               ? "Register your team and add your team members."
-              : "Verify your registered details to continue to your dashboard."}
+              : isInvitation
+                ? "You have been added to a team. Verify your mobile number to open your team dashboard."
+                : "Verify your registered details to continue to your dashboard."}
           </p>
 
           {step === "register" ? (

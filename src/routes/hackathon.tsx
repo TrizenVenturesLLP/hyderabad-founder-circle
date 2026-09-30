@@ -46,7 +46,11 @@ function HackathonPublicPage() {
     return () => unsubscribe();
   }, []);
 
-  if (pathname.startsWith("/hackathon/problems/") || pathname === "/hackathon/register") {
+  if (
+    pathname.startsWith("/hackathon/problems/") ||
+    pathname === "/hackathon/register" ||
+    pathname === "/hackathon/login"
+  ) {
     return <Outlet />;
   }
 
