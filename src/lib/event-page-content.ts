@@ -160,8 +160,7 @@ const EVENT_OVERRIDES: Record<string, EventPageOverrides> = {
       subtitle: "Monthly Community Meetup",
       headline: "Building a stronger founder community in Hyderabad.",
       tagline: "Connect · Learn · Collaborate · Grow",
-      audienceLine:
-        "30+ Founders · Builders · Operators · Mentors · Entrepreneurs",
+      audienceLine: "30+ Founders · Builders · Operators · Mentors · Entrepreneurs",
       positioning: "",
     },
     why: {
@@ -250,8 +249,7 @@ const EVENT_OVERRIDES: Record<string, EventPageOverrides> = {
       subtitle: "The Corporate Music Break",
       headline: "Live music. Unwind. Connect.",
       tagline: "An evening of live music and good company.",
-      audienceLine:
-        "Working professionals · Music lovers · Creative teams · Community members",
+      audienceLine: "Working professionals · Music lovers · Creative teams · Community members",
       positioning: "Hosted at NanoSpace Coworking · Nanakramguda",
     },
     why: {
@@ -335,7 +333,7 @@ const EVENT_OVERRIDES: Record<string, EventPageOverrides> = {
       },
       {
         q: "What are the timings?",
-        a: "Saturday, 19 September 2026 · 6:00 PM – 9:00 PM at NanoSpace Coworking, Nanakramguda.",
+        a: "Saturday, 3 October 2026 · 6:00 PM – 9:00 PM at NanoSpace Coworking, Nanakramguda.",
       },
       {
         q: "Will there be food or snacks?",
@@ -434,8 +432,7 @@ export function getEventPageContent(meetup: Meetup) {
     agenda: overrides.agenda ?? defaultAgenda,
     agendaHeading: overrides.agendaHeading ?? "About two hours",
     agendaSubheading:
-      overrides.agendaSubheading ??
-      "Structured enough to be useful — open enough to talk.",
+      overrides.agendaSubheading ?? "Structured enough to be useful — open enough to talk.",
     collaborativeHosts: overrides.collaborativeHosts ?? [],
     partnerTiers: overrides.partnerTiers ?? [],
     speakersHeading: overrides.speakersHeading ?? "Meet our speakers",
@@ -444,9 +441,7 @@ export function getEventPageContent(meetup: Meetup) {
       "Industry leaders, founders, and innovators sharing insights from the work.",
     excludeRoles: overrides.excludeRoles ?? [],
     metaOrganizer:
-      overrides.metaOrganizer ??
-      meetup.organization?.name ??
-      "Hyderabad Founders Network",
+      overrides.metaOrganizer ?? meetup.organization?.name ?? "Hyderabad Founders Network",
     hideRefreshmentsAmenity: overrides.hideRefreshmentsAmenity === true,
   };
 }

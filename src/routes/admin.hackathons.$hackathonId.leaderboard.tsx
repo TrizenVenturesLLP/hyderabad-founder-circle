@@ -1,10 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Download, RotateCcw, Search, Trophy } from "lucide-react";
+import {
+  CheckCircle2,
+  Download,
+  Eye,
+  EyeOff,
+  RotateCcw,
+  Search,
+  Trophy,
+  XCircle,
+} from "lucide-react";
+import { toast } from "sonner";
 import { AdminPageHeader, AdminPanel } from "@/components/admin/AdminPageChrome";
 import { HackathonNav, hackathonSectionPageClass } from "@/components/admin/HackathonNav";
 import {
+  applyAdminHackathonRoundCutoff,
+  clearAdminHackathonRoundCutoff,
   fetchAdminHackathonLeaderboard,
+  publishAdminHackathonRoundResults,
   type AdminHackathonLeaderboard,
   type AdminHackathonLeaderboardEntry,
 } from "@/lib/admin-api";
@@ -34,18 +47,33 @@ function csvCell(value: string | number | null) {
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-function downloadCsv(hackathonId: string, items: AdminHackathonLeaderboardEntry[]) {
+function roundAverage(entry: AdminHackathonLeaderboardEntry, round: number) {
+  return entry.roundScores?.find((score) => score.round === round)?.averageScore ?? null;
+}
+
+function resultLabel(entry: AdminHackathonLeaderboardEntry, round: number) {
+  if (entry.qualification === "qualified") return `Qualified for Round ${round + 1}`;
+  if (entry.qualification === "disqualified") return "Disqualified";
+  return "";
+}
+
+function downloadCsv(
+  hackathonId: string,
+  round: number,
+  maxRound: number,
+  items: AdminHackathonLeaderboardEntry[],
+) {
+  const rounds = Array.from({ length: maxRound }, (_, index) => index + 1);
   const header = [
-    "Rank",
+    `Round ${round} rank`,
     "Team",
     "Team lead",
     "Problem statement",
     "Domain",
-    "Evaluations submitted",
-    "Assigned jury",
-    "Average score",
-    "Highest score",
-    "Lowest score",
+    "Jury",
+    `Round ${round} scored`,
+    ...rounds.map((value) => `Round ${value} score`),
+    `Round ${round} result`,
   ];
   const rows = items.map((entry) => [
     entry.rank,
@@ -53,17 +81,16 @@ function downloadCsv(hackathonId: string, items: AdminHackathonLeaderboardEntry[
     entry.leadName,
     [entry.problemStatementId, entry.problemStatementTitle].filter(Boolean).join(" — "),
     domainLabels[entry.domainId] || entry.domainId,
-    entry.submittedEvaluations,
-    entry.totalJuryMembers,
-    entry.averageScore,
-    entry.highestScore,
-    entry.lowestScore,
+    entry.juryName || "Unclaimed",
+    entry.submittedEvaluations ? "Yes" : "No",
+    ...rounds.map((value) => roundAverage(entry, value)),
+    resultLabel(entry, round),
   ]);
   const csv = [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\n");
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   const link = document.createElement("a");
   link.href = url;
-  link.download = `${hackathonId}-leaderboard.csv`;
+  link.download = `${hackathonId}-round-${round}-leaderboard.csv`;
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -90,24 +117,57 @@ function RankBadge({ rank }: { rank: number | null }) {
   );
 }
 
+function QualificationBadge({
+  entry,
+  round,
+}: {
+  entry: AdminHackathonLeaderboardEntry;
+  round: number;
+}) {
+  if (entry.qualification === "qualified") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] font-semibold whitespace-nowrap text-emerald-700">
+        <CheckCircle2 className="size-3" />
+        Qualified · Round {round + 1}
+      </span>
+    );
+  }
+  if (entry.qualification === "disqualified") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded bg-red-50 px-1.5 py-0.5 text-[11px] font-semibold whitespace-nowrap text-red-700">
+        <XCircle className="size-3" />
+        Disqualified
+      </span>
+    );
+  }
+  return <span className="text-xs text-muted-foreground">—</span>;
+}
+
 function AdminHackathonLeaderboardPage() {
   const { hackathonId } = Route.useParams();
   const [data, setData] = useState<AdminHackathonLeaderboard>(emptyLeaderboard);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [round, setRound] = useState(1);
+  const [cutoffInput, setCutoffInput] = useState("");
+  const [editingCutoff, setEditingCutoff] = useState(false);
+  const [working, setWorking] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      setData(await fetchAdminHackathonLeaderboard(hackathonId));
+      const next = await fetchAdminHackathonLeaderboard(hackathonId, round);
+      setData(next);
+      setCutoffInput(next.result ? String(next.result.cutoff) : "");
+      setEditingCutoff(false);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not load leaderboard.");
     } finally {
       setLoading(false);
     }
-  }, [hackathonId]);
+  }, [hackathonId, round]);
 
   useEffect(() => {
     void load();
@@ -126,17 +186,88 @@ function AdminHackathonLeaderboardPage() {
 
   const topTeams = data.items.filter((entry) => entry.rank !== null && entry.rank <= 3);
   const evaluatedTeams = data.items.filter((entry) => entry.submittedEvaluations > 0).length;
-  const thresholdText =
-    data.requiredEvaluations === 1
-      ? "1 submitted Jury evaluation"
-      : `${data.requiredEvaluations} submitted Jury evaluations`;
+  const maxRound = data.maxRound ?? 1;
+  const nextRound = round + 1;
+  const rounds = Array.from({ length: maxRound }, (_, index) => index + 1);
+  const otherRounds = rounds.filter((value) => value !== round);
+  const result = data.result ?? null;
+  const published = Boolean(result?.publishedAt);
+  const fullyScoredTeams = data.items.filter(
+    (entry) => entry.totalJuryMembers > 0 && entry.submittedEvaluations > 0,
+  ).length;
+  const unassignedTeams = data.items.filter((entry) => entry.totalJuryMembers === 0).length;
+
+  const cutoffValue = Number(cutoffInput);
+  const cutoffValid = cutoffInput.trim() !== "" && cutoffValue >= 0 && cutoffValue <= 100;
+  const scoringComplete = Boolean(data.scoringComplete);
+  const previewQualified = cutoffValid
+    ? data.items.filter((entry) => (entry.averageScore ?? -1) >= cutoffValue).length
+    : 0;
+
+  async function runAction(action: () => Promise<unknown>, message: string) {
+    setWorking(true);
+    try {
+      await action();
+      toast.success(message);
+      await load();
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Something went wrong.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  function applyCutoff() {
+    if (!cutoffValid || !scoringComplete) return;
+    const disqualifiedCount = data.items.length - previewQualified;
+    if (
+      !window.confirm(
+        `Apply a cutoff of ${cutoffValue}? ${previewQualified} team(s) qualify for Round ${nextRound} and ${disqualifiedCount} team(s) are disqualified. Teams won't see this until you publish results.`,
+      )
+    )
+      return;
+    void runAction(
+      () => applyAdminHackathonRoundCutoff(hackathonId, round, cutoffValue),
+      `Cutoff applied: ${previewQualified} qualified for Round ${nextRound}.`,
+    );
+  }
+
+  function clearCutoff() {
+    if (
+      !window.confirm(
+        `Clear the Round ${round} cutoff? All Round ${round} teams go back to undecided.`,
+      )
+    )
+      return;
+    void runAction(
+      () => clearAdminHackathonRoundCutoff(hackathonId, round),
+      `Round ${round} cutoff cleared.`,
+    );
+  }
+
+  function togglePublish() {
+    const next = !published;
+    if (
+      next &&
+      !window.confirm(
+        `Publish Round ${round} results? Qualified teams will see they're going to Round ${nextRound}; the rest will see they are disqualified.`,
+      )
+    )
+      return;
+    void runAction(
+      () => publishAdminHackathonRoundResults(hackathonId, round, next),
+      next
+        ? `Round ${round} results published to teams.`
+        : `Round ${round} results hidden from teams.`,
+    );
+  }
 
   return (
     <div className={`space-y-6 p-4 sm:p-5 md:p-6 ${hackathonSectionPageClass}`}>
       <HackathonNav hackathonId={hackathonId} active="leaderboard" />
       <AdminPageHeader
         title="Leaderboard"
-        description={`Teams are ranked by their average Jury score once they have ${thresholdText}. Drafts are not counted.`}
+        description={`Each team is scored by the Jury member who claimed its problem statement. Teams are ranked by their Round ${round} score once it is submitted; drafts are not counted.`}
         actions={
           <div className="flex gap-2">
             <button
@@ -150,7 +281,7 @@ function AdminHackathonLeaderboardPage() {
             <button
               type="button"
               disabled={!data.items.length}
-              onClick={() => downloadCsv(hackathonId, data.items)}
+              onClick={() => downloadCsv(hackathonId, round, maxRound, data.items)}
               className="inline-flex h-9 items-center gap-1.5 rounded-md bg-(--brand-primary) px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               <Download className="size-3.5" />
@@ -160,9 +291,168 @@ function AdminHackathonLeaderboardPage() {
         }
       />
 
+      {maxRound > 1 ? (
+        <div
+          role="tablist"
+          aria-label="Leaderboard round"
+          className="inline-flex rounded-md border border-border bg-white p-1"
+        >
+          {rounds.map((value) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={round === value}
+              onClick={() => setRound(value)}
+              className={cn(
+                "rounded px-4 py-1.5 text-xs font-semibold transition-colors",
+                round === value
+                  ? "bg-(--brand-primary) text-white"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+            >
+              Round {value}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      <AdminPanel className="p-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">Round {round} results</p>
+            {result && !editingCutoff ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Cutoff <strong className="text-foreground">{result.cutoff}</strong> ·{" "}
+                <span className="font-semibold text-emerald-700">
+                  {result.qualifiedCount} qualified for Round {nextRound}
+                </span>{" "}
+                ·{" "}
+                <span className="font-semibold text-red-700">
+                  {result.disqualifiedCount} disqualified
+                </span>{" "}
+                ·{" "}
+                {published ? (
+                  <span className="font-semibold text-foreground">Published to teams</span>
+                ) : (
+                  "Not yet visible to teams"
+                )}
+              </p>
+            ) : scoringComplete ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                All teams are scored. Teams whose average is at or above the cutoff qualify for
+                Round {nextRound}; the rest are disqualified.
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-amber-700">
+                Waiting for scores — {fullyScoredTeams} of {data.items.length} teams have been
+                scored by their Jury member
+                {unassignedTeams
+                  ? ` · ${unassignedTeams} team${unassignedTeams === 1 ? " is" : "s are"} on an unclaimed statement or haven't picked one`
+                  : ""}
+                . The cutoff unlocks once every team is scored; until then no team is shown as
+                qualified or disqualified.
+              </p>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {!result || editingCutoff ? (
+              <>
+                <label className="flex items-center gap-2 text-xs font-medium">
+                  Cutoff
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step="0.5"
+                    value={cutoffInput}
+                    disabled={!scoringComplete}
+                    onChange={(event) => setCutoffInput(event.target.value)}
+                    placeholder="e.g. 60"
+                    className="h-9 w-24 rounded-md border border-border bg-white px-2.5 text-sm tabular-nums outline-none focus:border-(--brand-accent) disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-60"
+                  />
+                </label>
+                {cutoffValid && scoringComplete ? (
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {previewQualified} qualify · {data.items.length - previewQualified} disqualified
+                  </span>
+                ) : null}
+                {editingCutoff ? (
+                  <button
+                    type="button"
+                    disabled={working}
+                    onClick={() => {
+                      setEditingCutoff(false);
+                      setCutoffInput(result ? String(result.cutoff) : "");
+                    }}
+                    className="inline-flex h-9 items-center rounded-md border border-border bg-white px-3.5 text-xs font-semibold hover:bg-muted"
+                  >
+                    Cancel
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  disabled={!cutoffValid || !scoringComplete || working}
+                  onClick={applyCutoff}
+                  title={
+                    scoringComplete
+                      ? undefined
+                      : "Unlocks once every Jury member has scored every team"
+                  }
+                  className="inline-flex h-9 items-center gap-1.5 rounded-md bg-(--brand-accent) px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {working ? "Applying…" : "Apply cutoff"}
+                </button>
+              </>
+            ) : result ? (
+              <>
+                {!published ? (
+                  <>
+                    <button
+                      type="button"
+                      disabled={working}
+                      onClick={() => setEditingCutoff(true)}
+                      className="inline-flex h-9 items-center rounded-md border border-border bg-white px-3.5 text-xs font-semibold hover:bg-muted disabled:opacity-50"
+                    >
+                      Change cutoff
+                    </button>
+                    <button
+                      type="button"
+                      disabled={working}
+                      onClick={clearCutoff}
+                      className="inline-flex h-9 items-center rounded-md border border-border bg-white px-3.5 text-xs font-semibold hover:bg-muted disabled:opacity-50"
+                    >
+                      Clear
+                    </button>
+                  </>
+                ) : null}
+                <button
+                  type="button"
+                  disabled={working}
+                  onClick={togglePublish}
+                  className={cn(
+                    "inline-flex h-9 items-center gap-1.5 rounded-md px-3.5 text-xs font-semibold transition-opacity disabled:opacity-50",
+                    published
+                      ? "border border-border bg-white hover:bg-muted"
+                      : "bg-(--brand-accent) text-white hover:opacity-90",
+                  )}
+                >
+                  {published ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                  {published ? "Unpublish" : "Publish results"}
+                </button>
+              </>
+            ) : null}
+          </div>
+        </div>
+      </AdminPanel>
+
       <div className="grid gap-3 sm:grid-cols-4">
         {[
-          { label: "Active teams", value: data.teamCount },
+          {
+            label: round === 1 ? "Active teams" : `Teams in Round ${round}`,
+            value: data.teamCount,
+          },
           { label: "Teams evaluated", value: evaluatedTeams },
           { label: "Teams ranked", value: data.rankedCount },
           { label: "Assigned Jury", value: data.totalJuryMembers },
@@ -228,84 +518,114 @@ function AdminHackathonLeaderboardPage() {
           </span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[880px] text-left text-sm">
+          <table
+            className="w-full text-left text-sm"
+            style={{ minWidth: 960 + otherRounds.length * 100 }}
+          >
             <thead className="bg-muted/40 text-xs text-muted-foreground">
               <tr>
                 <th className="w-16 px-4 py-3 font-medium">Rank</th>
                 <th className="px-4 py-3 font-medium">Team</th>
                 <th className="px-4 py-3 font-medium">Problem statement</th>
-                <th className="px-4 py-3 font-medium">Evaluations</th>
-                <th className="px-4 py-3 font-medium">Score range</th>
-                <th className="px-4 py-3 text-right font-medium">Average</th>
+                <th className="px-4 py-3 font-medium">Jury</th>
+                {otherRounds.map((value) => (
+                  <th key={value} className="px-4 py-3 text-right font-medium">
+                    Round {value}
+                  </th>
+                ))}
+                <th className="px-4 py-3 text-right font-medium">
+                  {maxRound > 1 ? `Round ${round} score` : "Score"}
+                </th>
+                <th className="px-4 py-3 font-medium">Result</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
+                  <td
+                    colSpan={6 + otherRounds.length}
+                    className="px-4 py-10 text-center text-muted-foreground"
+                  >
                     Loading leaderboard…
                   </td>
                 </tr>
               ) : !filtered.length ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
+                  <td
+                    colSpan={6 + otherRounds.length}
+                    className="px-4 py-10 text-center text-muted-foreground"
+                  >
                     {data.items.length ? "No teams match your search." : "No active teams yet."}
                   </td>
                 </tr>
               ) : (
-                filtered.map((entry) => {
-                  const missing = Math.max(
-                    0,
-                    data.requiredEvaluations - entry.submittedEvaluations,
-                  );
-                  return (
-                    <tr key={entry.teamId} className="hover:bg-muted/30">
-                      <td className="px-4 py-3">
-                        <RankBadge rank={entry.rank} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="font-semibold">{entry.teamName}</p>
-                        {entry.leadName ? (
-                          <p className="text-xs text-muted-foreground">Lead: {entry.leadName}</p>
-                        ) : null}
-                      </td>
-                      <td className="max-w-[280px] px-4 py-3">
-                        {entry.problemStatementId ? (
-                          <>
-                            <p className="font-mono text-xs font-semibold text-(--brand-accent)">
-                              {entry.problemStatementId}
-                              {entry.domainId ? (
-                                <span className="ml-1.5 font-sans font-normal text-muted-foreground">
-                                  · {domainLabels[entry.domainId] || entry.domainId}
-                                </span>
-                              ) : null}
-                            </p>
-                            <p className="truncate text-xs">{entry.problemStatementTitle}</p>
-                          </>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Not selected</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground tabular-nums">
-                        {entry.submittedEvaluations} of {entry.totalJuryMembers} submitted
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground tabular-nums">
-                        {entry.highestScore === null
-                          ? "—"
-                          : `${entry.lowestScore} – ${entry.highestScore}`}
-                      </td>
-                      <td className="px-4 py-3 text-right font-semibold tabular-nums">
-                        {entry.averageScore === null ? (
-                          <span className="text-xs font-normal text-muted-foreground">
-                            {entry.submittedEvaluations ? `Needs ${missing} more` : "Not evaluated"}
-                          </span>
-                        ) : (
-                          `${entry.averageScore.toFixed(1)} / 100`
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
+                filtered.map((entry) => (
+                  <tr key={entry.teamId} className="hover:bg-muted/30">
+                    <td className="px-4 py-3">
+                      <RankBadge rank={entry.rank} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="font-semibold">{entry.teamName}</p>
+                      {entry.leadName ? (
+                        <p className="text-xs text-muted-foreground">Lead: {entry.leadName}</p>
+                      ) : null}
+                    </td>
+                    <td className="max-w-[280px] px-4 py-3">
+                      {entry.problemStatementId ? (
+                        <>
+                          <p className="font-mono text-xs font-semibold text-(--brand-accent)">
+                            {entry.problemStatementId}
+                            {entry.domainId ? (
+                              <span className="ml-1.5 font-sans font-normal text-muted-foreground">
+                                · {domainLabels[entry.domainId] || entry.domainId}
+                              </span>
+                            ) : null}
+                          </p>
+                          <p className="truncate text-xs">{entry.problemStatementTitle}</p>
+                        </>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Not selected</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-xs">
+                      {entry.juryName ? (
+                        <>
+                          <p className="font-medium text-foreground">{entry.juryName}</p>
+                          <p className="text-muted-foreground">
+                            {entry.submittedEvaluations ? "Scored" : "Not scored yet"}
+                          </p>
+                        </>
+                      ) : (
+                        <span className="text-amber-700">
+                          {entry.problemStatementId ? "Statement unclaimed" : "No statement"}
+                        </span>
+                      )}
+                    </td>
+                    {otherRounds.map((value) => {
+                      const average = roundAverage(entry, value);
+                      return (
+                        <td
+                          key={value}
+                          className="px-4 py-3 text-right text-xs text-muted-foreground tabular-nums"
+                        >
+                          {average === null ? "—" : average.toFixed(1)}
+                        </td>
+                      );
+                    })}
+                    <td className="px-4 py-3 text-right font-semibold tabular-nums">
+                      {entry.averageScore === null ? (
+                        <span className="text-xs font-normal text-muted-foreground">
+                          Not scored
+                        </span>
+                      ) : (
+                        `${entry.averageScore.toFixed(1)} / 100`
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <QualificationBadge entry={entry} round={round} />
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>

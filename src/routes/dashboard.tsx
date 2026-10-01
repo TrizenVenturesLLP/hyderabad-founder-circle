@@ -13,6 +13,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  Eye,
   LockKeyhole,
   MapPin,
   Search,
@@ -31,7 +32,10 @@ import {
   getHackathonUserDetails,
   getHackathonReleaseTimer as getServerReleaseTimer,
   getHackathonProblemStatements,
+  type HackathonProblemProposal,
+  type HackathonProposalSlots,
   type HackathonRegisteredUser,
+  type HackathonRoundResult,
 } from "@/lib/hackathon-api";
 import {
   getStatementDomainIds,
@@ -41,6 +45,7 @@ import {
 } from "@/lib/hackathon";
 import { tabIndicatorClass, useTabIndicator } from "@/components/admin/useTabIndicator";
 import { StudentShell } from "@/components/student/StudentShell";
+import { ProblemProposalCard } from "@/components/student/ProblemProposalCard";
 import { AppSelect } from "@/components/AppSelect";
 
 export const Route = createFileRoute("/dashboard")({
@@ -99,6 +104,9 @@ function DashboardPage() {
   );
 
   const [backendUser, setBackendUser] = useState<HackathonRegisteredUser | null>(null);
+  const [roundResult, setRoundResult] = useState<HackathonRoundResult | null>(null);
+  const [problemProposal, setProblemProposal] = useState<HackathonProblemProposal | null>(null);
+  const [proposalSlots, setProposalSlots] = useState<HackathonProposalSlots | null>(null);
   const [localProfile, setLocalProfile] = useState<HackathonStudentProfile | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
@@ -117,6 +125,9 @@ function DashboardPage() {
         phone: profile.mobile,
       })
         .then((res) => {
+          setRoundResult(res.roundResult ?? null);
+          setProblemProposal(res.problemProposal ?? null);
+          setProposalSlots(res.proposalSlots ?? null);
           if (res.user) {
             setBackendUser(res.user);
             setConfirmedStatementId(res.user.problem_statement_id || null);
@@ -189,7 +200,11 @@ function DashboardPage() {
 
   const domainStatements = useMemo(
     () =>
-      statements.filter((statement) => getStatementDomainIds(statement).includes(selectedDomainId)),
+      statements.filter(
+        (statement) =>
+          statement.available !== false &&
+          getStatementDomainIds(statement).includes(selectedDomainId),
+      ),
     [selectedDomainId, statements],
   );
 
@@ -288,6 +303,30 @@ function DashboardPage() {
     void navigate({ to: "/hackathon", replace: true });
   }
 
+  const availableStatementCount = statements.filter(
+    (statement) => statement.available !== false,
+  ).length;
+
+  const proposalCard = (
+    <ProblemProposalCard
+      domains={details.domains}
+      defaultDomainId={selectedDomainId}
+      isLead={isLead}
+      leadName={leadName}
+      credentials={
+        localProfile?.email && localProfile.mobile
+          ? { email: localProfile.email, phone: localProfile.mobile }
+          : null
+      }
+      proposal={problemProposal}
+      slots={proposalSlots}
+      onChange={(state) => {
+        setProblemProposal(state.problemProposal ?? null);
+        if (state.proposalSlots) setProposalSlots(state.proposalSlots);
+      }}
+    />
+  );
+
   const stats = [
     {
       label: "Registration",
@@ -346,6 +385,54 @@ function DashboardPage() {
               {roleLabel}
             </span>
           </section>
+
+          {roundResult ? (
+            <section
+              role="status"
+              className={`mt-5 flex items-start gap-3 rounded-lg border p-4 sm:p-5 ${
+                roundResult.status === "qualified"
+                  ? "border-emerald-200 bg-emerald-50"
+                  : "border-red-200 bg-red-50"
+              }`}
+            >
+              <span
+                className={`grid size-9 shrink-0 place-items-center rounded-md ${
+                  roundResult.status === "qualified"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-red-100 text-red-700"
+                }`}
+              >
+                {roundResult.status === "qualified" ? (
+                  <Trophy className="size-4" />
+                ) : (
+                  <X className="size-4" />
+                )}
+              </span>
+              <div className="min-w-0">
+                {roundResult.status === "qualified" ? (
+                  <>
+                    <p className="text-sm font-semibold text-emerald-900">
+                      Qualified — going to Round {roundResult.nextRound}
+                    </p>
+                    <p className="mt-0.5 text-[13px] text-emerald-800">
+                      Congratulations! Your team cleared Round {roundResult.round} and will be
+                      evaluated again by the Jury in Round {roundResult.nextRound}.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-semibold text-red-900">
+                      Disqualified in Round {roundResult.round}
+                    </p>
+                    <p className="mt-0.5 text-[13px] text-red-800">
+                      Your team's overall score didn't reach the Round {roundResult.round} cutoff.
+                      Thank you for participating.
+                    </p>
+                  </>
+                )}
+              </div>
+            </section>
+          ) : null}
 
           <section className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
             {stats.map(({ label, value, hint, Icon, mono }) => (
@@ -488,6 +575,7 @@ function DashboardPage() {
                       {leadName} selects and confirms your team&apos;s problem statement. It will
                       appear here once it&apos;s confirmed.
                     </p>
+                    <div className="w-full max-w-xl text-left">{proposalCard}</div>
                   </div>
                 ) : (
                   <>
@@ -501,7 +589,7 @@ function DashboardPage() {
                         </h2>
                       </div>
                       <span className="border border-(--color-border) bg-(--color-background-alt) px-2 py-0.5 text-[11px] font-semibold text-(--color-text-secondary)">
-                        {statements.length} available
+                        {availableStatementCount} available
                       </span>
                     </div>
                     <p className="mt-2 flex items-start gap-1.5 border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] leading-5 text-amber-800">
@@ -509,6 +597,7 @@ function DashboardPage() {
                       Your team can confirm only one problem statement, and it can&apos;t be changed
                       afterwards. Review it carefully before confirming.
                     </p>
+                    {proposalCard}
 
                     <div
                       ref={trackTabs.containerRef}
@@ -639,29 +728,39 @@ function DashboardPage() {
                             key={statement.id}
                             to="/hackathon/problems/$problemId"
                             params={{ problemId: statement.id }}
-                            className="group block px-3.5 py-3 transition-colors hover:bg-(--color-background-alt)"
+                            aria-label={`View ${statement.id}: ${statement.title}`}
+                            className="group flex items-center gap-3 px-3.5 py-3 transition-colors hover:bg-(--color-background-alt)"
                           >
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="font-mono text-[11px] font-bold text-(--brand-accent)">
-                                {statement.id}
-                              </span>
-                              <span className="bg-(--color-background-alt) px-1.5 py-0.5 text-[10.5px] font-semibold text-(--color-text-secondary)">
-                                {statement.difficulty}
-                              </span>
-                            </div>
-                            <p className="mt-1 text-[13.5px] font-semibold group-hover:text-(--brand-accent)">
-                              {statement.title}
-                            </p>
-                            {statement.industry || statement.platform ? (
-                              <p className="mt-0.5 text-[11.5px] text-(--color-text-secondary)">
-                                {[statement.industry, statement.platform]
-                                  .filter(Boolean)
-                                  .join(" · ")}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-[11px] font-bold text-(--brand-accent)">
+                                  {statement.id}
+                                </span>
+                                <span className="bg-(--color-background-alt) px-1.5 py-0.5 text-[10.5px] font-semibold text-(--color-text-secondary)">
+                                  {statement.difficulty}
+                                </span>
+                              </div>
+                              <p className="mt-1 text-[13.5px] font-semibold group-hover:text-(--brand-accent)">
+                                {statement.title}
                               </p>
-                            ) : null}
-                            <p className="mt-1 line-clamp-2 text-[12px] leading-5 text-(--color-text-muted)">
-                              {statement.description}
-                            </p>
+                              {statement.industry || statement.platform ? (
+                                <p className="mt-0.5 text-[11.5px] text-(--color-text-secondary)">
+                                  {[statement.industry, statement.platform]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                                </p>
+                              ) : null}
+                              <p className="mt-1 line-clamp-2 text-[12px] leading-5 text-(--color-text-muted)">
+                                {statement.description}
+                              </p>
+                            </div>
+                            <span
+                              aria-hidden
+                              className="inline-flex h-8 shrink-0 items-center gap-1.5 border border-(--brand-accent)/40 bg-white px-3 text-[12px] font-semibold text-(--brand-accent) transition-colors group-hover:border-(--brand-accent) group-hover:bg-(--brand-accent) group-hover:text-white"
+                            >
+                              <Eye className="size-3.5" />
+                              View
+                            </span>
                           </Link>
                         ))
                       ) : domainStatements.length > 0 ? (

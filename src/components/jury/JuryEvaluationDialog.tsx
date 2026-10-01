@@ -52,6 +52,9 @@ export function JuryEvaluationDialog({
   const [team, setTeam] = useState<JuryTeam | null>(null);
   const [rubric, setRubric] = useState<JuryCriterion[]>([]);
   const [evaluation, setEvaluation] = useState<JuryEvaluation | null>(null);
+  const [round, setRound] = useState(1);
+  const [latestRound, setLatestRound] = useState(1);
+  const [switchingRound, setSwitchingRound] = useState(false);
   const [scores, setScores] = useState<Record<string, string>>({});
   const [comments, setComments] = useState("");
   const [editing, setEditing] = useState(false);
@@ -73,6 +76,8 @@ export function JuryEvaluationDialog({
         if (!active) return;
         setTeam(teamData.team);
         setRubric(evaluationData.rubric);
+        setRound(evaluationData.round ?? 1);
+        setLatestRound(evaluationData.latestRound ?? teamData.team.round ?? 1);
         setEvaluation(evaluationData.evaluation);
         setComments(evaluationData.evaluation?.comments || "");
         setScores(scoresFrom(evaluationData.evaluation));
@@ -104,6 +109,26 @@ export function JuryEvaluationDialog({
     );
   }
 
+  async function selectRound(next: number) {
+    if (next === round || switchingRound || saving) return;
+    setSwitchingRound(true);
+    setError("");
+    setNotice("");
+    try {
+      const data = await getJuryEvaluation(hackathonId, teamId, next);
+      setRound(next);
+      setRubric(data.rubric);
+      setEvaluation(data.evaluation);
+      setComments(data.evaluation?.comments || "");
+      setScores(scoresFrom(data.evaluation));
+      setEditing(false);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not load this round.");
+    } finally {
+      setSwitchingRound(false);
+    }
+  }
+
   function startEditing() {
     setEditing(true);
     setError("");
@@ -126,6 +151,7 @@ export function JuryEvaluationDialog({
         criteriaScores: scorePayload(),
         comments,
         status: "draft",
+        round,
       });
       setEvaluation(result.evaluation);
       setNotice("Draft saved.");
@@ -149,6 +175,7 @@ export function JuryEvaluationDialog({
       const result = await submitJuryEvaluation(hackathonId, teamId, {
         criteriaScores: scorePayload(),
         comments,
+        round,
       });
       setEvaluation(result.evaluation);
       setEditing(false);
@@ -178,7 +205,7 @@ export function JuryEvaluationDialog({
             <DialogHeader className="min-w-0 space-y-1 text-left">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-xs font-semibold tracking-[0.12em] text-(--brand-accent) uppercase">
-                  Team evaluation
+                  Team evaluation{latestRound > 1 ? ` · Round ${round}` : ""}
                 </p>
                 {team && !loading ? statusBadge : null}
               </div>
@@ -187,8 +214,10 @@ export function JuryEvaluationDialog({
               </DialogTitle>
               <DialogDescription>
                 {readOnly
-                  ? "Your submitted score. Use Edit score to change it."
-                  : "Review the submission, then pick a mark for each criterion."}
+                  ? `Your submitted ${latestRound > 1 ? `Round ${round} ` : ""}score. Use Edit score to change it.`
+                  : latestRound > 1 && round === latestRound
+                    ? `This team was selected for Round ${round}. Score it again for this round.`
+                    : "Review the submission, then pick a mark for each criterion."}
               </DialogDescription>
             </DialogHeader>
             <button
@@ -260,6 +289,37 @@ export function JuryEvaluationDialog({
           ) : null}
           {team && !loading ? (
             <>
+              {latestRound > 1 ? (
+                <div
+                  role="tablist"
+                  aria-label="Evaluation round"
+                  className="mb-4 inline-flex rounded-xl border border-(--color-border) bg-white p-1"
+                >
+                  {Array.from({ length: latestRound }, (_, index) => index + 1).map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      role="tab"
+                      aria-selected={round === value}
+                      disabled={switchingRound || saving !== null}
+                      onClick={() => void selectRound(value)}
+                      className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-colors disabled:cursor-wait ${
+                        round === value
+                          ? "bg-(--brand-accent) text-white"
+                          : "text-(--color-text-secondary) hover:bg-(--color-background-alt)"
+                      }`}
+                    >
+                      Round {value}
+                      {value === latestRound ? (
+                        <span className={round === value ? "opacity-80" : "opacity-60"}>
+                          {" "}
+                          · current
+                        </span>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
               <div className="mb-3 flex items-center justify-between text-xs text-(--color-text-muted)">
                 <span className="font-semibold tracking-[0.06em] uppercase">Scoring criteria</span>
                 <span className="tabular-nums">

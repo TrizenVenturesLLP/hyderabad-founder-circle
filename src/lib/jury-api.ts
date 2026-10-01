@@ -49,8 +49,12 @@ export type JuryHackathon = {
   status: string;
   startDate: string | null;
   endDate: string | null;
+  /** Teams on statements this Jury member claimed. */
   teamCount: number;
+  totalTeamCount?: number;
   statementCount: number;
+  claimedCount?: number;
+  claimLimit?: number;
   evaluatedCount: number;
   pendingEvaluations: number;
 };
@@ -74,8 +78,22 @@ export type JuryTeam = {
     submittedAt: string | null;
     hasFile: boolean;
   };
+  /** Latest evaluation round the team has been selected for. */
+  round?: number;
   evaluationStatus?: "pending" | "draft" | "submitted";
   totalScore?: number | null;
+  roundScores?: {
+    round: number;
+    status: "pending" | "draft" | "submitted";
+    totalScore: number | null;
+  }[];
+  /** Result of the latest round with an applied cutoff, if any. */
+  outcome?: JuryRoundOutcome | null;
+};
+export type JuryRoundOutcome = {
+  round: number;
+  status: "qualified" | "disqualified";
+  nextRound: number | null;
 };
 export type JuryEvaluation = {
   _id: string;
@@ -92,6 +110,9 @@ export type JuryLeaderboardEntry = {
   submittedEvaluations: number;
   totalJuryMembers: number;
   averageScore: number | null;
+  advanced?: boolean;
+  qualification?: "qualified" | "disqualified" | null;
+  roundScores?: { round: number; submittedEvaluations: number; averageScore: number | null }[];
   rank: number | null;
 };
 
@@ -145,10 +166,15 @@ export function getJuryHackathon(hackathonId: string) {
   );
 }
 
-export function getJuryLeaderboard(hackathonId: string) {
-  return request<{ items: JuryLeaderboardEntry[]; requiredEvaluations?: number }>(
-    `/api/jury/hackathons/${encodeURIComponent(hackathonId)}/leaderboard`,
-  );
+export function getJuryLeaderboard(hackathonId: string, round = 1) {
+  return request<{
+    items: JuryLeaderboardEntry[];
+    requiredEvaluations?: number;
+    round?: number;
+    maxRound?: number;
+    result?: { cutoff: number; decidedAt: string | null } | null;
+    scoringComplete?: boolean;
+  }>(`/api/jury/hackathons/${encodeURIComponent(hackathonId)}/leaderboard?round=${round}`);
 }
 
 export type JuryProblemStatementStatus = "pending_approval" | "active" | "rejected";
@@ -171,11 +197,36 @@ export type JuryProblemStatement = {
   createdBy: { _id: string; name: string } | null;
   createdByMe: boolean;
   createdAt: string;
+  claimed?: boolean;
+  claimedByMe?: boolean;
+  claimedByName?: string;
+  /** Proposed by a team; only that team works on it. */
+  teamProposal?: boolean;
+  /** Teams that confirmed this statement. */
+  teamCount?: number;
+  /** Team names; empty for statements claimed by another Jury member. */
+  confirmedTeams?: string[];
 };
 
 export function getJuryProblemStatements(hackathonId: string) {
-  return request<{ statements: JuryProblemStatement[] }>(
-    `/api/jury/hackathons/${encodeURIComponent(hackathonId)}/problem-statements`,
+  return request<{
+    statements: JuryProblemStatement[];
+    claimLimit?: number;
+    claimedCount?: number;
+  }>(`/api/jury/hackathons/${encodeURIComponent(hackathonId)}/problem-statements`);
+}
+
+export function claimJuryProblemStatement(hackathonId: string, statementId: string) {
+  return post<{ claimedCount: number; claimLimit: number }>(
+    `/api/jury/hackathons/${encodeURIComponent(hackathonId)}/problem-statements/${encodeURIComponent(statementId)}/claim`,
+    {},
+  );
+}
+
+export function unclaimJuryProblemStatement(hackathonId: string, statementId: string) {
+  return post<{ claimedCount: number; claimLimit: number }>(
+    `/api/jury/hackathons/${encodeURIComponent(hackathonId)}/problem-statements/${encodeURIComponent(statementId)}/unclaim`,
+    {},
   );
 }
 
@@ -257,9 +308,14 @@ export async function getJurySubmissionViewLink(
   };
 }
 
-export function getJuryEvaluation(hackathonId: string, teamId: string) {
-  return request<{ evaluation: JuryEvaluation | null; rubric: JuryCriterion[] }>(
-    `/api/jury/hackathons/${encodeURIComponent(hackathonId)}/teams/${encodeURIComponent(teamId)}/evaluation`,
+export function getJuryEvaluation(hackathonId: string, teamId: string, round?: number) {
+  return request<{
+    evaluation: JuryEvaluation | null;
+    rubric: JuryCriterion[];
+    round?: number;
+    latestRound?: number;
+  }>(
+    `/api/jury/hackathons/${encodeURIComponent(hackathonId)}/teams/${encodeURIComponent(teamId)}/evaluation${round ? `?round=${round}` : ""}`,
   );
 }
 
@@ -270,6 +326,7 @@ export function saveJuryEvaluationDraft(
     criteriaScores: Record<string, number>;
     comments: string;
     status: "draft";
+    round?: number;
   },
 ) {
   return request<{ evaluation: JuryEvaluation }>(
@@ -284,7 +341,7 @@ export function saveJuryEvaluationDraft(
 export function submitJuryEvaluation(
   hackathonId: string,
   teamId: string,
-  body: { criteriaScores?: Record<string, number>; comments?: string } = {},
+  body: { criteriaScores?: Record<string, number>; comments?: string; round?: number } = {},
 ) {
   return post<{ evaluation: JuryEvaluation }>(
     `/api/jury/hackathons/${encodeURIComponent(hackathonId)}/teams/${encodeURIComponent(teamId)}/evaluation/submit`,

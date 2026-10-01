@@ -21,6 +21,7 @@ import {
   Users,
 } from "lucide-react";
 import { POSTER_HACKATHON_DETAILS } from "@/lib/hackathon-data";
+import { MAX_TEAM_MEMBERS } from "@/lib/hackathon";
 import {
   HackathonApiError,
   loginHackathonStudent,
@@ -186,7 +187,7 @@ function HackathonRegistrationPage() {
   }
 
   function addMember() {
-    if (members.length >= 3) return;
+    if (members.length >= MAX_TEAM_MEMBERS - 1) return;
 
     setMembers((current) => [
       ...current,
@@ -549,12 +550,12 @@ function HackathonRegistrationPage() {
                   <div>
                     <h2 className="text-sm font-semibold text-foreground">Team Members</h2>
                     <p className="text-[11.5px] text-muted-foreground">
-                      Add up to 3 additional members.
+                      Add up to {MAX_TEAM_MEMBERS - 1} additional members.
                     </p>
                   </div>
 
                   <span className="text-[11.5px] font-medium text-muted-foreground">
-                    {members.length + 1}/4 members
+                    {members.length + 1}/{MAX_TEAM_MEMBERS} members
                   </span>
                 </div>
 
@@ -608,7 +609,7 @@ function HackathonRegistrationPage() {
                   ))}
                 </div>
 
-                {members.length < 3 && (
+                {members.length < MAX_TEAM_MEMBERS - 1 && (
                   <button
                     type="button"
                     onClick={addMember}

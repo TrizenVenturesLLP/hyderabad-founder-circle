@@ -11,6 +11,7 @@ import {
 import { RsvpButton } from "@/components/rsvp/RsvpButton";
 import {
   DATE_TBC_LABEL,
+  isHackathonEvent,
   isMeetupCompleted,
   isMeetupDateConfirmed,
   isRsvpOpen,
@@ -47,12 +48,24 @@ function statusMeta(meetup: Meetup) {
 export function EventCard({ meetup, className }: { meetup: Meetup; className?: string }) {
   const confirmed = isMeetupDateConfirmed(meetup);
   const day = confirmed ? new Date(meetup.dateISO + "T12:00:00") : null;
-  const dayNum = day?.getDate();
-  const monthShort = day?.toLocaleDateString("en-IN", { month: "short" }).toUpperCase();
+  const endDay =
+    confirmed && meetup.endDateISO && meetup.endDateISO !== meetup.dateISO
+      ? new Date(meetup.endDateISO + "T12:00:00")
+      : null;
+  const monthOf = (date: Date) =>
+    date.toLocaleDateString("en-IN", { month: "short" }).toUpperCase();
   const weekday = day?.toLocaleDateString("en-IN", { weekday: "short" });
+  const dayRange = day
+    ? !endDay
+      ? `${day.getDate()} ${monthOf(day)}`
+      : endDay.getMonth() === day.getMonth()
+        ? `${day.getDate()}–${endDay.getDate()} ${monthOf(day)}`
+        : `${day.getDate()} ${monthOf(day)} – ${endDay.getDate()} ${monthOf(endDay)}`
+    : "";
   const { label, tone, Icon } = statusMeta(meetup);
   const cover = meetupCoverImage(meetup);
   const open = isRsvpOpen(meetup);
+  const hackathon = isHackathonEvent(meetup);
 
   return (
     <article
@@ -104,7 +117,7 @@ export function EventCard({ meetup, className }: { meetup: Meetup; className?: s
             {meetup.title}
           </h3>
           <p className="mt-1.5 text-[12px] font-medium text-white/85">
-            {confirmed ? `${weekday} · ${dayNum} ${monthShort}` : DATE_TBC_LABEL}
+            {confirmed ? `${weekday} · ${dayRange}` : DATE_TBC_LABEL}
           </p>
         </div>
       </Link>
@@ -144,7 +157,15 @@ export function EventCard({ meetup, className }: { meetup: Meetup; className?: s
               aria-hidden
             />
           </Link>
-          {open ? (
+          {open && hackathon ? (
+            <Link
+              to="/hackathon/register"
+              className="btn-primary min-w-0 flex-1 justify-center gap-1.5 min-h-10! px-3! text-[13px]!"
+            >
+              <Ticket className="size-3.5" strokeWidth={1.75} aria-hidden />
+              Register
+            </Link>
+          ) : open ? (
             <RsvpButton
               event={meetup}
               className="btn-primary min-w-0 flex-1 justify-center gap-1.5 min-h-10! px-3! text-[13px]!"

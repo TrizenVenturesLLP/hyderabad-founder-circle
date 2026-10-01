@@ -321,7 +321,8 @@ function AdminHackathonJuryPage() {
                   </div>
                   <div className="mt-2.5 flex items-center justify-between text-[11.5px] text-muted-foreground">
                     <span>
-                      {member.teamsEvaluated} evaluated · {member.teamsPending} pending
+                      {member.statementsClaimed ?? 0} statements · {member.teamsAssigned ?? 0} teams
+                      · {member.teamsEvaluated} evaluated · {member.teamsPending} pending
                     </span>
                     <span className="font-semibold text-foreground tabular-nums">
                       {member.completionPercent}%

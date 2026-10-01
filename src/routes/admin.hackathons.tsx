@@ -33,6 +33,7 @@ import {
   type ProblemStatement,
 } from "@/lib/hackathon";
 import { TrackMultiSelect } from "@/components/admin/TrackMultiSelect";
+import { cn } from "@/lib/utils";
 import {
   activateHackathonUser,
   getHackathonRegisteredUsers,
@@ -51,7 +52,12 @@ import {
   type HackathonEvaluationScores,
   type HackathonRegisteredUser,
 } from "@/lib/hackathon-api";
-import { reviewAdminHackathonProblemStatement, type AdminSessionUser } from "@/lib/admin-api";
+import {
+  releaseAdminHackathonProblemStatement,
+  reviewAdminHackathonProblemStatement,
+  setAdminHackathonJuryClaimLimit,
+  type AdminSessionUser,
+} from "@/lib/admin-api";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -103,6 +109,9 @@ interface FormState {
 
 type AdminProblemStatement = ProblemStatement & {
   createdBy?: { name: string } | null;
+  claimedBy?: { name: string; email?: string } | null;
+  proposedByTeam?: { team_name: string; lead_name?: string } | null;
+  confirmedTeams?: { team_name: string; lead_name?: string }[];
   status?: "pending_approval" | "active" | "rejected";
   createdAt?: string;
 };
@@ -120,6 +129,50 @@ const emptyForm: FormState = {
 };
 
 const hackathons = adminHackathons;
+
+type SelectionState = "both" | "confirmed-only" | "claimed-only" | "neither";
+
+const SELECTION_FILTERS: {
+  value: SelectionState;
+  label: string;
+  hint: string;
+  className: string;
+}[] = [
+  {
+    value: "both",
+    label: "Confirmed & claimed",
+    hint: "Teams picked it and a Jury member scores it",
+    className: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  },
+  {
+    value: "confirmed-only",
+    label: "Confirmed, not claimed",
+    hint: "Teams picked it but no Jury member will score them yet",
+    className: "border-red-200 bg-red-50 text-red-800",
+  },
+  {
+    value: "claimed-only",
+    label: "Claimed, not confirmed",
+    hint: "A Jury member claimed it but no team picked it yet",
+    className: "border-amber-200 bg-amber-50 text-amber-800",
+  },
+  {
+    value: "neither",
+    label: "Not claimed or confirmed",
+    hint: "Live, but no Jury member and no team yet",
+    className: "border-border bg-white text-foreground",
+  },
+];
+
+function selectionState(statement: AdminProblemStatement): SelectionState | null {
+  if (statement.status && statement.status !== "active") return null;
+  const confirmed = Boolean(statement.confirmedTeams?.length);
+  const claimed = Boolean(statement.claimedBy);
+  if (confirmed && claimed) return "both";
+  if (confirmed) return "confirmed-only";
+  if (claimed) return "claimed-only";
+  return "neither";
+}
 
 const hackathonQuickLinkClass =
   "inline-flex h-8 cursor-pointer items-center gap-1.5 border border-(--color-border) bg-white px-2.5 text-(--color-text-secondary) transition-colors hover:border-(--brand-accent) hover:bg-(--brand-accent-soft) hover:text-(--brand-accent)";
@@ -267,8 +320,14 @@ function AdminHackathonsPage() {
   const [selectedDomain, setSelectedDomain] = useState<string>("ui-ux");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
+  const [selectionFilter, setSelectionFilter] = useState<SelectionState | "all">("all");
   const [releaseAt, setReleaseAt] = useState<string | null>(null);
   const [releaseAtInput, setReleaseAtInput] = useState<string>("");
+  const [claimLimit, setClaimLimit] = useState(20);
+  const [claimLimitInput, setClaimLimitInput] = useState("20");
+  const [savingClaimLimit, setSavingClaimLimit] = useState(false);
+  const [teamProposalLimit, setTeamProposalLimit] = useState(5);
+  const [releasingStatementId, setReleasingStatementId] = useState<string | null>(null);
 
   // Single Add / Edit Modal
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -304,6 +363,9 @@ function AdminHackathonsPage() {
       try {
         const data = await getAdminHackathonProblemStatements(activeHackathonId);
         setStatements(data.statements || []);
+        setClaimLimit(data.claimLimit ?? 20);
+        setClaimLimitInput(String(data.claimLimit ?? 20));
+        setTeamProposalLimit(data.teamProposalLimit ?? 5);
       } catch (error) {
         console.error("Failed to load problem statements:", error);
         toast.error("Failed to load problem statements");
@@ -327,6 +389,49 @@ function AdminHackathonsPage() {
 
     return () => unsubscribe();
   }, [activeHackathonId]);
+
+  async function handleSaveClaimLimit(e: React.FormEvent) {
+    e.preventDefault();
+    const limit = Number(claimLimitInput);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 500) {
+      toast.error("Claim limit must be a whole number from 1 to 500.");
+      return;
+    }
+    setSavingClaimLimit(true);
+    try {
+      const result = await setAdminHackathonJuryClaimLimit(activeHackathonId, limit);
+      setClaimLimit(result.claimLimit);
+      setClaimLimitInput(String(result.claimLimit));
+      toast.success(`Each Jury member can now claim up to ${result.claimLimit} statements.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update the claim limit.");
+    } finally {
+      setSavingClaimLimit(false);
+    }
+  }
+
+  async function handleReleaseStatement(item: AdminProblemStatement) {
+    if (
+      !window.confirm(
+        `Release ${item.id} from ${item.claimedBy?.name || "its Jury member"}?\n\nAnother Jury member can then claim it. Scores the previous Jury member gave teams on this statement will no longer count.`,
+      )
+    )
+      return;
+    setReleasingStatementId(item.id);
+    try {
+      await releaseAdminHackathonProblemStatement(activeHackathonId, item.id);
+      setStatements((current) =>
+        current.map((statement) =>
+          statement.id === item.id ? { ...statement, claimedBy: null } : statement,
+        ),
+      );
+      toast.success(`${item.id} released.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not release the statement.");
+    } finally {
+      setReleasingStatementId(null);
+    }
+  }
 
   async function handleSaveReleaseTimer(e: React.FormEvent) {
     e.preventDefault();
@@ -571,6 +676,11 @@ function AdminHackathonsPage() {
     [statements],
   );
   const pendingApprovalCount = pendingStatements.length;
+  const approvedTeamProposals = statements.filter(
+    (s) => s.proposedByTeam && s.status === "active",
+  ).length;
+  const teamSlotsFull = (item: AdminProblemStatement) =>
+    Boolean(item.proposedByTeam) && approvedTeamProposals >= teamProposalLimit;
   const liveStatementCount = statements.filter((s) => !s.status || s.status === "active").length;
   const rejectedStatementCount = statements.filter((s) => s.status === "rejected").length;
 
@@ -587,9 +697,26 @@ function AdminHackathonsPage() {
         difficultyFilter === "all" ||
         item.difficulty.toLowerCase() === difficultyFilter.toLowerCase();
 
-      return matchesSearch && matchesDifficulty;
+      const matchesSelection =
+        selectionFilter === "all" || selectionState(item) === selectionFilter;
+
+      return matchesSearch && matchesDifficulty && matchesSelection;
     });
-  }, [domainStatements, searchQuery, difficultyFilter]);
+  }, [domainStatements, searchQuery, difficultyFilter, selectionFilter]);
+
+  const selectionCounts = useMemo(() => {
+    const counts: Record<SelectionState, number> = {
+      both: 0,
+      "confirmed-only": 0,
+      "claimed-only": 0,
+      neither: 0,
+    };
+    for (const item of domainStatements) {
+      const state = selectionState(item);
+      if (state) counts[state] += 1;
+    }
+    return counts;
+  }, [domainStatements]);
 
   function handleOpenCreate() {
     setEditingId(null);
@@ -753,9 +880,11 @@ function AdminHackathonsPage() {
       setStatements(refreshed.statements || []);
       setReviewTarget(null);
       toast.success(
-        action === "approve"
-          ? "Problem Statement approved and live."
-          : "Problem Statement rejected.",
+        action === "reject"
+          ? "Problem Statement rejected."
+          : statement.proposedByTeam
+            ? `Approved — confirmed as ${statement.proposedByTeam.team_name}'s problem statement.`
+            : "Problem Statement approved and live.",
       );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not review Problem Statement.");
@@ -1615,7 +1744,12 @@ function AdminHackathonsPage() {
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Problem Statements added by Jury members go live only after you approve them.
+                  Problem Statements added by Jury members go live only after you approve them. Team
+                  ideas become that team&apos;s statement when approved ·{" "}
+                  <span className="font-semibold text-foreground">
+                    {approvedTeamProposals} of {teamProposalLimit} team ideas approved
+                  </span>
+                  .
                 </p>
               </div>
               <button
@@ -1657,7 +1791,11 @@ function AdminHackathonsPage() {
                           {trackNames(item)}
                         </td>
                         <td className="px-4 py-3 text-xs text-foreground">
-                          {item.createdBy?.name ? `Jury · ${item.createdBy.name}` : "—"}
+                          {item.proposedByTeam
+                            ? `Team · ${item.proposedByTeam.team_name}`
+                            : item.createdBy?.name
+                              ? `Jury · ${item.createdBy.name}`
+                              : "—"}
                         </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">
                           {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "—"}
@@ -1674,7 +1812,12 @@ function AdminHackathonsPage() {
                             </button>
                             <button
                               type="button"
-                              disabled={reviewingStatementId === item.id}
+                              disabled={reviewingStatementId === item.id || teamSlotsFull(item)}
+                              title={
+                                teamSlotsFull(item)
+                                  ? `All ${teamProposalLimit} team idea slots are used`
+                                  : undefined
+                              }
                               onClick={() => void handleReviewStatement(item, "approve")}
                               className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
                             >
@@ -1764,6 +1907,38 @@ function AdminHackathonsPage() {
             </button>
           </form>
         </div>
+
+        <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Jury claim limit</p>
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+              Each Jury member claims statements and scores only the teams that pick them. Teams can
+              pick any statement; a team on an unclaimed statement is scored once a Jury member
+              claims it. Currently {claimLimit} per Jury member ·{" "}
+              {statements.filter((s) => s.claimedBy).length} of {statements.length} claimed.
+            </p>
+          </div>
+          <form onSubmit={handleSaveClaimLimit} className="flex items-end gap-2">
+            <label className="text-xs font-medium text-foreground">
+              Statements per Jury member
+              <input
+                type="number"
+                min={1}
+                max={500}
+                value={claimLimitInput}
+                onChange={(e) => setClaimLimitInput(e.target.value)}
+                className="mt-1 block w-28 rounded-lg border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={savingClaimLimit}
+              className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-95 disabled:opacity-60"
+            >
+              {savingClaimLimit ? "Saving…" : "Save limit"}
+            </button>
+          </form>
+        </div>
       </AdminPanel>
 
       <div
@@ -1820,6 +1995,50 @@ function AdminHackathonsPage() {
         })}
         <span aria-hidden className={tabIndicatorClass} style={trackTabs.indicatorStyle} />
       </div>
+
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        {SELECTION_FILTERS.map((option) => {
+          const active = selectionFilter === option.value;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => setSelectionFilter(active ? "all" : option.value)}
+              title={option.hint}
+              className={cn(
+                "flex items-center justify-between gap-3 border px-3.5 py-2.5 text-left transition",
+                option.className,
+                active
+                  ? "ring-2 ring-(--brand-accent) ring-offset-1"
+                  : "opacity-90 hover:opacity-100 hover:shadow-sm",
+              )}
+            >
+              <span className="min-w-0">
+                <span className="block truncate text-xs font-semibold">{option.label}</span>
+                <span className="block truncate text-[11px] opacity-75">{option.hint}</span>
+              </span>
+              <span className="text-xl font-bold tabular-nums">
+                {selectionCounts[option.value]}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {selectionFilter !== "all" ? (
+        <p className="-mt-3 text-xs text-muted-foreground">
+          Showing only &ldquo;
+          {SELECTION_FILTERS.find((option) => option.value === selectionFilter)?.label}&rdquo; in
+          this track ·{" "}
+          <button
+            type="button"
+            onClick={() => setSelectionFilter("all")}
+            className="font-semibold text-primary hover:underline"
+          >
+            Show all
+          </button>
+        </p>
+      ) : null}
 
       {/* Filter and Search Panel */}
       <AdminPanel className="rounded-xl p-4">
@@ -1992,16 +2211,61 @@ function AdminHackathonsPage() {
                 </div>
 
                 <div className="flex items-center justify-between gap-2 border-t border-border bg-muted/30 px-4 py-2.5">
-                  <p className="min-w-0 truncate text-[11px] text-muted-foreground">
-                    {item.createdBy?.name ? `Jury · ${item.createdBy.name}` : "Admin"}
-                  </p>
+                  <div className="min-w-0 text-[11px]">
+                    <p className="truncate text-muted-foreground">
+                      {item.proposedByTeam
+                        ? `Team idea · ${item.proposedByTeam.team_name}`
+                        : item.createdBy?.name
+                          ? `Added by Jury · ${item.createdBy.name}`
+                          : "Added by Admin"}
+                    </p>
+                    <p
+                      className={cn(
+                        "truncate font-semibold",
+                        item.claimedBy ? "text-emerald-700" : "text-amber-700",
+                      )}
+                    >
+                      {item.claimedBy
+                        ? `Scored by ${item.claimedBy.name}`
+                        : "Unclaimed · no Jury to score yet"}
+                    </p>
+                    <p
+                      className={cn(
+                        "truncate",
+                        item.confirmedTeams?.length
+                          ? "font-semibold text-foreground"
+                          : "text-muted-foreground",
+                      )}
+                      title={item.confirmedTeams?.map((team) => team.team_name).join(", ")}
+                    >
+                      {item.confirmedTeams?.length
+                        ? `Confirmed by ${item.confirmedTeams.map((team) => team.team_name).join(", ")}`
+                        : "No team has confirmed it"}
+                    </p>
+                  </div>
 
                   <div className="flex shrink-0 items-center gap-1">
+                    {item.claimedBy ? (
+                      <button
+                        type="button"
+                        disabled={releasingStatementId === item.id}
+                        onClick={() => void handleReleaseStatement(item)}
+                        title="Release so another Jury member can claim it"
+                        className="inline-flex h-7 items-center border border-border bg-white px-2 text-[11px] font-semibold text-foreground hover:bg-muted disabled:opacity-60"
+                      >
+                        {releasingStatementId === item.id ? "Releasing…" : "Release"}
+                      </button>
+                    ) : null}
                     {item.status === "pending_approval" ? (
                       <>
                         <button
                           type="button"
-                          disabled={reviewingStatementId === item.id}
+                          disabled={reviewingStatementId === item.id || teamSlotsFull(item)}
+                          title={
+                            teamSlotsFull(item)
+                              ? `All ${teamProposalLimit} team idea slots are used`
+                              : undefined
+                          }
                           onClick={() => void handleReviewStatement(item, "approve")}
                           className="inline-flex h-7 items-center gap-1 bg-emerald-700 px-2 text-[11px] font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
                         >
@@ -2105,9 +2369,11 @@ function AdminHackathonsPage() {
                 <p className="mt-1 text-xs text-muted-foreground">
                   {reviewTarget.statement.difficulty} ·{" "}
                   {reviewTarget.statement.category || "General"} · Submitted by{" "}
-                  {reviewTarget.statement.createdBy?.name
-                    ? `Jury · ${reviewTarget.statement.createdBy.name}`
-                    : "Admin"}
+                  {reviewTarget.statement.proposedByTeam
+                    ? `Team · ${reviewTarget.statement.proposedByTeam.team_name}`
+                    : reviewTarget.statement.createdBy?.name
+                      ? `Jury · ${reviewTarget.statement.createdBy.name}`
+                      : "Admin"}
                 </p>
               </div>
               <button
@@ -2127,6 +2393,38 @@ function AdminHackathonsPage() {
               platform={reviewTarget.statement.platform}
               description={reviewTarget.statement.description}
             />
+            {reviewTarget.statement.status !== "pending_approval" &&
+            reviewTarget.statement.status !== "rejected" ? (
+              <div className="mt-4 grid gap-3 border border-border bg-muted/30 p-3 text-xs sm:grid-cols-2">
+                <div>
+                  <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                    Jury
+                  </p>
+                  <p className="mt-1 font-semibold text-foreground">
+                    {reviewTarget.statement.claimedBy?.name || "Not claimed yet"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                    Confirmed by teams ({reviewTarget.statement.confirmedTeams?.length || 0})
+                  </p>
+                  {reviewTarget.statement.confirmedTeams?.length ? (
+                    <ul className="mt-1 space-y-0.5">
+                      {reviewTarget.statement.confirmedTeams.map((team) => (
+                        <li key={team.team_name} className="text-foreground">
+                          <span className="font-semibold">{team.team_name}</span>
+                          {team.lead_name ? (
+                            <span className="text-muted-foreground"> · {team.lead_name}</span>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-1 text-muted-foreground">No team yet</p>
+                  )}
+                </div>
+              </div>
+            ) : null}
             {reviewTarget.statement.deliverables?.length ? (
               <div className="mt-4">
                 <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
@@ -2142,7 +2440,8 @@ function AdminHackathonsPage() {
 
             {reviewTarget.mode === "reject" ? (
               <label className="mt-5 block text-xs font-semibold text-foreground">
-                Reason for rejection (shared with the Jury member)
+                Reason for rejection (shared with the{" "}
+                {reviewTarget.statement.proposedByTeam ? "team" : "Jury member"})
                 <textarea
                   autoFocus
                   rows={3}
@@ -2190,7 +2489,15 @@ function AdminHackathonsPage() {
                   </button>
                   <button
                     type="button"
-                    disabled={reviewingStatementId === reviewTarget.statement.id}
+                    disabled={
+                      reviewingStatementId === reviewTarget.statement.id ||
+                      teamSlotsFull(reviewTarget.statement)
+                    }
+                    title={
+                      teamSlotsFull(reviewTarget.statement)
+                        ? `All ${teamProposalLimit} team idea slots are used`
+                        : undefined
+                    }
                     onClick={() => void handleReviewStatement(reviewTarget.statement, "approve")}
                     className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
                   >

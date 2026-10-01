@@ -377,7 +377,12 @@ function ProblemStatementDetailsPage() {
                   Submit project
                 </button>
               ) : null}
-              {isLead && !confirmed && !lockedToOther ? (
+              {isLead && !confirmed && !lockedToOther && statement.available === false ? (
+                <p className="border border-amber-200 bg-amber-50 px-3 py-2 text-[12.5px] text-amber-800">
+                  This statement was proposed by another team and is reserved for them. Please
+                  choose another one.
+                </p>
+              ) : isLead && !confirmed && !lockedToOther ? (
                 <button
                   type="button"
                   onClick={() => void handleConfirmStatement()}

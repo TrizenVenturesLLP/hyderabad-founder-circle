@@ -227,15 +227,15 @@ function JuryHackathonOverviewPage() {
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               icon={<Users className="size-5" />}
-              label="Registered teams"
+              label="Your teams"
               value={hackathon.teamCount}
               to="/jury/hackathons/$hackathonId/teams"
               hackathonId={hackathonId}
             />
             <StatCard
               icon={<FileText className="size-5" />}
-              label="Live problem statements"
-              value={hackathon.statementCount}
+              label={`Statements claimed (max ${hackathon.claimLimit ?? 20})`}
+              value={hackathon.claimedCount ?? 0}
               to="/jury/hackathons/$hackathonId/problem-statements"
               hackathonId={hackathonId}
             />

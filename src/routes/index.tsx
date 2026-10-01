@@ -2,14 +2,18 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
+  CalendarDays,
   CalendarPlus,
   ClipboardList,
+  Clock3,
+  MapPin,
   Megaphone,
   Network,
   Radio,
   Sparkles,
   Users,
   Wrench,
+  type LucideIcon,
 } from "lucide-react";
 import { EventCard } from "@/components/EventCard";
 import { useInView } from "@/hooks/use-in-view";
@@ -20,17 +24,14 @@ import {
   getMeetups,
   isMeetupCompleted,
   isRsvpOpen,
-  meetupCoverImage,
   meetupDateLabel,
+  meetupShortDateLabel,
   type Meetup,
 } from "@/lib/events";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
-    const [meetups, organizations] = await Promise.all([
-      getMeetups(),
-      getEventOrganizations(),
-    ]);
+    const [meetups, organizations] = await Promise.all([getMeetups(), getEventOrganizations()]);
     const upcoming = meetups.filter((m) => !isMeetupCompleted(m));
     const featured = (upcoming.length > 0 ? upcoming : meetups).slice(0, 6);
     return {
@@ -156,6 +157,32 @@ const faqs = [
   },
 ];
 
+function HeroEventFact({
+  Icon,
+  label,
+  value,
+  className,
+}: {
+  Icon: LucideIcon;
+  label: string;
+  value: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex items-start gap-3", className)}>
+      <Icon
+        className="mt-0.5 size-4 shrink-0 text-[var(--brand-accent)]"
+        strokeWidth={1.75}
+        aria-hidden
+      />
+      <div className="min-w-0">
+        <dt className="text-[11.5px] font-medium text-[var(--color-text-muted)]">{label}</dt>
+        <dd className="mt-0.5 font-medium text-foreground">{value}</dd>
+      </div>
+    </div>
+  );
+}
+
 function SectionLabel({ children }: { children: string }) {
   return (
     <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--brand-accent)]">
@@ -164,7 +191,7 @@ function SectionLabel({ children }: { children: string }) {
   );
 }
 
-function HeroSection({ previewEvents }: { previewEvents: Meetup[] }) {
+function HeroSection({ event }: { event: Meetup | null }) {
   return (
     <section
       id="hero"
@@ -212,67 +239,52 @@ function HeroSection({ previewEvents }: { previewEvents: Meetup[] }) {
           </p>
         </div>
 
-        <div className="hero-card-reveal hero-reveal-delay-2 relative lg:col-span-6">
-          <div
-            className="absolute -inset-4 rounded-[2rem] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--brand-accent)_12%,transparent),transparent_60%)] blur-2xl"
-            aria-hidden
-          />
-          <div className="relative grid gap-3 sm:grid-cols-2">
-            {previewEvents.slice(0, 2).map((event, i) => (
-              <Link
-                key={event.slug}
-                to="/events/$slug"
-                params={{ slug: event.slug }}
-                className={cn(
-                  "group overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[var(--shadow-card)] transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_-20px_rgba(15,23,42,0.35)]",
-                  i === 0 && "sm:col-span-2 sm:flex sm:min-h-[11.5rem]",
-                )}
-              >
-                <div
-                  className={cn(
-                    "relative overflow-hidden bg-[var(--color-background-alt)]",
-                    i === 0
-                      ? "aspect-[16/9] sm:aspect-auto sm:w-[46%] sm:shrink-0"
-                      : "aspect-[16/10]",
-                  )}
-                >
-                  <img
-                    src={meetupCoverImage(event)}
-                    alt=""
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                    loading={i === 0 ? "eager" : "lazy"}
-                    fetchPriority={i === 0 ? "high" : undefined}
-                  />
-                </div>
-                <div className="flex flex-1 flex-col justify-center p-4 sm:p-5">
-                  <p className="text-[11px] font-semibold tracking-[0.06em] text-[var(--brand-accent)]">
-                    {event.organization?.name || event.format}
-                    {isRsvpOpen(event) ? " · Open" : ""}
-                  </p>
-                  <h2 className="mt-1.5 line-clamp-2 font-display text-[1.02rem] leading-snug tracking-tight text-foreground">
-                    {event.title}
-                  </h2>
-                  <p className="mt-2 text-[13px] text-[var(--color-text-secondary)]">
-                    {meetupDateLabel(event)} · {event.city}
-                  </p>
-                </div>
-              </Link>
-            ))}
-            {previewEvents.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-[var(--color-border-strong)] bg-white/70 p-8 text-center sm:col-span-2">
-                <p className="font-display text-[1.05rem] text-foreground">
-                  Events are loading soon
-                </p>
-                <Link
-                  to="/events"
-                  className="mt-3 inline-flex text-[14px] font-medium text-[var(--brand-accent)] hover:underline"
-                >
-                  Browse the events page →
-                </Link>
-              </div>
+        {event ? (
+          <div className="hero-card-reveal hero-reveal-delay-2 lg:col-span-6 lg:border-l lg:border-[var(--color-border)] lg:pl-12">
+            <p className="flex items-center gap-2 text-[12px] font-semibold tracking-[0.08em] text-[var(--brand-accent)] uppercase">
+              {!isMeetupCompleted(event) ? (
+                <span className="relative flex size-2" aria-hidden>
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-[var(--brand-accent)] opacity-60" />
+                  <span className="relative inline-flex size-2 rounded-full bg-[var(--brand-accent)]" />
+                </span>
+              ) : null}
+              {isMeetupCompleted(event) ? "Latest event" : "Upcoming event"}
+              {event.organization?.name ? (
+                <span className="font-medium text-[var(--color-text-muted)] normal-case tracking-normal">
+                  · by {event.organization.name}
+                </span>
+              ) : null}
+            </p>
+            <h2 className="mt-3 font-display text-[clamp(1.7rem,3.2vw,2.4rem)] leading-[1.1] tracking-[-0.03em] text-foreground">
+              {event.title}
+            </h2>
+            {event.blurb ? (
+              <p className="mt-3 max-w-[46ch] text-[14.5px] leading-relaxed text-[var(--color-text-secondary)]">
+                {event.blurb}
+              </p>
             ) : null}
+
+            <dl className="mt-6 grid gap-3.5 text-[14px] sm:grid-cols-2">
+              <HeroEventFact Icon={CalendarDays} label="Date" value={meetupShortDateLabel(event)} />
+              {event.time ? <HeroEventFact Icon={Clock3} label="Time" value={event.time} /> : null}
+              <HeroEventFact
+                Icon={MapPin}
+                label="Venue"
+                value={[event.venue, event.area || event.city].filter(Boolean).join(", ")}
+                className="sm:col-span-2"
+              />
+            </dl>
+
+            <Link
+              to="/events/$slug"
+              params={{ slug: event.slug }}
+              className="group/cta mt-7 inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-[var(--brand-accent)] hover:underline"
+            >
+              {isRsvpOpen(event) ? "Register now" : "View event details"}
+              <ArrowRight className="btn-arrow size-4" strokeWidth={1.75} />
+            </Link>
           </div>
-        </div>
+        ) : null}
       </div>
     </section>
   );
@@ -763,11 +775,17 @@ function StickyExploreBar() {
 
 function Home() {
   const { upcoming, meetups, organizations } = Route.useLoaderData();
-  const preview = upcoming.length > 0 ? upcoming : meetups.slice(0, 2);
+  const heroEvent = useMemo(() => {
+    const byDate = (m: Meetup) => m.endDateISO || m.dateISO;
+    const next = meetups
+      .filter((m) => !isMeetupCompleted(m))
+      .sort((a, b) => a.dateISO.localeCompare(b.dateISO))[0];
+    return next ?? [...meetups].sort((a, b) => byDate(b).localeCompare(byDate(a)))[0] ?? null;
+  }, [meetups]);
 
   return (
     <div className="relative bg-[var(--color-background)] pb-24 md:pb-0">
-      <HeroSection previewEvents={preview.slice(0, 2)} />
+      <HeroSection event={heroEvent} />
       <DiscoverySection events={upcoming} />
       <CommunitiesSection organizations={organizations} events={meetups} />
       <AttendeeStepsSection />

@@ -9,7 +9,7 @@ import {
   resendHackathonTeamInvitation,
   type HackathonRegisteredUser,
 } from "@/lib/hackathon-api";
-import type { HackathonStudentProfile } from "@/lib/hackathon";
+import { MAX_TEAM_MEMBERS, type HackathonStudentProfile } from "@/lib/hackathon";
 
 export const Route = createFileRoute("/dashboard/team")({
   component: TeamPage,
@@ -60,7 +60,7 @@ function TeamPage() {
 
   async function handleAddMember(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!localProfile || !backendUser || members.length >= 4) return;
+    if (!localProfile || !backendUser || members.length >= MAX_TEAM_MEMBERS) return;
 
     setIsAddingMember(true);
     setMemberFeedback(null);
@@ -132,16 +132,16 @@ function TeamPage() {
             <div>
               <h2 className="text-[14px] font-semibold">Add a team member</h2>
               <p className="mt-0.5 text-[12px] text-(--color-text-muted)">
-                Up to four people per team, including the Team Lead. They get an invitation email
-                with a link to set their password and sign in.
+                Up to {MAX_TEAM_MEMBERS} people per team, including the Team Lead. They get an
+                invitation email with a link to set their password and sign in.
               </p>
             </div>
             <span className="border border-(--color-border) bg-(--color-background-alt) px-2 py-0.5 text-[11px] font-semibold text-(--color-text-secondary)">
-              {Math.max(0, 4 - members.length)} spots left
+              {Math.max(0, MAX_TEAM_MEMBERS - members.length)} spots left
             </span>
           </div>
 
-          {members.length < 4 ? (
+          {members.length < MAX_TEAM_MEMBERS ? (
             <form
               onSubmit={handleAddMember}
               className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_auto]"
@@ -195,7 +195,7 @@ function TeamPage() {
             </form>
           ) : (
             <p className="mt-3 text-[12.5px] text-(--color-text-secondary)">
-              Your team has reached its four-member limit.
+              Your team has reached its {MAX_TEAM_MEMBERS}-member limit.
             </p>
           )}
 
@@ -220,7 +220,7 @@ function TeamPage() {
         <div className="flex items-center justify-between gap-2 border-b border-(--color-border) px-4 py-3">
           <h2 className="text-[14px] font-semibold">Members</h2>
           <span className="text-[11.5px] font-medium text-(--color-text-muted)">
-            {members.length} of 4
+            {members.length} of {MAX_TEAM_MEMBERS}
           </span>
         </div>
 

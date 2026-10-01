@@ -77,15 +77,21 @@ export function JuryTable({
   columns,
   children,
   minWidth = 720,
+  compact = false,
 }: {
   columns: { label: string; className?: string }[];
   children: ReactNode;
   minWidth?: number;
+  /** Smaller text and padding so wide tables fit without horizontal scrolling. */
+  compact?: boolean;
 }) {
   return (
     <div className="mt-4 overflow-hidden rounded-2xl border border-(--color-border) bg-white shadow-(--shadow-small)">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm" style={{ minWidth }}>
+        <table
+          className={cn("w-full text-left", compact ? "text-[13px]" : "text-sm")}
+          style={{ minWidth }}
+        >
           <thead className="border-b border-(--color-border) bg-(--color-background-alt)">
             <tr>
               {columns.map((column) => (
@@ -93,7 +99,8 @@ export function JuryTable({
                   key={column.label}
                   scope="col"
                   className={cn(
-                    "px-4 py-3 text-[11px] font-semibold tracking-[0.06em] whitespace-nowrap text-(--color-text-muted) uppercase",
+                    "font-semibold tracking-[0.06em] whitespace-nowrap text-(--color-text-muted) uppercase",
+                    compact ? "px-3 py-2.5 text-[10px]" : "px-4 py-3 text-[11px]",
                     column.className,
                   )}
                 >

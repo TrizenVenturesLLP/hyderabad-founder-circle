@@ -282,6 +282,8 @@ export type AdminHackathonJuryMember = {
   status: "active" | "revoked";
   accountStatus: "active" | "disabled";
   joinedAt: string;
+  statementsClaimed?: number;
+  teamsAssigned?: number;
   teamsEvaluated: number;
   teamsPending: number;
   completionPercent: number;
@@ -363,13 +365,38 @@ export type AdminHackathonLeaderboardEntry = {
   domainId: string;
   submittedEvaluations: number;
   totalJuryMembers: number;
+  /** The Jury member who claimed the team's problem statement; empty when unclaimed. */
+  juryName?: string;
   averageScore: number | null;
+  /** Average of the scores submitted so far, before the required count is reached. */
+  provisionalScore?: number | null;
   highestScore: number | null;
   lowestScore: number | null;
+  /** Latest round the team has been selected for. */
+  teamRound?: number;
+  /** True when the team was selected for the round after the one shown. */
+  advanced?: boolean;
+  /** Set once the round's cutoff has been applied. */
+  qualification?: "qualified" | "disqualified" | null;
+  roundScores?: { round: number; submittedEvaluations: number; averageScore: number | null }[];
   rank: number | null;
 };
 
+export type AdminHackathonRoundResult = {
+  round: number;
+  cutoff: number;
+  qualifiedCount: number;
+  disqualifiedCount: number;
+  decidedAt: string | null;
+  publishedAt: string | null;
+};
+
 export type AdminHackathonLeaderboard = {
+  round?: number;
+  maxRound?: number;
+  result?: AdminHackathonRoundResult | null;
+  /** True when every assigned Jury member has submitted a score for every team in the round. */
+  scoringComplete?: boolean;
   requiredEvaluations: number;
   totalJuryMembers: number;
   teamCount: number;
@@ -377,8 +404,34 @@ export type AdminHackathonLeaderboard = {
   items: AdminHackathonLeaderboardEntry[];
 };
 
-export function fetchAdminHackathonLeaderboard(hackathonId: string) {
-  return adminFetch<AdminHackathonLeaderboard>(`${adminHackathonPath(hackathonId)}/leaderboard`);
+export function fetchAdminHackathonLeaderboard(hackathonId: string, round = 1) {
+  return adminFetch<AdminHackathonLeaderboard>(
+    `${adminHackathonPath(hackathonId)}/leaderboard?round=${round}`,
+  );
+}
+
+export function applyAdminHackathonRoundCutoff(hackathonId: string, round: number, cutoff: number) {
+  return adminFetch<{ result: AdminHackathonRoundResult }>(
+    `${adminHackathonPath(hackathonId)}/rounds/${round}/cutoff`,
+    { method: "POST", body: JSON.stringify({ cutoff }) },
+  );
+}
+
+export function clearAdminHackathonRoundCutoff(hackathonId: string, round: number) {
+  return adminFetch<{ ok: boolean }>(`${adminHackathonPath(hackathonId)}/rounds/${round}/cutoff`, {
+    method: "DELETE",
+  });
+}
+
+export function publishAdminHackathonRoundResults(
+  hackathonId: string,
+  round: number,
+  published: boolean,
+) {
+  return adminFetch<{ result: AdminHackathonRoundResult }>(
+    `${adminHackathonPath(hackathonId)}/rounds/${round}/publish`,
+    { method: "POST", body: JSON.stringify({ published }) },
+  );
 }
 
 export type AdminHackathonEvaluation = {
@@ -394,11 +447,15 @@ export type AdminHackathonEvaluation = {
     team_name: string;
     lead_name: string;
     problem_statement_id: string | null;
+    round?: number;
   };
 };
 
-export function fetchAdminHackathonEvaluations(hackathonId: string) {
+export function fetchAdminHackathonEvaluations(hackathonId: string, round = 1) {
   return adminFetch<{
+    round?: number;
+    maxRound?: number;
+    result?: AdminHackathonRoundResult | null;
     items: AdminHackathonEvaluation[];
     total: number;
     teamCount: number;
@@ -406,7 +463,7 @@ export function fetchAdminHackathonEvaluations(hackathonId: string) {
     submittedCount: number;
     pendingCount: number;
     rubric: { id: string; name: string; maxMarks: number; order: number }[];
-  }>(`${adminHackathonPath(hackathonId)}/evaluations`);
+  }>(`${adminHackathonPath(hackathonId)}/evaluations?round=${round}`);
 }
 
 export function reopenAdminHackathonEvaluation(hackathonId: string, evaluationId: string) {
@@ -414,6 +471,20 @@ export function reopenAdminHackathonEvaluation(hackathonId: string, evaluationId
     `${adminHackathonPath(hackathonId)}/evaluations/${encodeURIComponent(evaluationId)}/reopen`,
     { method: "POST", body: JSON.stringify({}) },
   );
+}
+
+export function releaseAdminHackathonProblemStatement(hackathonId: string, statementId: string) {
+  return adminFetch<{ ok: boolean; id: string }>(
+    `${adminHackathonPath(hackathonId)}/problem-statements/${encodeURIComponent(statementId)}/release`,
+    { method: "POST", body: JSON.stringify({}) },
+  );
+}
+
+export function setAdminHackathonJuryClaimLimit(hackathonId: string, limit: number) {
+  return adminFetch<{ claimLimit: number }>(`${adminHackathonPath(hackathonId)}/jury-claim-limit`, {
+    method: "PATCH",
+    body: JSON.stringify({ limit }),
+  });
 }
 
 export function reviewAdminHackathonProblemStatement(

@@ -308,7 +308,7 @@ function JuryWorkspaceLayout({ pathname }: { pathname: string }) {
           </div>
         </aside>
         <main id="main-content" className="min-w-0 flex-1 p-4 sm:p-6 lg:ml-[280px] lg:p-8">
-          <div className="mx-auto max-w-6xl">
+          <div className="mx-auto max-w-screen-2xl">
             <Outlet />
           </div>
         </main>

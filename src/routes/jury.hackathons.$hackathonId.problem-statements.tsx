@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronRight, Eye, FilePlus2, Plus, Send } from "lucide-react";
+import { ChevronRight, Eye, FilePlus2, Hand, Plus, Send, Undo2, Users } from "lucide-react";
+import { toast } from "sonner";
 import { AppSelect } from "@/components/AppSelect";
 import { FormField, FormSection, SegmentedControl, formFieldClass } from "@/components/FormLayout";
 import {
@@ -12,20 +13,16 @@ import {
 } from "@/components/ui/dialog";
 import { ProblemStatementFacts } from "@/components/hackathon/ProblemStatementFacts";
 import { JuryPageHeader } from "@/components/jury/JuryPageHeader";
+import { JuryBadge, JuryButton, JuryFilterSelect, JuryToolbar } from "@/components/jury/JuryTable";
 import {
-  JuryBadge,
-  JuryButton,
-  JuryFilterSelect,
-  JuryTable,
-  JuryTableMessage,
-  JuryToolbar,
-} from "@/components/jury/JuryTable";
-import {
+  claimJuryProblemStatement,
   createJuryProblemStatement,
   getJuryProblemStatements,
+  unclaimJuryProblemStatement,
   type JuryProblemStatement,
 } from "@/lib/jury-api";
 import { getStatementDomainIds } from "@/lib/hackathon";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/jury/hackathons/$hackathonId/problem-statements")({
   component: JuryProblemStatementsPage,
@@ -73,6 +70,10 @@ function JuryProblemStatementsPage() {
   const [search, setSearch] = useState("");
   const [domainFilter, setDomainFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [claimFilter, setClaimFilter] = useState("all");
+  const [claimLimit, setClaimLimit] = useState(20);
+  const [claimedCount, setClaimedCount] = useState(0);
+  const [claimingId, setClaimingId] = useState("");
   const [viewing, setViewing] = useState<JuryProblemStatement | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -83,6 +84,8 @@ function JuryProblemStatementsPage() {
     try {
       const data = await getJuryProblemStatements(hackathonId);
       setStatements(data.statements);
+      setClaimLimit(data.claimLimit ?? 20);
+      setClaimedCount(data.claimedCount ?? 0);
       setError("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not load problem statements.");
@@ -101,6 +104,18 @@ function JuryProblemStatementsPage() {
       if (domainFilter !== "all" && !getStatementDomainIds(statement).includes(domainFilter))
         return false;
       if (statusFilter !== "all" && statement.status !== statusFilter) return false;
+      if (claimFilter === "mine" && !statement.claimedByMe) return false;
+      if (claimFilter === "mine-picked" && !(statement.claimedByMe && statement.teamCount))
+        return false;
+      if (claimFilter === "mine-unpicked" && !(statement.claimedByMe && !statement.teamCount))
+        return false;
+      if (claimFilter === "available" && (statement.claimed || statement.status !== "active"))
+        return false;
+      if (
+        claimFilter === "available-picked" &&
+        (statement.claimed || statement.status !== "active" || !statement.teamCount)
+      )
+        return false;
       if (!query) return true;
       return [
         statement.id,
@@ -114,9 +129,64 @@ function JuryProblemStatementsPage() {
         .toLowerCase()
         .includes(query);
     });
-  }, [domainFilter, search, statements, statusFilter]);
+  }, [claimFilter, domainFilter, search, statements, statusFilter]);
+
+  const limitReached = claimedCount >= claimLimit;
+
+  async function claim(statement: JuryProblemStatement) {
+    if (
+      !window.confirm(
+        `Claim ${statement.id} — "${statement.title}"?\n\nYou will score every team that picks this statement, and no other Jury member can claim it. You can unclaim it until you start scoring one of its teams.`,
+      )
+    )
+      return;
+    setClaimingId(statement.id);
+    try {
+      const result = await claimJuryProblemStatement(hackathonId, statement.id);
+      setClaimedCount(result.claimedCount);
+      toast.success(
+        `${statement.id} claimed. ${result.claimedCount} of ${result.claimLimit} used.`,
+      );
+      await load();
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Could not claim this statement.");
+      await load();
+    } finally {
+      setClaimingId("");
+    }
+  }
+
+  async function unclaim(statement: JuryProblemStatement) {
+    const teams = statement.teamCount || 0;
+    if (
+      !window.confirm(
+        `Unclaim ${statement.id} — "${statement.title}"?\n\n${
+          teams
+            ? `${teams} team${teams === 1 ? " has" : "s have"} picked this statement. They won't have a Jury member until someone else claims it.`
+            : "Another Jury member will be able to claim it."
+        }`,
+      )
+    )
+      return;
+    setClaimingId(statement.id);
+    try {
+      const result = await unclaimJuryProblemStatement(hackathonId, statement.id);
+      setClaimedCount(result.claimedCount);
+      toast.success(
+        `${statement.id} unclaimed. ${result.claimedCount} of ${result.claimLimit} used.`,
+      );
+      await load();
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Could not unclaim this statement.");
+    } finally {
+      setClaimingId("");
+    }
+  }
 
   const liveCount = statements.filter((statement) => statement.status === "active").length;
+  const myPickedCount = statements.filter(
+    (statement) => statement.claimedByMe && statement.teamCount,
+  ).length;
   const pendingCount = statements.filter(
     (statement) => statement.status === "pending_approval",
   ).length;
@@ -158,7 +228,7 @@ function JuryProblemStatementsPage() {
     <section>
       <JuryPageHeader
         title="Problem Statements"
-        description="Statements you propose are reviewed by the Super Admin and go live only after approval."
+        description={`Claim up to ${claimLimit} live statements — you score every team that picks them, and no other Jury member can claim them. You can unclaim a statement until you start scoring its teams. Statements you propose go live after Super Admin approval.`}
         actions={
           <JuryButton
             variant="primary"
@@ -194,8 +264,33 @@ function JuryProblemStatementsPage() {
         search={search}
         onSearchChange={setSearch}
         placeholder="Search ID, title, or keyword"
-        summary={`${liveCount} live${pendingCount ? ` · ${pendingCount} awaiting approval` : ""}`}
+        summary={
+          <>
+            <span
+              className={
+                limitReached ? "font-semibold text-amber-700" : "font-semibold text-foreground"
+              }
+            >
+              {claimedCount} of {claimLimit} claimed
+            </span>
+            {claimedCount ? ` · ${myPickedCount} of yours picked by teams` : ""}
+            {` · ${liveCount} live${pendingCount ? ` · ${pendingCount} awaiting approval` : ""}`}
+          </>
+        }
       >
+        <JuryFilterSelect
+          label="Filter by claim"
+          value={claimFilter}
+          onChange={setClaimFilter}
+          options={[
+            { value: "all", label: "All statements" },
+            { value: "mine", label: "Claimed by me" },
+            { value: "mine-picked", label: "Claimed by me · picked by teams" },
+            { value: "mine-unpicked", label: "Claimed by me · no team yet" },
+            { value: "available", label: "Available to claim" },
+            { value: "available-picked", label: "Unclaimed · confirmed by teams" },
+          ]}
+        />
         <JuryFilterSelect
           label="Filter by domain"
           value={domainFilter}
@@ -218,61 +313,216 @@ function JuryProblemStatementsPage() {
         />
       </JuryToolbar>
 
-      <JuryTable
-        minWidth={960}
-        columns={[
-          { label: "ID" },
-          { label: "Title" },
-          { label: "Industry" },
-          { label: "Domain" },
-          { label: "Difficulty" },
-          { label: "Status" },
-          { label: "Added by" },
-          { label: "Action", className: "text-right" },
-        ]}
-      >
+      <div className="mt-4 overflow-hidden rounded-2xl border border-(--color-border) bg-white">
+        <div className="flex items-center justify-between gap-2 border-b border-(--color-border) px-4 py-3">
+          <p className="text-[12px] font-bold tracking-[0.06em] uppercase">
+            {domainFilter === "all" ? "All domains" : domainLabels[domainFilter] || domainFilter}{" "}
+            <span className="font-medium tracking-normal text-(--color-text-muted) normal-case">
+              ({filtered.length} challenge{filtered.length === 1 ? "" : "s"})
+            </span>
+          </p>
+        </div>
+
         {loading ? (
-          <JuryTableMessage colSpan={8}>Loading statements…</JuryTableMessage>
+          <p className="px-4 py-12 text-center text-sm text-(--color-text-muted)">
+            Loading statements…
+          </p>
         ) : !filtered.length ? (
-          <JuryTableMessage colSpan={8}>
+          <p className="px-4 py-12 text-center text-sm text-(--color-text-muted)">
             {statements.length ? "No statements match your search." : "No statements yet."}
-          </JuryTableMessage>
+          </p>
         ) : (
-          filtered.map((statement) => (
-            <tr key={statement.id} className="hover:bg-(--color-background-alt)/60">
-              <td className="px-4 py-3 font-mono text-xs font-semibold whitespace-nowrap text-(--brand-accent)">
-                {statement.id}
-              </td>
-              <td className="max-w-[320px] px-4 py-3">
-                <p className="truncate font-medium">{statement.title}</p>
-                <p className="truncate text-xs text-(--color-text-muted)">
-                  {statement.platform || statement.description}
-                </p>
-              </td>
-              <td className="max-w-[160px] truncate px-4 py-3 text-xs whitespace-nowrap text-(--color-text-secondary)">
-                {statement.industry || "—"}
-              </td>
-              <td className="px-4 py-3 text-xs whitespace-nowrap text-(--color-text-secondary)">
-                {trackLabels(statement)}
-              </td>
-              <td className="px-4 py-3 text-xs whitespace-nowrap text-(--color-text-secondary)">
-                {statement.difficulty}
-              </td>
-              <td className="px-4 py-3">
-                <StatusBadge status={statement.status} />
-              </td>
-              <td className="px-4 py-3 text-xs whitespace-nowrap text-(--color-text-secondary)">
-                {statement.createdByMe ? "You" : statement.createdBy?.name || "Administrator"}
-              </td>
-              <td className="px-4 py-3 text-right">
-                <JuryButton onClick={() => setViewing(statement)}>
-                  <Eye className="size-3.5" /> View
-                </JuryButton>
-              </td>
-            </tr>
-          ))
+          <div className="grid gap-3 p-3 sm:grid-cols-2 sm:p-4 xl:grid-cols-3">
+            {filtered.map((statement) => {
+              const tracks = getStatementDomainIds(statement);
+              const busy = claimingId === statement.id;
+              return (
+                <article
+                  key={statement.id}
+                  className={cn(
+                    "flex min-h-[280px] flex-col border bg-white transition-shadow hover:shadow-md",
+                    statement.claimedByMe
+                      ? "border-(--brand-accent)/50"
+                      : statement.status === "pending_approval"
+                        ? "border-amber-300"
+                        : statement.status === "rejected"
+                          ? "border-red-200"
+                          : "border-(--color-border)",
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2 border-b border-(--color-border) px-4 py-2.5">
+                    <span className="truncate font-mono text-[11px] font-bold text-(--brand-accent)">
+                      {statement.id}
+                    </span>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {statement.status !== "active" ? (
+                        <StatusBadge status={statement.status} />
+                      ) : null}
+                      <span className="bg-(--color-background-alt) px-2 py-0.5 text-[10.5px] font-semibold text-(--color-text-secondary)">
+                        {statement.difficulty}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-1 flex-col px-4 py-3.5">
+                    <h3 className="line-clamp-2 text-sm font-bold leading-snug">
+                      <button
+                        type="button"
+                        onClick={() => setViewing(statement)}
+                        title={statement.title}
+                        className="text-left hover:text-(--brand-accent) hover:underline"
+                      >
+                        {statement.title}
+                      </button>
+                    </h3>
+
+                    {statement.industry || statement.platform || statement.scope ? (
+                      <dl className="mt-2 space-y-0.5 text-[11.5px]">
+                        {[
+                          ["Industry", statement.industry],
+                          ["Tech", statement.platform],
+                          ["Scope", statement.scope],
+                        ]
+                          .filter(([, value]) => value)
+                          .map(([label, value]) => (
+                            <div key={label} className="flex gap-1">
+                              <dt className="shrink-0 text-(--color-text-muted)">{label}:</dt>
+                              <dd className="truncate text-foreground/80" title={value}>
+                                {value}
+                              </dd>
+                            </div>
+                          ))}
+                      </dl>
+                    ) : null}
+
+                    <p
+                      className="mt-2.5 line-clamp-4 text-xs leading-relaxed text-(--color-text-secondary)"
+                      title={statement.description}
+                    >
+                      {statement.description}
+                    </p>
+
+                    <div className="mt-auto flex flex-wrap gap-1.5 pt-3">
+                      {statement.teamProposal ? (
+                        <span className="bg-sky-50 px-2 py-0.5 text-[10.5px] font-semibold text-sky-800">
+                          Team idea
+                        </span>
+                      ) : null}
+                      <span
+                        className="bg-(--brand-accent-soft) px-2 py-0.5 text-[10.5px] font-semibold text-(--brand-accent)"
+                        title={trackLabels(statement)}
+                      >
+                        {tracks.length > 1 ? `${tracks.length} tracks` : trackLabels(statement)}
+                      </span>
+                      {statement.deliverables?.length ? (
+                        <span
+                          className="bg-(--color-background-alt) px-2 py-0.5 text-[10.5px] font-medium text-(--color-text-secondary)"
+                          title={statement.deliverables.join("\n")}
+                        >
+                          {statement.deliverables.length} deliverable
+                          {statement.deliverables.length === 1 ? "" : "s"}
+                        </span>
+                      ) : null}
+                      {statement.teamCount ? (
+                        <span className="inline-flex items-center gap-1 bg-(--color-background-alt) px-2 py-0.5 text-[10.5px] font-medium text-(--color-text-secondary)">
+                          <Users className="size-3" />
+                          {statement.teamCount} team{statement.teamCount === 1 ? "" : "s"}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 border-t border-(--color-border) bg-(--color-background-alt)/50 px-4 py-2.5">
+                    <div className="min-w-0 text-[11px]">
+                      <p className="truncate text-(--color-text-muted)">
+                        {statement.teamProposal
+                          ? "Team idea"
+                          : statement.createdByMe
+                            ? "Added by you"
+                            : statement.createdBy?.name
+                              ? `Added by Jury · ${statement.createdBy.name}`
+                              : "Added by Admin"}
+                      </p>
+                      <p
+                        className={cn(
+                          "truncate font-semibold",
+                          statement.claimedByMe
+                            ? "text-(--brand-accent)"
+                            : statement.claimed
+                              ? "text-(--color-text-secondary)"
+                              : "text-amber-700",
+                        )}
+                      >
+                        {statement.claimedByMe
+                          ? "Claimed by you"
+                          : statement.claimed
+                            ? `Claimed by ${statement.claimedByName || "another Jury member"}`
+                            : statement.status === "active"
+                              ? "Unclaimed"
+                              : "Not live yet"}
+                      </p>
+                      {statement.claimedByMe ||
+                      (!statement.claimed && statement.status === "active") ? (
+                        <p
+                          className={cn(
+                            "truncate",
+                            !statement.confirmedTeams?.length
+                              ? "text-(--color-text-muted)"
+                              : statement.claimedByMe
+                                ? "font-semibold text-emerald-700"
+                                : "font-semibold text-red-700",
+                          )}
+                          title={statement.confirmedTeams?.join(", ")}
+                        >
+                          {statement.confirmedTeams?.length
+                            ? `${statement.claimedByMe ? "Confirmed" : "Needs a Jury · confirmed"} by ${statement.confirmedTeams.join(", ")}`
+                            : "No team has confirmed it yet"}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setViewing(statement)}
+                        aria-label={`View ${statement.title}`}
+                        title="View"
+                        className="inline-flex size-7 items-center justify-center border border-(--color-border) bg-white text-(--color-text-secondary) hover:bg-(--color-background-alt) hover:text-foreground"
+                      >
+                        <Eye className="size-3.5" />
+                      </button>
+                      {statement.claimedByMe ? (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void unclaim(statement)}
+                          className="inline-flex h-7 items-center gap-1 border border-red-200 bg-white px-2 text-[11px] font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                        >
+                          <Undo2 className="size-3" />
+                          {busy ? "Unclaiming…" : "Unclaim"}
+                        </button>
+                      ) : !statement.claimed && statement.status === "active" ? (
+                        <button
+                          type="button"
+                          disabled={limitReached || busy}
+                          title={
+                            limitReached ? `You've claimed ${claimLimit} statements` : undefined
+                          }
+                          onClick={() => void claim(statement)}
+                          className="inline-flex h-7 items-center gap-1 bg-(--brand-accent) px-2.5 text-[11px] font-semibold text-white hover:bg-(--brand-accent-hover) disabled:opacity-60"
+                        >
+                          <Hand className="size-3" />
+                          {busy ? "Claiming…" : "Claim"}
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         )}
-      </JuryTable>
+      </div>
 
       <Dialog open={Boolean(viewing)} onOpenChange={(open) => !open && setViewing(null)}>
         <DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto sm:rounded-2xl">
@@ -285,13 +535,38 @@ function JuryProblemStatementsPage() {
                 <DialogTitle className="text-xl">{viewing.title}</DialogTitle>
                 <DialogDescription>
                   {viewing.difficulty} · Added by{" "}
-                  {viewing.createdByMe ? "you" : viewing.createdBy?.name || "Administrator"} on{" "}
-                  {new Date(viewing.createdAt).toLocaleDateString()}
+                  {viewing.teamProposal
+                    ? "a team (team idea)"
+                    : viewing.createdByMe
+                      ? "you"
+                      : viewing.createdBy?.name || "Administrator"}{" "}
+                  on {new Date(viewing.createdAt).toLocaleDateString()}
                 </DialogDescription>
               </DialogHeader>
               <div>
                 <StatusBadge status={viewing.status} />
               </div>
+              {viewing.claimedByMe || (!viewing.claimed && viewing.status === "active") ? (
+                <div className="rounded-xl border border-(--color-border) bg-(--color-background-alt) px-3 py-2.5 text-sm">
+                  <p className="text-[11px] font-semibold tracking-wider text-(--color-text-muted) uppercase">
+                    {viewing.claimedByMe
+                      ? "Teams you will score"
+                      : "Confirmed by teams · no Jury yet"}{" "}
+                    ({viewing.confirmedTeams?.length || 0})
+                  </p>
+                  {viewing.confirmedTeams?.length ? (
+                    <ul className="mt-1 list-disc space-y-0.5 pl-5 font-medium">
+                      {viewing.confirmedTeams.map((name) => (
+                        <li key={name}>{name}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-1 text-(--color-text-secondary)">
+                      No team has confirmed this statement yet.
+                    </p>
+                  )}
+                </div>
+              ) : null}
               {viewing.status === "rejected" && viewing.rejectionReason ? (
                 <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
                   Rejection reason: {viewing.rejectionReason}
@@ -485,7 +760,7 @@ function JuryProblemStatementsPage() {
 
             <div className="flex flex-col-reverse gap-2 border-t border-(--color-border) bg-(--color-background-alt) px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
               <p className="text-xs text-(--color-text-muted)">
-                You can track its status in the table.
+                You can track its status on this page.
               </p>
               <div className="flex justify-end gap-2">
                 <JuryButton size="md" onClick={() => setFormOpen(false)}>

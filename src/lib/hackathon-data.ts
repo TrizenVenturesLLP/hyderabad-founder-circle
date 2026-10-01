@@ -65,7 +65,7 @@ export const POSTER_HACKATHON_DETAILS: HackathonDetails = {
     dateLabel: "OCT 3RD & 4TH 2026",
     dateISO: "2026-10-03",
     format: "Offline",
-    teamSize: "2–5 Members",
+    teamSize: "2–6 Members",
   },
   domains: POSTER_DOMAINS,
   perks: [

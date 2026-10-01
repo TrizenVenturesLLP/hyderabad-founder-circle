@@ -108,9 +108,50 @@ export function loginHackathonStudent(payload: { email: string; password: string
   }>("/api/hackathon/login", payload);
 }
 
+export type HackathonRoundResult = {
+  round: number;
+  status: "qualified" | "disqualified";
+  nextRound: number | null;
+};
+
+export type HackathonProblemProposal = {
+  id: string;
+  title: string;
+  domainId: string;
+  status: "pending_approval" | "active" | "rejected";
+  rejectionReason: string;
+  createdAt: string;
+};
+
+export type HackathonProposalSlots = { limit: number; approved: number };
+
+type HackathonProposalState = {
+  problemProposal?: HackathonProblemProposal | null;
+  proposalSlots?: HackathonProposalSlots;
+};
+
 export function getHackathonUserDetails(payload: { email: string; phone: string }) {
-  return hackathonFetch<{ message?: string; user?: HackathonRegisteredUser }>(
-    "/api/hackathon/user",
+  return hackathonFetch<
+    {
+      message?: string;
+      user?: HackathonRegisteredUser;
+      /** Only present once the admin has published the round's results. */
+      roundResult?: HackathonRoundResult | null;
+    } & HackathonProposalState
+  >("/api/hackathon/user", payload);
+}
+
+export function proposeHackathonProblemStatement(payload: {
+  email: string;
+  phone: string;
+  domainId: string;
+  title: string;
+  description: string;
+  industry?: string;
+  platform?: string;
+}) {
+  return hackathonFetch<{ message: string } & HackathonProposalState>(
+    "/api/hackathon/problem-proposals",
     payload,
   );
 }
@@ -447,7 +488,14 @@ export async function getAdminHackathonProblemStatements(hackathonId: string) {
   const responseText = await response.text();
   let data: {
     error?: string;
-    statements?: (ProblemStatement & { createdBy: { name: string } | null })[];
+    claimLimit?: number;
+    teamProposalLimit?: number;
+    statements?: (ProblemStatement & {
+      createdBy: { name: string } | null;
+      claimedBy?: { name: string; email?: string } | null;
+      proposedByTeam?: { team_name: string; lead_name?: string } | null;
+      confirmedTeams?: { team_name: string; lead_name?: string }[];
+    })[];
   } = {};
   try {
     data = JSON.parse(responseText);

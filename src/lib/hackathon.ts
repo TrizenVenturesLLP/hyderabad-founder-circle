@@ -1,5 +1,8 @@
 export type ProblemDifficulty = "Beginner" | "Intermediate" | "Advanced";
 
+/** Includes the Team Lead. */
+export const MAX_TEAM_MEMBERS = 6;
+
 export interface HackathonReleaseTimer {
   releaseAt: string | null;
 }
@@ -22,6 +25,10 @@ export interface ProblemStatement {
   platform?: string;
   description: string;
   deliverables?: string[];
+  /** False until a Jury member claims the statement; teams can only pick available ones. */
+  available?: boolean;
+  /** Proposed by a team; reserved for that team only. */
+  teamProposal?: boolean;
 }
 
 export function getStatementDomainIds(statement: Pick<ProblemStatement, "domainId" | "domainIds">) {

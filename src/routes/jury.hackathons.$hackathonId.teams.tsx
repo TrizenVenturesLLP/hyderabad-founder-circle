@@ -32,6 +32,7 @@ function JuryTeamsPage() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [roundFilter, setRoundFilter] = useState("all");
 
   const load = useCallback(async () => {
     try {
@@ -55,17 +56,19 @@ function JuryTeamsPage() {
       if (statusFilter !== "all" && (team.evaluationStatus || "pending") !== statusFilter) {
         return false;
       }
+      if (roundFilter !== "all" && (team.round ?? 1) < Number(roundFilter)) return false;
       if (!query) return true;
       return [team.teamName, team.problemStatementId || "", ...team.members]
         .join(" ")
         .toLowerCase()
         .includes(query);
     });
-  }, [search, statusFilter, teams]);
+  }, [roundFilter, search, statusFilter, teams]);
 
   if (pathname !== `/jury/hackathons/${hackathonId}/teams`) return <Outlet />;
 
   const evaluatedCount = teams.filter((team) => team.evaluationStatus === "submitted").length;
+  const maxRound = Math.max(1, ...teams.map((team) => team.round ?? 1));
 
   return (
     <section>
@@ -100,25 +103,42 @@ function JuryTeamsPage() {
             { value: "submitted", label: "Evaluated" },
           ]}
         />
+        {maxRound > 1 ? (
+          <JuryFilterSelect
+            label="Filter by round"
+            value={roundFilter}
+            onChange={setRoundFilter}
+            options={[
+              { value: "all", label: "All rounds" },
+              ...Array.from({ length: maxRound - 1 }, (_, index) => ({
+                value: String(index + 2),
+                label: `Selected for Round ${index + 2}`,
+              })),
+            ]}
+          />
+        ) : null}
       </JuryToolbar>
 
       <JuryTable
-        minWidth={920}
+        minWidth={980}
         columns={[
           { label: "Team" },
           { label: "Members" },
           { label: "Problem" },
           { label: "Submission" },
+          { label: "Round" },
           { label: "Score", className: "text-right" },
           { label: "Status" },
           { label: "Actions", className: "text-right" },
         ]}
       >
         {loading ? (
-          <JuryTableMessage colSpan={7}>Loading teams…</JuryTableMessage>
+          <JuryTableMessage colSpan={8}>Loading teams…</JuryTableMessage>
         ) : !filtered.length ? (
-          <JuryTableMessage colSpan={7}>
-            {teams.length ? "No teams match your search." : "No active teams have registered."}
+          <JuryTableMessage colSpan={8}>
+            {teams.length
+              ? "No teams match your search."
+              : "No teams yet. You only see teams that pick a problem statement you claimed — claim statements on the Problem Statements page."}
           </JuryTableMessage>
         ) : (
           filtered.map((team) => (
@@ -141,12 +161,35 @@ function JuryTeamsPage() {
                   <JuryBadge tone="gray">Awaiting</JuryBadge>
                 )}
               </td>
+              <td className="px-4 py-3">
+                <JuryBadge tone={(team.round ?? 1) > 1 ? "blue" : "gray"}>
+                  Round {team.round ?? 1}
+                </JuryBadge>
+                {team.outcome ? (
+                  <div className="mt-1">
+                    {team.outcome.status === "qualified" ? (
+                      <JuryBadge tone="green">Going to Round {team.outcome.nextRound}</JuryBadge>
+                    ) : (
+                      <JuryBadge tone="red">Disqualified in Round {team.outcome.round}</JuryBadge>
+                    )}
+                  </div>
+                ) : null}
+              </td>
               <td className="px-4 py-3 text-right font-semibold whitespace-nowrap tabular-nums">
                 {team.totalScore === null || team.totalScore === undefined ? (
                   <span className="font-normal text-(--color-text-muted)">—</span>
                 ) : (
                   `${team.totalScore} / 100`
                 )}
+                {(team.roundScores?.length ?? 0) > 1 ? (
+                  <p className="mt-0.5 text-[11px] font-normal text-(--color-text-muted)">
+                    {team.roundScores!.slice(0, -1).map((score) => (
+                      <span key={score.round} className="ml-2 first:ml-0">
+                        R{score.round}: {score.totalScore ?? "—"}
+                      </span>
+                    ))}
+                  </p>
+                ) : null}
               </td>
               <td className="px-4 py-3">
                 <EvaluationBadge status={team.evaluationStatus} />

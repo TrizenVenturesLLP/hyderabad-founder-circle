@@ -3,6 +3,7 @@ import katlaPhoto from "@/assets/Katla-Charitavya.jpeg";
 import prasadPhoto from "@/assets/Prasad-Anumula.jpeg";
 import sreeKeerthanaPhoto from "@/assets/Sree-Keerthana-Gorty.jpg";
 import raffiShaikPhoto from "@/assets/Raffi-Shaik.jpg";
+import hackathonPoster from "@/assets/poster.jpg";
 
 export type CommunityHost = {
   name: string;
@@ -34,7 +35,11 @@ export type EventSpeaker = {
 export type Meetup = {
   slug: string;
   title: string;
+  /** Hackathons link to /hackathon pages instead of the meetup page and RSVP flow. */
+  kind?: "meetup" | "hackathon";
   dateISO: string;
+  /** Last day of multi-day events; empty for single-day events. */
+  endDateISO?: string;
   dateLabel: string;
   /** When false, public pages hide the calendar date until it is locked in. */
   dateConfirmed?: boolean;
@@ -85,8 +90,8 @@ export type Meetup = {
 };
 
 const API_BASE =
-  (import.meta as ImportMeta & { env: Record<string, string> }).env
-    .VITE_API_URL || "http://localhost:4000";
+  (import.meta as ImportMeta & { env: Record<string, string> }).env.VITE_API_URL ||
+  "http://localhost:4000";
 
 /** Resolve known speaker photo keys / names to bundled assets. */
 const SPEAKER_PHOTO_MAP: Record<string, string> = {
@@ -124,10 +129,8 @@ const venueDefaults = {
   area: "Gachibowli",
   address:
     "DraperU India (Formerly Draper Startup House Hyderabad), Rajiv Gandhi Nagar, Gachibowli, Hyderabad, Telangana 500032",
-  mapsUrl:
-    "https://maps.app.goo.gl/KTRvgep4y9ciSCjSA?g_st=com.microsoft.skype.teams.extshare",
-  mapsEmbedUrl:
-    "https://www.google.com/maps?q=DraperU+India+Gachibowli+Hyderabad&output=embed",
+  mapsUrl: "https://maps.app.goo.gl/KTRvgep4y9ciSCjSA?g_st=com.microsoft.skype.teams.extshare",
+  mapsEmbedUrl: "https://www.google.com/maps?q=DraperU+India+Gachibowli+Hyderabad&output=embed",
   city: "Hyderabad",
   seats: 40,
   format: "Offline" as const,
@@ -158,8 +161,7 @@ export const fallbackMeetups: Meetup[] = [
     dateConfirmed: true,
     ...venueDefaults,
     status: "completed",
-    blurb:
-      "The monthly roundtable. Show up, share what you're building, find your people.",
+    blurb: "The monthly roundtable. Show up, share what you're building, find your people.",
     speakers: [
       {
         name: "Prasad Anumula",
@@ -222,10 +224,38 @@ export const fallbackMeetups: Meetup[] = [
     ],
   },
   {
+    slug: "ai-hack-x-mrdu-2026",
+    title: "AI HACK X MRDU 2026",
+    kind: "hackathon",
+    dateISO: "2026-10-03",
+    endDateISO: "2026-10-04",
+    dateLabel: "Saturday, 3 October – Sunday, 4 October 2026",
+    dateConfirmed: true,
+    time: "24-hour hackathon",
+    venue: "Malla Reddy (MR) Deemed to be University",
+    area: "Maisammaguda, Dulapally",
+    address:
+      "Malla Reddy (MR) Deemed to be University, Maisammaguda, Dulapally, Secunderabad / Hyderabad, Telangana 500100",
+    mapsUrl:
+      "https://www.google.com/maps/search/?api=1&query=Malla+Reddy+University+Maisammaguda+Hyderabad",
+    mapsEmbedUrl:
+      "https://www.google.com/maps?q=Malla+Reddy+University+Maisammaguda+Hyderabad&output=embed",
+    city: "Hyderabad",
+    format: "Offline",
+    status: "open",
+    blurb:
+      "24-hour national hackathon hosted by the Department of CSE-AIML at Malla Reddy (MR) Deemed to be University.",
+    organization: {
+      id: "trizen-ventures",
+      name: "Trizen Ventures",
+      slug: "trizen-ventures",
+    },
+  },
+  {
     slug: "band-explorers-vybe",
     title: "Band Explorers Vybe — The Corporate Music Break",
-    dateISO: "2026-09-19",
-    dateLabel: "Saturday, 19 September 2026",
+    dateISO: "2026-10-03",
+    dateLabel: "Saturday, 3 October 2026",
     dateConfirmed: true,
     time: "6:00 PM – 9:00 PM",
     venue: "NanoSpace Coworking",
@@ -331,7 +361,9 @@ export function mapApiEventToMeetup(raw: Record<string, unknown>): Meetup {
   return {
     slug,
     title: String(raw.title || ""),
+    kind: raw.kind === "hackathon" ? "hackathon" : "meetup",
     dateISO: String(raw.dateISO || ""),
+    endDateISO: raw.endDateISO ? String(raw.endDateISO) : undefined,
     dateLabel: String(raw.dateLabel || ""),
     dateConfirmed: raw.dateConfirmed === true,
     time: String(raw.time || ""),
@@ -354,9 +386,7 @@ export function mapApiEventToMeetup(raw: Record<string, unknown>): Meetup {
       slug === "band-explorers-vybe"
         ? {
             ...payment,
-            tickets: payment?.tickets?.length
-              ? payment.tickets
-              : BAND_EXPLORERS_TICKETS,
+            tickets: payment?.tickets?.length ? payment.tickets : BAND_EXPLORERS_TICKETS,
           }
         : payment,
   };
@@ -372,19 +402,12 @@ export async function getMeetups(options?: {
 }): Promise<Meetup[]> {
   const now = Date.now();
   const orgSlug = options?.organizationSlug || "";
-  if (
-    !options?.force &&
-    !orgSlug &&
-    meetupsCache &&
-    now - meetupsCacheAt < CACHE_MS
-  ) {
+  if (!options?.force && !orgSlug && meetupsCache && now - meetupsCacheAt < CACHE_MS) {
     return meetupsCache;
   }
 
   try {
-    const qs = orgSlug
-      ? `?organizationSlug=${encodeURIComponent(orgSlug)}`
-      : "";
+    const qs = orgSlug ? `?organizationSlug=${encodeURIComponent(orgSlug)}` : "";
     const res = await fetch(`${API_BASE}/api/events${qs}`);
     if (!res.ok) throw new Error("events fetch failed");
     const data = (await res.json()) as { items?: Record<string, unknown>[] };
@@ -405,9 +428,7 @@ export async function getMeetups(options?: {
     meetupsCacheAt = now;
     return fallbackMeetups;
   }
-  return fallbackMeetups.filter(
-    (m) => m.organization?.slug === orgSlug || !m.organization,
-  );
+  return fallbackMeetups.filter((m) => m.organization?.slug === orgSlug || !m.organization);
 }
 
 export async function getEventOrganizations(): Promise<
@@ -440,15 +461,12 @@ export function findMeetupBySlug(slug: string) {
 export function getNextMeetup(list?: Meetup[]) {
   const source = list ?? meetupsCache ?? fallbackMeetups;
   return (
-    source.find((m) => isRsvpOpen(m)) ??
-    source.find((m) => !isMeetupCompleted(m)) ??
-    source[0]
+    source.find((m) => isRsvpOpen(m)) ?? source.find((m) => !isMeetupCompleted(m)) ?? source[0]
   );
 }
 
 /** Sync fallback for modules that still expect a static next meetup. */
-export const nextMeetup =
-  fallbackMeetups.find((m) => m.status === "open") ?? fallbackMeetups[0];
+export const nextMeetup = fallbackMeetups.find((m) => m.status === "open") ?? fallbackMeetups[0];
 
 export const DATE_TBC_LABEL = "Date to be confirmed";
 export const DATE_TBC_HEADLINE = "TO BE CONFIRMED";
@@ -462,10 +480,24 @@ export function meetupDateLabel(meetup: Meetup) {
   return isMeetupDateConfirmed(meetup) ? meetup.dateLabel : DATE_TBC_LABEL;
 }
 
+/** Compact date such as "Sat, 3 Oct" or "Sat, 3 Oct – Sun, 4 Oct". */
+export function meetupShortDateLabel(meetup: Meetup) {
+  if (!isMeetupDateConfirmed(meetup) || !meetup.dateISO) return DATE_TBC_LABEL;
+  const format = (iso: string) =>
+    new Date(`${iso}T12:00:00`).toLocaleDateString("en-IN", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
+  const start = format(meetup.dateISO);
+  if (!meetup.endDateISO || meetup.endDateISO === meetup.dateISO) return start;
+  return `${start} – ${format(meetup.endDateISO)}`;
+}
+
 /** True when the event date has ended (end of day, Asia/Kolkata). */
 export function isMeetupPast(meetup: Meetup) {
   if (!isMeetupDateConfirmed(meetup) || !meetup.dateISO) return false;
-  const end = new Date(`${meetup.dateISO}T23:59:59+05:30`);
+  const end = new Date(`${meetup.endDateISO || meetup.dateISO}T23:59:59+05:30`);
   return Number.isFinite(end.getTime()) && Date.now() > end.getTime();
 }
 
@@ -514,13 +546,20 @@ export function meetupSeatsLabel(meetup: Meetup) {
 }
 
 /** Poster / cover art for discovery cards and event heroes. */
-export function meetupCoverImage(meetup: Pick<Meetup, "slug">) {
+export function isHackathonEvent(meetup: Pick<Meetup, "kind">) {
+  return meetup.kind === "hackathon";
+}
+
+export function meetupCoverImage(meetup: Pick<Meetup, "slug" | "kind">) {
+  if (isHackathonEvent(meetup)) return hackathonPoster;
   if (meetup.slug === "band-explorers-vybe") return "/band-explorers-vybe.jpg";
+  if (meetup.slug === "hyderabad-founders-network-september") return "/september-2026-1.jpg";
   return "/july-2026-1.jpeg";
 }
 
-export function meetupCoverObjectClass(meetup: Pick<Meetup, "slug">) {
-  if (meetup.slug === "band-explorers-vybe") return "object-top";
+export function meetupCoverObjectClass(meetup: Pick<Meetup, "slug" | "kind">) {
+  if (isHackathonEvent(meetup) || meetup.slug === "band-explorers-vybe") return "object-top";
+  if (meetup.slug === "hyderabad-founders-network-september") return "object-[center_55%]";
   return "object-[center_42%]";
 }
 

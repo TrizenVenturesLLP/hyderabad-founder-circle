@@ -23,6 +23,7 @@ export const Route = createFileRoute("/admin/hackathons/$hackathonId/evaluations
 });
 
 type Results = {
+  maxRound?: number;
   items: AdminHackathonEvaluation[];
   teamCount: number;
   assignedJuryCount: number;
@@ -88,18 +89,21 @@ function AdminHackathonEvaluationsPage() {
   const [progressFilter, setProgressFilter] = useState<ProgressFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>("rank");
   const [openTeamKey, setOpenTeamKey] = useState<string | null>(null);
+  const [round, setRound] = useState(1);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      setResults(await fetchAdminHackathonEvaluations(hackathonId));
+      setResults(await fetchAdminHackathonEvaluations(hackathonId, round));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not load evaluations.");
     } finally {
       setLoading(false);
     }
-  }, [hackathonId]);
+  }, [hackathonId, round]);
+
+  const maxRound = results.maxRound ?? 1;
 
   useEffect(() => {
     void load();
@@ -246,7 +250,11 @@ function AdminHackathonEvaluationsPage() {
       <HackathonNav hackathonId={hackathonId} active="evaluations" />
       <AdminPageHeader
         title="Evaluations"
-        description="Jury scores per team, averaged from submitted evaluations."
+        description={
+          maxRound > 1
+            ? `Round ${round} Jury scores per team, averaged from submitted evaluations.`
+            : "Jury scores per team, averaged from submitted evaluations."
+        }
         actions={
           <button
             type="button"
@@ -259,10 +267,42 @@ function AdminHackathonEvaluationsPage() {
         }
       />
 
+      {maxRound > 1 ? (
+        <div
+          role="tablist"
+          aria-label="Evaluation round"
+          className="inline-flex border border-border bg-white"
+        >
+          {Array.from({ length: maxRound }, (_, index) => index + 1).map((value) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={round === value}
+              onClick={() => {
+                setOpenTeamKey(null);
+                setRound(value);
+              }}
+              className={`h-8 border-r border-border px-4 text-xs font-semibold transition-colors last:border-r-0 ${
+                round === value
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              Round {value}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <AdminPanel className="overflow-hidden rounded-xl">
         <dl className="grid grid-cols-2 gap-px border-b border-border bg-border sm:grid-cols-4">
           {[
-            { label: "Active teams", value: results.teamCount, tone: "text-foreground" },
+            {
+              label: round === 1 ? "Active teams" : `Teams in Round ${round}`,
+              value: results.teamCount,
+              tone: "text-foreground",
+            },
             { label: "Assigned Jury", value: results.assignedJuryCount, tone: "text-foreground" },
             { label: "Submitted", value: results.submittedCount, tone: "text-emerald-700" },
             {
@@ -496,7 +536,14 @@ function AdminHackathonEvaluationsPage() {
           {openTeam ? (
             <>
               <DialogHeader className="border-b border-border px-5 py-4 pr-12 text-left">
-                <DialogTitle className="text-base">{openTeam.team.team_name}</DialogTitle>
+                <DialogTitle className="text-base">
+                  {openTeam.team.team_name}
+                  {maxRound > 1 ? (
+                    <span className="ml-2 text-xs font-semibold text-muted-foreground">
+                      Round {round}
+                    </span>
+                  ) : null}
+                </DialogTitle>
                 <DialogDescription className="text-xs">
                   Lead: {openTeam.team.lead_name || "—"}
                   {openTeam.team.problem_statement_id
