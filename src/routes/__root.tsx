@@ -172,13 +172,14 @@ function RootComponent() {
     pathname === "/org-login" ||
     pathname === "/host" ||
     pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/jury") ||
     pathname.startsWith("/hackathon/problems/");
-
   useEffect(() => {
     if (
       pathname.startsWith("/admin") ||
       pathname.startsWith("/admin-login") ||
-      pathname === "/org-login"
+      pathname === "/org-login" ||
+      pathname.startsWith("/jury")
     ) {
       return;
     }

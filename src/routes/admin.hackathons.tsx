@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 import {
   ExternalLink,
   Plus,
@@ -14,21 +14,13 @@ import {
   Users,
   Eye,
   Save,
+  Check,
+  FilePlus2,
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { AdminPageHeader, AdminPanel } from "@/components/admin/AdminPageChrome";
-import {
-  getAllProblemStatements,
-  addProblemStatement,
-  updateProblemStatement,
-  deleteProblemStatement,
-  bulkAddProblemStatements,
-  clearAllProblemStatements,
-  resetProblemStatementsToStarter,
-  subscribeToHackathonData,
-  getHackathonDetails,
-} from "@/lib/hackathon-storage";
+import { subscribeToHackathonData, getHackathonDetails } from "@/lib/hackathon-storage";
 import type { ProblemDifficulty, ProblemStatement } from "@/lib/hackathon";
 import {
   activateHackathonUser,
@@ -38,15 +30,37 @@ import {
   getHackathonReleaseTimer as getServerReleaseTimer,
   saveHackathonReleaseTimer as saveServerReleaseTimer,
   clearHackathonReleaseTimer,
-  getHackathonProblemStatements,
+  getAdminHackathonProblemStatements,
   saveHackathonProblemStatement,
+  bulkAddHackathonProblemStatements,
+  clearHackathonProblemStatements,
   deleteHackathonProblemStatement,
+  fetchAdminHackathonSubmission,
   saveHackathonEvaluation,
   type HackathonEvaluationScores,
   type HackathonRegisteredUser,
 } from "@/lib/hackathon-api";
+import { reviewAdminHackathonProblemStatement } from "@/lib/admin-api";
+import { adminHackathons, findAdminHackathon } from "@/lib/admin-hackathons";
+import { HackathonNav } from "@/components/admin/HackathonNav";
+import { AppSelect } from "@/components/AppSelect";
+import { ProblemStatementFacts } from "@/components/hackathon/ProblemStatementFacts";
+import { FormField, FormSection, SegmentedControl, formFieldClass } from "@/components/FormLayout";
+
+const DIFFICULTIES: readonly ProblemDifficulty[] = ["Beginner", "Intermediate", "Advanced"];
+const DIFFICULTY_OPTIONS = DIFFICULTIES.map((value) => ({ value, label: value }));
 
 export const Route = createFileRoute("/admin/hackathons")({
+  validateSearch: (search: Record<string, unknown>): { hackathon?: string; view?: "teams" } => ({
+    hackathon: typeof search.hackathon === "string" ? search.hackathon : undefined,
+    view: search.view === "teams" ? "teams" : undefined,
+  }),
+  beforeLoad: ({ context }) => {
+    const { admin } = context as { admin?: { role?: string } };
+    if (admin?.role !== "platform_admin") {
+      throw redirect({ to: "/admin/events" });
+    }
+  },
   component: AdminHackathonsPage,
   head: () => ({
     meta: [{ title: "AI Hack x MRDU — Admin Problem Statements" }],
@@ -59,38 +73,108 @@ interface FormState {
   title: string;
   category: string;
   difficulty: ProblemDifficulty;
+  industry: string;
+  scope: string;
+  platform: string;
   description: string;
   deliverablesText: string;
 }
+
+type AdminProblemStatement = ProblemStatement & {
+  createdBy?: { name: string } | null;
+  status?: "pending_approval" | "active" | "rejected";
+  createdAt?: string;
+};
 
 const emptyForm: FormState = {
   domainId: "ui-ux",
   title: "",
   category: "",
   difficulty: "Intermediate",
+  industry: "",
+  scope: "",
+  platform: "",
   description: "",
   deliverablesText: "",
 };
 
-type HackathonCard = {
-  id: string;
-  title: string;
-  date: string;
-  venue: string;
-  status: "Upcoming" | "Ongoing" | "Completed";
-  prizePool: string;
-};
+const hackathons = adminHackathons;
 
-const hackathons: HackathonCard[] = [
-  {
-    id: "ai-hack-x-mrdu-2026",
-    title: "AI HACK X MRDU 2026",
-    date: "October 3–4, 2026",
-    venue: "Malla Reddy Deemed to be University",
-    status: "Upcoming",
-    prizePool: "₹2,00,000",
-  },
+type BulkField = "title" | "industry" | "scope" | "platform" | "description";
+
+const BULK_FIELD_LABELS: { field: BulkField; pattern: RegExp }[] = [
+  { field: "title", pattern: /^(?:problem\s*statement|title)\s*:\s*/i },
+  { field: "industry", pattern: /^industry\s*:\s*/i },
+  { field: "scope", pattern: /^scope\s*:\s*/i },
+  { field: "platform", pattern: /^(?:platform\s*\/?\s*(?:tech)?|tech(?:nology)?)\s*:\s*/i },
+  { field: "description", pattern: /^description\s*:\s*/i },
 ];
+
+function matchBulkLabel(line: string) {
+  for (const { field, pattern } of BULK_FIELD_LABELS) {
+    const match = line.match(pattern);
+    if (match) return { field, rest: line.slice(match[0].length).trim() };
+  }
+  return null;
+}
+
+function parseBulkProblemStatements(text: string) {
+  const blocks = text
+    .split(/\n\s*\n/)
+    .map((block) =>
+      block
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean),
+    )
+    .filter((lines) => lines.length > 0);
+
+  const grouped: string[][] = [];
+  for (const lines of blocks) {
+    const label = matchBulkLabel(lines[0]);
+    if (grouped.length && label && label.field !== "title") {
+      grouped[grouped.length - 1].push(...lines);
+    } else {
+      grouped.push([...lines]);
+    }
+  }
+
+  return grouped
+    .map((lines) => {
+      const values: Record<BulkField, string[]> = {
+        title: [],
+        industry: [],
+        scope: [],
+        platform: [],
+        description: [],
+      };
+      let current: BulkField = "title";
+      lines.forEach((line, index) => {
+        const label = matchBulkLabel(line);
+        if (label) {
+          current = label.field;
+          if (label.rest) values[current].push(label.rest);
+          return;
+        }
+        if (index === 0) {
+          values.title.push(line.replace(/^(\d+[.)]|[-*])\s*/, ""));
+          current = "description";
+          return;
+        }
+        values[current === "title" ? "description" : current].push(line);
+      });
+      const title = values.title.join(" ").trim();
+      const description = values.description.join("\n").trim() || title;
+      return {
+        title,
+        description,
+        industry: values.industry.join(" ").trim(),
+        scope: values.scope.join("\n").trim(),
+        platform: values.platform.join(" ").trim(),
+      };
+    })
+    .filter((item) => item.title);
+}
 
 type RegisteredUserWithStatus = HackathonRegisteredUser & {
   status?: "active" | "suspended";
@@ -131,8 +215,11 @@ function toDateTimeInputValue(isoValue: string | null): string {
 }
 
 function AdminHackathonsPage() {
-  const [selectedHackathon, setSelectedHackathon] = useState<HackathonCard | null>(null);
-  const [showRegisteredStudents, setShowRegisteredStudents] = useState(false);
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+
+  const search = Route.useSearch();
+  const selectedHackathon = findAdminHackathon(search.hackathon);
+  const showRegisteredStudents = Boolean(selectedHackathon) && search.view === "teams";
   const [registeredUsers, setRegisteredUsers] = useState<RegisteredUserWithStatus[]>([]);
   const [registeredUsersLoading, setRegisteredUsersLoading] = useState(false);
   const [registeredUsersError, setRegisteredUsersError] = useState<string | null>(null);
@@ -145,9 +232,10 @@ function AdminHackathonsPage() {
   const [savingEvaluationId, setSavingEvaluationId] = useState<string | null>(null);
 
   const details = getHackathonDetails();
+  const activeHackathonId = selectedHackathon?.id || hackathons[0].id;
   const domains = details.domains;
 
-  const [statements, setStatements] = useState<ProblemStatement[]>([]);
+  const [statements, setStatements] = useState<AdminProblemStatement[]>([]);
   const [selectedDomain, setSelectedDomain] = useState<string>("ui-ux");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
@@ -159,6 +247,12 @@ function AdminHackathonsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormState>(emptyForm);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [reviewingStatementId, setReviewingStatementId] = useState<string | null>(null);
+  const [reviewTarget, setReviewTarget] = useState<{
+    statement: AdminProblemStatement;
+    mode: "view" | "reject";
+  } | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   // Bulk Add Modal
   const [isBulkModalOpen, setIsBulkModalOpen] = useState<boolean>(false);
@@ -169,7 +263,7 @@ function AdminHackathonsPage() {
   useEffect(() => {
     async function load() {
       try {
-        const data = await getHackathonProblemStatements();
+        const data = await getAdminHackathonProblemStatements(activeHackathonId);
         setStatements(data.statements || []);
       } catch (error) {
         console.error("Failed to load problem statements:", error);
@@ -193,7 +287,7 @@ function AdminHackathonsPage() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [activeHackathonId]);
 
   async function handleSaveReleaseTimer(e: React.FormEvent) {
     e.preventDefault();
@@ -252,7 +346,6 @@ function AdminHackathonsPage() {
   }
 
   async function handleOpenRegisteredStudents() {
-    setShowRegisteredStudents(true);
     setRegisteredUsersLoading(true);
     setRegisteredUsersError(null);
 
@@ -272,11 +365,15 @@ function AdminHackathonsPage() {
     }
   }
 
+  useEffect(() => {
+    if (showRegisteredStudents) void handleOpenRegisteredStudents();
+  }, [showRegisteredStudents]);
+
   async function handleSaveEvaluation(team: RegisteredUserWithStatus) {
     const draft = evaluationDrafts[team._id] ?? toEvaluationDraft(team);
     const scores = Object.fromEntries(
       evaluationCriteria.map(({ key }) => [key, draft.scores[key]]),
-    ) as Partial<HackathonEvaluationScores>;
+    ) as Partial<Record<keyof HackathonEvaluationScores, number | "">>;
 
     if (evaluationCriteria.some(({ key }) => scores[key] === "" || scores[key] === undefined)) {
       toast.error("Enter a score for every evaluation criterion");
@@ -356,8 +453,7 @@ function AdminHackathonsPage() {
     if (!scores) return 0;
 
     return evaluationCriteria.reduce(
-      (total, criterion) =>
-        total + ((scores[criterion.key] ?? 0) * criterion.weight) / 10,
+      (total, criterion) => total + ((scores[criterion.key] ?? 0) * criterion.weight) / 10,
       0,
     );
   }
@@ -418,6 +514,12 @@ function AdminHackathonsPage() {
     return statements.filter((s) => s.domainId === selectedDomain);
   }, [statements, selectedDomain]);
 
+  const pendingStatements = useMemo(
+    () => statements.filter((s) => s.status === "pending_approval"),
+    [statements],
+  );
+  const pendingApprovalCount = pendingStatements.length;
+
   const filteredStatements = useMemo(() => {
     return domainStatements.filter((item) => {
       const matchesSearch =
@@ -452,6 +554,9 @@ function AdminHackathonsPage() {
       title: item.title,
       category: item.category || "",
       difficulty: item.difficulty,
+      industry: item.industry || "",
+      scope: item.scope || "",
+      platform: item.platform || "",
       description: item.description,
       deliverablesText: (item.deliverables || []).join("\n"),
     });
@@ -488,11 +593,14 @@ function AdminHackathonsPage() {
         title: formData.title.trim(),
         category: formData.category.trim() || "General",
         difficulty: formData.difficulty,
+        industry: formData.industry.trim(),
+        scope: formData.scope.trim(),
+        platform: formData.platform.trim(),
         description: formData.description.trim(),
         deliverables,
       });
 
-      const data = await getHackathonProblemStatements();
+      const data = await getAdminHackathonProblemStatements(activeHackathonId);
       setStatements(data.statements || []);
 
       toast.success(
@@ -509,57 +617,43 @@ function AdminHackathonsPage() {
     }
   }
 
-  function handleBulkImport(e: React.FormEvent) {
+  async function handleBulkImport(e: React.FormEvent) {
     e.preventDefault();
     if (!bulkText.trim()) {
       toast.error("Please enter at least one problem statement");
       return;
     }
 
-    const rawBlocks = bulkText
-      .split(/\n\s*\n/)
-      .map((b) => b.trim())
-      .filter(Boolean);
-
-    const parsedItems: {
-      domainId: string;
-      title: string;
-      description: string;
-      difficulty: ProblemDifficulty;
-    }[] = [];
-
-    for (const block of rawBlocks) {
-      const lines = block
-        .split("\n")
-        .map((l) => l.trim())
-        .filter(Boolean);
-      if (lines.length === 0) continue;
-      const title = lines[0].replace(/^(\d+[\.\)]|\-|\*)\s*/, "");
-      const description = lines.slice(1).join(" ") || title;
-      parsedItems.push({
-        domainId: bulkDomain,
-        title,
-        description,
-        difficulty: bulkDifficulty,
-      });
-    }
+    const parsedItems = parseBulkProblemStatements(bulkText).map((item) => ({
+      ...item,
+      domainId: bulkDomain,
+      difficulty: bulkDifficulty,
+    }));
 
     if (parsedItems.length === 0) {
       toast.error("Could not parse problem statements");
       return;
     }
 
-    const added = bulkAddProblemStatements(parsedItems);
-    toast.success(`Successfully imported ${added.length} problem statements into ${bulkDomain}`);
-    setIsBulkModalOpen(false);
-    setBulkText("");
+    try {
+      const result = await bulkAddHackathonProblemStatements(parsedItems);
+      const refreshed = await getAdminHackathonProblemStatements(activeHackathonId);
+      setStatements(refreshed.statements || []);
+      toast.success(
+        `Successfully imported ${result.statements?.length || 0} problem statements into ${bulkDomain}`,
+      );
+      setIsBulkModalOpen(false);
+      setBulkText("");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not import problem statements.");
+    }
   }
 
   async function handleDelete(id: string) {
     try {
       await deleteHackathonProblemStatement(id);
 
-      const data = await getHackathonProblemStatements();
+      const data = await getAdminHackathonProblemStatements(activeHackathonId);
       setStatements(data.statements || []);
 
       toast.success(`Deleted statement ${id}`);
@@ -571,20 +665,80 @@ function AdminHackathonsPage() {
     }
   }
 
-  function handleReset() {
+  function openReview(statement: AdminProblemStatement, mode: "view" | "reject") {
+    setRejectReason("");
+    setReviewTarget({ statement, mode });
+  }
+
+  async function handleReviewStatement(
+    statement: AdminProblemStatement,
+    action: "approve" | "reject",
+    rejectionReason?: string,
+  ) {
+    const reason = action === "reject" ? rejectionReason?.trim() : undefined;
+    if (action === "reject" && !reason) {
+      toast.error("Enter a reason before rejecting.");
+      return;
+    }
+    setReviewingStatementId(statement.id);
+    try {
+      await reviewAdminHackathonProblemStatement(activeHackathonId, statement.id, {
+        action,
+        reason,
+      });
+      const refreshed = await getAdminHackathonProblemStatements(activeHackathonId);
+      setStatements(refreshed.statements || []);
+      setReviewTarget(null);
+      toast.success(
+        action === "approve"
+          ? "Problem Statement approved and live."
+          : "Problem Statement rejected.",
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not review Problem Statement.");
+    } finally {
+      setReviewingStatementId(null);
+    }
+  }
+
+  async function handleReset() {
     if (
       window.confirm(
         "Reset problem statements to the starter set? This will replace current entries.",
       )
     ) {
-      resetProblemStatementsToStarter();
-      toast.success("Problem statements reset to starter templates");
+      void clearHackathonProblemStatements()
+        .then(async () => {
+          const refreshed = await getAdminHackathonProblemStatements(activeHackathonId);
+          setStatements(refreshed.statements || []);
+          toast.success("Problem statements reset to starter templates");
+        })
+        .catch((error) =>
+          toast.error(
+            error instanceof Error ? error.message : "Could not reset problem statements.",
+          ),
+        );
     }
   }
 
+  async function handleDownloadSubmission(fileUrl: string) {
+    try {
+      const objectUrl = await fetchAdminHackathonSubmission(fileUrl);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = "hackathon-submission";
+      anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not download submission.");
+    }
+  }
+
+  if (pathname.includes("/jury") || pathname.includes("/evaluations")) return <Outlet />;
+
   if (!selectedHackathon) {
     return (
-      <div className="space-y-6 pl-4">
+      <div className="space-y-6 p-4 sm:p-5 md:p-6">
         <AdminPageHeader
           title="Hackathons"
           description="Select a hackathon to manage its problem statements."
@@ -592,11 +746,11 @@ function AdminHackathonsPage() {
 
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {hackathons.map((hackathon) => (
-            <button
+            <Link
               key={hackathon.id}
-              type="button"
-              onClick={() => setSelectedHackathon(hackathon)}
-              className="group rounded-xl border border-border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              to="/admin/hackathons"
+              search={{ hackathon: hackathon.id }}
+              className="group block rounded-2xl border border-border bg-white p-5 text-left shadow-(--shadow-small) transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:border-(--color-border-strong) hover:shadow-(--shadow-card-hover)"
             >
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
@@ -614,8 +768,15 @@ function AdminHackathonsPage() {
                 <p>🏆 Prize Pool: {hackathon.prizePool}</p>
               </div>
 
+              {hackathon.id === activeHackathonId && pendingApprovalCount > 0 ? (
+                <p className="mt-4 inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                  {pendingApprovalCount} Problem Statement
+                  {pendingApprovalCount === 1 ? "" : "s"} awaiting approval
+                </p>
+              ) : null}
+
               <div className="mt-5 text-sm font-semibold text-primary">Open Hackathon →</div>
-            </button>
+            </Link>
           ))}
         </div>
       </div>
@@ -623,29 +784,24 @@ function AdminHackathonsPage() {
   }
   if (showRegisteredStudents) {
     return (
-      <div className="space-y-6 pl-4">
+      <div className="space-y-6 p-4 sm:p-5 md:p-6">
+        <HackathonNav
+          hackathonId={selectedHackathon.id}
+          active="teams"
+          pendingCount={pendingApprovalCount}
+        />
         <AdminPageHeader
-          title="AI HACK X MRDU — Registered Teams"
+          title="Registered Teams"
           description="View registered teams, team leads, members, and problem statement selections."
           actions={
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setShowRegisteredStudents(false)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted"
-              >
-                <ArrowLeft className="size-3.5" />
-                Back to Problem Statements
-              </button>
-              <button
-                type="button"
-                onClick={handleOpenRegisteredStudents}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-95"
-              >
-                <RotateCcw className="size-3.5" />
-                Refresh
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleOpenRegisteredStudents}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-white px-4 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
+            >
+              <RotateCcw className="size-3.5" />
+              Refresh
+            </button>
           }
         />
 
@@ -691,27 +847,28 @@ function AdminHackathonsPage() {
           </div>
 
           <div className="mt-3 flex justify-end">
-            <label className="flex items-center gap-2 text-xs font-medium text-foreground">
+            <div className="flex items-center gap-2 text-xs font-medium text-foreground">
               <span>Sort by</span>
-              <select
+              <AppSelect
+                ariaLabel="Sort teams"
                 value={registeredSort}
-                onChange={(e) =>
+                onValueChange={(value) =>
                   setRegisteredSort(
-                    e.target.value as
-                      | "registration-date"
-                      | "team-name"
-                      | "score-high-low"
-                      | "score-low-high",
+                    value as
+                      "registration-date" | "team-name" | "score-high-low" | "score-low-high",
                   )
                 }
-                className="rounded-lg border border-border bg-white px-2.5 py-2 text-xs font-medium text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
-              >
-                <option value="registration-date">Registration date</option>
-                <option value="team-name">Team name</option>
-                <option value="score-high-low">Score: High → Low</option>
-                <option value="score-low-high">Score: Low → High</option>
-              </select>
-            </label>
+                options={[
+                  { value: "registration-date", label: "Registration date" },
+                  { value: "team-name", label: "Team name" },
+                  { value: "score-high-low", label: "Score: High → Low" },
+                  { value: "score-low-high", label: "Score: Low → High" },
+                ]}
+                shape="pill"
+                size="sm"
+                className="w-auto min-w-44"
+              />
+            </div>
           </div>
         </AdminPanel>
 
@@ -911,14 +1068,15 @@ function AdminHackathonsPage() {
                           {team.submission.ppt_url && (
                             <div>
                               <p className="text-xs font-semibold text-foreground">Presentation</p>
-                              <a
-                                href={team.submission.ppt_url}
-                                target="_blank"
-                                rel="noreferrer"
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void handleDownloadSubmission(team.submission!.ppt_url!)
+                                }
                                 className="mt-1 inline-flex text-xs font-semibold text-primary hover:underline"
                               >
-                                View PPT / PDF
-                              </a>
+                                Download PPT / PDF
+                              </button>
                             </div>
                           )}
 
@@ -950,119 +1108,120 @@ function AdminHackathonsPage() {
                         </p>
                       )}
 
-                      {team.submission?.submitted_at && (() => {
-                        const draft = evaluationDrafts[team._id] ?? toEvaluationDraft(team);
-                        const weightedScore = evaluationCriteria.reduce(
-                          (total, criterion) =>
-                            total +
-                            (Number(draft.scores[criterion.key] || 0) * criterion.weight) / 10,
-                          0,
-                        );
+                      {team.submission?.submitted_at &&
+                        (() => {
+                          const draft = evaluationDrafts[team._id] ?? toEvaluationDraft(team);
+                          const weightedScore = evaluationCriteria.reduce(
+                            (total, criterion) =>
+                              total +
+                              (Number(draft.scores[criterion.key] || 0) * criterion.weight) / 10,
+                            0,
+                          );
 
-                        return (
-                          <form
-                            className="mt-4 border-t border-border pt-4"
-                            onSubmit={(event) => {
-                              event.preventDefault();
-                              void handleSaveEvaluation(team);
-                            }}
-                          >
-                            <div className="mb-2 flex items-center justify-between gap-3">
-                              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                Team Evaluation
-                              </p>
-                              <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-semibold text-muted-foreground">
-                                {team.evaluation?.evaluated_at ? "Evaluated" : "Not Evaluated"}
-                              </span>
-                            </div>
-
-                            <div className="divide-y divide-border">
-                              {evaluationCriteria.map((criterion) => (
-                                <label
-                                  key={criterion.key}
-                                  className="grid grid-cols-[minmax(0,1fr)_auto_5rem] items-center gap-3 py-3"
-                                >
-                                  <span>
-                                    <span className="block text-xs font-semibold text-foreground">
-                                      {criterion.label}
-                                    </span>
-                                    <span className="mt-1 block text-[11px] text-muted-foreground">
-                                      Score from 0 to 10
-                                    </span>
-                                  </span>
-                                  <span className="text-[11px] text-muted-foreground">
-                                    {criterion.weight}%
-                                  </span>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    max="10"
-                                    step="1"
-                                    required
-                                    aria-label={`${criterion.label} score`}
-                                    value={draft.scores[criterion.key]}
-                                    onChange={(event) => {
-                                      const value = event.target.value;
-                                      setEvaluationDrafts((drafts) => ({
-                                        ...drafts,
-                                        [team._id]: {
-                                          ...draft,
-                                          scores: {
-                                            ...draft.scores,
-                                            [criterion.key]: value === "" ? "" : Number(value),
-                                          },
-                                        },
-                                      }));
-                                    }}
-                                    className="h-10 w-20 rounded-lg border border-border bg-white px-3 text-sm font-semibold text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
-                                  />
-                                </label>
-                              ))}
-                            </div>
-
-                            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-primary/10 p-3">
-                              <div>
-                                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                  Weighted Score
+                          return (
+                            <form
+                              className="mt-4 border-t border-border pt-4"
+                              onSubmit={(event) => {
+                                event.preventDefault();
+                                void handleSaveEvaluation(team);
+                              }}
+                            >
+                              <div className="mb-2 flex items-center justify-between gap-3">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                  Team Evaluation
                                 </p>
-                                <p className="mt-1 text-lg font-bold text-foreground">
-                                  {weightedScore.toFixed(1)}{" "}
-                                  <span className="text-xs font-medium">/ 100</span>
-                                </p>
+                                <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+                                  {team.evaluation?.evaluated_at ? "Evaluated" : "Not Evaluated"}
+                                </span>
                               </div>
-                              <button
-                                type="submit"
-                                disabled={savingEvaluationId === team._id}
-                                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                <Save className="size-3.5" />
-                                {savingEvaluationId === team._id
-                                  ? "Saving..."
-                                  : team.evaluation?.evaluated_at
-                                    ? "Update Evaluation"
-                                    : "Save Evaluation"}
-                              </button>
-                            </div>
 
-                            <label className="mt-4 block text-xs font-semibold text-foreground">
-                              Judge Comments
-                              <textarea
-                                rows={3}
-                                maxLength={2000}
-                                value={draft.comments}
-                                onChange={(event) =>
-                                  setEvaluationDrafts((drafts) => ({
-                                    ...drafts,
-                                    [team._id]: { ...draft, comments: event.target.value },
-                                  }))
-                                }
-                                placeholder="Add feedback about the team's submission..."
-                                className="mt-2 w-full resize-y rounded-lg border border-border bg-white px-3 py-2.5 text-xs font-normal text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
-                              />
-                            </label>
-                          </form>
-                        );
-                      })()}
+                              <div className="divide-y divide-border">
+                                {evaluationCriteria.map((criterion) => (
+                                  <label
+                                    key={criterion.key}
+                                    className="grid grid-cols-[minmax(0,1fr)_auto_5rem] items-center gap-3 py-3"
+                                  >
+                                    <span>
+                                      <span className="block text-xs font-semibold text-foreground">
+                                        {criterion.label}
+                                      </span>
+                                      <span className="mt-1 block text-[11px] text-muted-foreground">
+                                        Score from 0 to 10
+                                      </span>
+                                    </span>
+                                    <span className="text-[11px] text-muted-foreground">
+                                      {criterion.weight}%
+                                    </span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max="10"
+                                      step="1"
+                                      required
+                                      aria-label={`${criterion.label} score`}
+                                      value={draft.scores[criterion.key]}
+                                      onChange={(event) => {
+                                        const value = event.target.value;
+                                        setEvaluationDrafts((drafts) => ({
+                                          ...drafts,
+                                          [team._id]: {
+                                            ...draft,
+                                            scores: {
+                                              ...draft.scores,
+                                              [criterion.key]: value === "" ? "" : Number(value),
+                                            },
+                                          },
+                                        }));
+                                      }}
+                                      className="h-10 w-20 rounded-lg border border-border bg-white px-3 text-sm font-semibold text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
+                                    />
+                                  </label>
+                                ))}
+                              </div>
+
+                              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-primary/10 p-3">
+                                <div>
+                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                    Weighted Score
+                                  </p>
+                                  <p className="mt-1 text-lg font-bold text-foreground">
+                                    {weightedScore.toFixed(1)}{" "}
+                                    <span className="text-xs font-medium">/ 100</span>
+                                  </p>
+                                </div>
+                                <button
+                                  type="submit"
+                                  disabled={savingEvaluationId === team._id}
+                                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  <Save className="size-3.5" />
+                                  {savingEvaluationId === team._id
+                                    ? "Saving..."
+                                    : team.evaluation?.evaluated_at
+                                      ? "Update Evaluation"
+                                      : "Save Evaluation"}
+                                </button>
+                              </div>
+
+                              <label className="mt-4 block text-xs font-semibold text-foreground">
+                                Judge Comments
+                                <textarea
+                                  rows={3}
+                                  maxLength={2000}
+                                  value={draft.comments}
+                                  onChange={(event) =>
+                                    setEvaluationDrafts((drafts) => ({
+                                      ...drafts,
+                                      [team._id]: { ...draft, comments: event.target.value },
+                                    }))
+                                  }
+                                  placeholder="Add feedback about the team's submission..."
+                                  className="mt-2 w-full resize-y rounded-lg border border-border bg-white px-3 py-2.5 text-xs font-normal text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
+                                />
+                              </label>
+                            </form>
+                          );
+                        })()}
                     </div>
 
                     <div className="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
@@ -1106,45 +1265,21 @@ function AdminHackathonsPage() {
   }
 
   return (
-    <div className="space-y-6 pl-4">
-      {/* Top Header */}
+    <div className="space-y-6 p-4 sm:p-5 md:p-6">
+      <HackathonNav
+        hackathonId={selectedHackathon.id}
+        active="statements"
+        pendingCount={pendingApprovalCount}
+      />
       <AdminPageHeader
-        title="AI HACK X MRDU — Problem Statements"
-        description="Add and manage live challenge problem statements for the 4 competition tracks."
+        title="Problem Statements"
+        description="Approve Jury submissions and manage live problem statements for the 4 competition tracks."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => setSelectedHackathon(null)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted"
-            >
-              <ArrowLeft className="size-3.5" />
-              Back to Hackathons
-            </button>
-
-            <button
-              type="button"
-              onClick={handleOpenRegisteredStudents}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted"
-            >
-              <Users className="size-3.5" />
-              Registered Students
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setBulkDomain(selectedDomain);
-                setIsBulkModalOpen(true);
-              }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted"
-            >
-              <Upload className="size-3.5" />
-              Bulk Add
-            </button>
-            <button
-              type="button"
               onClick={handleReset}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-2.5 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               title="Reset to starter seeds"
             >
               <RotateCcw className="size-3.5" />
@@ -1152,15 +1287,114 @@ function AdminHackathonsPage() {
             </button>
             <button
               type="button"
+              onClick={() => {
+                setBulkDomain(selectedDomain);
+                setIsBulkModalOpen(true);
+              }}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-white px-4 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
+            >
+              <Upload className="size-3.5" />
+              Bulk add
+            </button>
+            <button
+              type="button"
               onClick={handleOpenCreate}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-95"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-[0_6px_16px_-10px_var(--brand-accent)] transition-colors hover:bg-(--brand-accent-hover)"
             >
               <Plus className="size-3.5" />
-              Add Statement
+              Add statement
             </button>
           </div>
         }
       />
+
+      <AdminPanel className="overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
+          <div>
+            <h2 className="text-sm font-bold text-foreground">Approval queue</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Problem Statements added by Jury members go live only after you approve them.
+            </p>
+          </div>
+          <span
+            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${pendingApprovalCount ? "bg-amber-100 text-amber-800" : "bg-emerald-50 text-emerald-700"}`}
+          >
+            {pendingApprovalCount ? `${pendingApprovalCount} pending` : "All caught up"}
+          </span>
+        </div>
+        {pendingApprovalCount ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-left text-sm">
+              <thead className="bg-(--color-background-alt) text-[11px] font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+                <tr>
+                  <th className="px-4 py-2.5">ID</th>
+                  <th className="px-4 py-2.5">Title</th>
+                  <th className="px-4 py-2.5">Track</th>
+                  <th className="px-4 py-2.5">Submitted by</th>
+                  <th className="px-4 py-2.5">Date</th>
+                  <th className="px-4 py-2.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {pendingStatements.map((item) => (
+                  <tr key={item.id} className="align-middle hover:bg-muted/30">
+                    <td className="px-4 py-3 font-mono text-xs font-semibold text-primary">
+                      {item.id}
+                    </td>
+                    <td className="max-w-[280px] px-4 py-3">
+                      <p className="truncate font-medium text-foreground">{item.title}</p>
+                      <p className="truncate text-xs text-muted-foreground">{item.description}</p>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      {domains.find((d) => d.id === item.domainId)?.name || item.domainId}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-foreground">
+                      {item.createdBy?.name ? `Jury · ${item.createdBy.name}` : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => openReview(item, "view")}
+                          className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted"
+                        >
+                          <Eye className="size-3.5" />
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          disabled={reviewingStatementId === item.id}
+                          onClick={() => void handleReviewStatement(item, "approve")}
+                          className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                        >
+                          <Check className="size-3.5" />
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          disabled={reviewingStatementId === item.id}
+                          onClick={() => openReview(item, "reject")}
+                          className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                        >
+                          <X className="size-3.5" />
+                          Reject
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="px-4 py-5 text-center text-xs text-muted-foreground">
+            No Problem Statements are waiting for approval.
+          </p>
+        )}
+      </AdminPanel>
 
       <AdminPanel className="rounded-xl border-primary/20 bg-primary/5 p-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -1223,6 +1457,9 @@ function AdminHackathonsPage() {
         {domains.map((domain) => {
           const isSelected = domain.id === selectedDomain;
           const count = statements.filter((s) => s.domainId === domain.id).length;
+          const pendingCount = statements.filter(
+            (s) => s.domainId === domain.id && s.status === "pending_approval",
+          ).length;
           return (
             <button
               key={domain.id}
@@ -1242,6 +1479,11 @@ function AdminHackathonsPage() {
                   Track
                 </p>
                 <p className="font-semibold text-sm text-foreground">{domain.name}</p>
+                {pendingCount > 0 ? (
+                  <p className="mt-0.5 text-[11px] font-semibold text-amber-700">
+                    {pendingCount} pending approval
+                  </p>
+                ) : null}
               </div>
               <span
                 className={`rounded-full px-2 py-0.5 text-xs font-bold ${
@@ -1279,16 +1521,15 @@ function AdminHackathonsPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <select
+            <AppSelect
+              ariaLabel="Filter by difficulty"
               value={difficultyFilter}
-              onChange={(e) => setDifficultyFilter(e.target.value)}
-              className="rounded-lg border border-border bg-white px-3 py-2 text-xs font-medium text-foreground focus:border-primary focus:outline-hidden"
-            >
-              <option value="all">All Difficulties</option>
-              <option value="Beginner">Beginner</option>
-              <option value="Intermediate">Intermediate</option>
-              <option value="Advanced">Advanced</option>
-            </select>
+              onValueChange={setDifficultyFilter}
+              options={[{ value: "all", label: "All difficulties" }, ...DIFFICULTY_OPTIONS]}
+              shape="pill"
+              size="sm"
+              className="w-auto min-w-40"
+            />
           </div>
         </div>
       </AdminPanel>
@@ -1336,11 +1577,46 @@ function AdminHackathonsPage() {
                         {item.category}
                       </span>
                     )}
+                    {item.status === "pending_approval" ? (
+                      <span className="rounded bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                        Pending Approval
+                      </span>
+                    ) : item.status === "rejected" ? (
+                      <span className="rounded bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-800">
+                        Rejected
+                      </span>
+                    ) : null}
                   </div>
 
                   <h3 className="mt-2 text-sm font-bold text-foreground">{item.title}</h3>
+                  {item.industry || item.platform ? (
+                    <p className="mt-1 text-[11.5px] text-foreground/80">
+                      {item.industry ? (
+                        <>
+                          <span className="text-muted-foreground">Industry:</span> {item.industry}
+                        </>
+                      ) : null}
+                      {item.industry && item.platform ? (
+                        <span className="mx-1.5 text-muted-foreground">·</span>
+                      ) : null}
+                      {item.platform ? (
+                        <>
+                          <span className="text-muted-foreground">Platform / Tech:</span>{" "}
+                          {item.platform}
+                        </>
+                      ) : null}
+                    </p>
+                  ) : null}
+                  {item.scope ? (
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      <span className="font-semibold text-foreground/80">Scope:</span> {item.scope}
+                    </p>
+                  ) : null}
                   <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                     {item.description}
+                  </p>
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    Added by {item.createdBy?.name ? `Jury · ${item.createdBy.name}` : "Admin"}
                   </p>
 
                   {item.deliverables && item.deliverables.length > 0 && (
@@ -1358,6 +1634,26 @@ function AdminHackathonsPage() {
                 </div>
 
                 <div className="flex shrink-0 items-center gap-1.5 sm:self-start">
+                  {item.status === "pending_approval" ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={reviewingStatementId === item.id}
+                        onClick={() => void handleReviewStatement(item, "approve")}
+                        className="rounded-md bg-emerald-700 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        disabled={reviewingStatementId === item.id}
+                        onClick={() => openReview(item, "reject")}
+                        className="rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                      >
+                        Reject
+                      </button>
+                    </>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => handleOpenEdit(item)}
@@ -1406,138 +1702,320 @@ function AdminHackathonsPage() {
         )}
       </AdminPanel>
 
-      {/* Create / Edit Modal Dialog */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-white p-6 shadow-large">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <h3 className="font-display text-base font-bold text-foreground">
-                {editingId ? `Edit Problem Statement: ${editingId}` : "Add New Problem Statement"}
-              </h3>
+      {reviewTarget ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="review-statement-title"
+        >
+          <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-border bg-white p-6 shadow-large">
+            <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
+              <div className="min-w-0">
+                <p className="font-mono text-xs font-semibold text-primary">
+                  {reviewTarget.statement.id} ·{" "}
+                  {domains.find((d) => d.id === reviewTarget.statement.domainId)?.name ||
+                    reviewTarget.statement.domainId}
+                </p>
+                <h3
+                  id="review-statement-title"
+                  className="mt-1 font-display text-base font-bold text-foreground"
+                >
+                  {reviewTarget.mode === "reject" ? "Reject: " : ""}
+                  {reviewTarget.statement.title}
+                </h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {reviewTarget.statement.difficulty} ·{" "}
+                  {reviewTarget.statement.category || "General"} · Submitted by{" "}
+                  {reviewTarget.statement.createdBy?.name
+                    ? `Jury · ${reviewTarget.statement.createdBy.name}`
+                    : "Admin"}
+                </p>
+              </div>
               <button
                 type="button"
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => setReviewTarget(null)}
                 className="rounded-lg p-1 text-muted-foreground hover:text-foreground"
+                aria-label="Close"
               >
                 <X className="size-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="mt-4 space-y-4">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="block text-xs font-medium text-foreground">Domain Track</label>
-                  <select
-                    value={formData.domainId}
-                    onChange={(e) => setFormData({ ...formData, domainId: e.target.value })}
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden"
-                  >
-                    {domains.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            <ProblemStatementFacts
+              className="mt-4"
+              industry={reviewTarget.statement.industry}
+              scope={reviewTarget.statement.scope}
+              platform={reviewTarget.statement.platform}
+              description={reviewTarget.statement.description}
+            />
+            {reviewTarget.statement.deliverables?.length ? (
+              <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                {reviewTarget.statement.deliverables.map((d, i) => (
+                  <li key={i}>{d}</li>
+                ))}
+              </ul>
+            ) : null}
 
-                <div>
-                  <label className="block text-xs font-medium text-foreground">
-                    Custom ID (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.id || ""}
-                    onChange={(e) => setFormData({ ...formData, id: e.target.value })}
-                    placeholder="e.g. UX-01, WEB-01 (auto if blank)"
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="block text-xs font-medium text-foreground">
-                    Sub-Category / Topic
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    placeholder="e.g. Mobile UX, Full Stack, LLM Agents"
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-foreground">
-                    Difficulty Level
-                  </label>
-                  <select
-                    value={formData.difficulty}
-                    onChange={(e) =>
-                      setFormData({ ...formData, difficulty: e.target.value as ProblemDifficulty })
-                    }
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden"
-                  >
-                    <option value="Beginner">Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-foreground">Problem Title *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Clear challenge title"
-                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-foreground">
-                  Description & Context *
-                </label>
+            {reviewTarget.mode === "reject" ? (
+              <label className="mt-5 block text-xs font-semibold text-foreground">
+                Reason for rejection (shared with the Jury member)
                 <textarea
-                  required
-                  rows={4}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Detail the technical challenge, scope, and objectives..."
-                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-foreground">
-                  Key Deliverables (One per line)
-                </label>
-                <textarea
+                  autoFocus
                   rows={3}
-                  value={formData.deliverablesText}
-                  onChange={(e) => setFormData({ ...formData, deliverablesText: e.target.value })}
-                  placeholder="Working prototype repo and deployment&#10;Architecture design doc&#10;Live demonstration"
-                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden font-mono"
+                  maxLength={500}
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  className="mt-1.5 w-full rounded-lg border border-border px-3 py-2 text-sm font-normal"
                 />
+              </label>
+            ) : null}
+
+            <div className="mt-6 flex flex-wrap justify-end gap-2 border-t border-border pt-4">
+              {reviewTarget.mode === "view" ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setReviewTarget({ ...reviewTarget, mode: "reject" })}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
+                  >
+                    <X className="size-3.5" />
+                    Reject
+                  </button>
+                  <button
+                    type="button"
+                    disabled={reviewingStatementId === reviewTarget.statement.id}
+                    onClick={() => void handleReviewStatement(reviewTarget.statement, "approve")}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                  >
+                    <Check className="size-3.5" />
+                    Approve &amp; make live
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setReviewTarget(null)}
+                    className="rounded-full border border-border bg-white px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={
+                      !rejectReason.trim() || reviewingStatementId === reviewTarget.statement.id
+                    }
+                    onClick={() =>
+                      void handleReviewStatement(reviewTarget.statement, "reject", rejectReason)
+                    }
+                    className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+                  >
+                    <X className="size-3.5" />
+                    Reject statement
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Create / Edit Modal Dialog */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border bg-white shadow-large">
+            <div className="flex items-start justify-between gap-3 border-b border-border px-5 pt-5 pb-4 sm:px-7">
+              <div className="flex items-start gap-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-(--brand-accent-soft) text-(--brand-accent)">
+                  {editingId ? <Pencil className="size-5" /> : <FilePlus2 className="size-5" />}
+                </span>
+                <div>
+                  <h3 className="font-(family-name:--font-brand) text-xl font-semibold text-foreground">
+                    {editingId ? "Edit Problem Statement" : "Add Problem Statement"}
+                  </h3>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    {editingId
+                      ? `Updating ${editingId}.`
+                      : "Fill in the details teams will see for this challenge."}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={() => setIsModalOpen(false)}
+                className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSave} className="flex min-h-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-5 sm:px-7">
+                <FormSection title="Basics">
+                  <FormField
+                    label="Title"
+                    htmlFor="admin-ps-title"
+                    counter={`${formData.title.length}/200`}
+                  >
+                    <input
+                      id="admin-ps-title"
+                      type="text"
+                      required
+                      maxLength={200}
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="Clear challenge title"
+                      className={formFieldClass}
+                    />
+                  </FormField>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <FormField label="Sub-category / topic" htmlFor="admin-ps-category" optional>
+                      <input
+                        id="admin-ps-category"
+                        type="text"
+                        value={formData.category}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                        placeholder="e.g. Mobile UX, LLM Agents"
+                        className={formFieldClass}
+                      />
+                    </FormField>
+                    <FormField
+                      label="Custom ID"
+                      htmlFor="admin-ps-id"
+                      optional
+                      hint="Generated automatically if left blank."
+                    >
+                      <input
+                        id="admin-ps-id"
+                        type="text"
+                        value={formData.id || ""}
+                        onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+                        placeholder="e.g. UX-01"
+                        className={`${formFieldClass} font-mono`}
+                      />
+                    </FormField>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <FormField label="Industry" htmlFor="admin-ps-industry">
+                      <input
+                        id="admin-ps-industry"
+                        type="text"
+                        required
+                        maxLength={120}
+                        value={formData.industry}
+                        onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                        placeholder="e.g. Healthcare, FinTech"
+                        className={formFieldClass}
+                      />
+                    </FormField>
+                    <FormField label="Platform / Tech" htmlFor="admin-ps-platform">
+                      <input
+                        id="admin-ps-platform"
+                        type="text"
+                        required
+                        maxLength={200}
+                        value={formData.platform}
+                        onChange={(e) => setFormData({ ...formData, platform: e.target.value })}
+                        placeholder="e.g. Web, React, Node.js"
+                        className={formFieldClass}
+                      />
+                    </FormField>
+                  </div>
+                </FormSection>
+
+                <FormSection title="Classification">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <FormField label="Domain track" htmlFor="admin-ps-domain">
+                      <AppSelect
+                        id="admin-ps-domain"
+                        value={formData.domainId}
+                        onValueChange={(domainId) => setFormData({ ...formData, domainId })}
+                        options={domains.map((d) => ({ value: d.id, label: d.name }))}
+                      />
+                    </FormField>
+                    <FormField label="Difficulty">
+                      <SegmentedControl
+                        ariaLabel="Difficulty"
+                        value={formData.difficulty}
+                        onChange={(difficulty) => setFormData({ ...formData, difficulty })}
+                        options={DIFFICULTIES}
+                      />
+                    </FormField>
+                  </div>
+                </FormSection>
+
+                <FormSection title="Details">
+                  <FormField
+                    label="Scope"
+                    htmlFor="admin-ps-scope"
+                    hint="What is in and out of scope for this problem."
+                    counter={`${formData.scope.length}/3000`}
+                  >
+                    <textarea
+                      id="admin-ps-scope"
+                      required
+                      maxLength={3000}
+                      rows={3}
+                      value={formData.scope}
+                      onChange={(e) => setFormData({ ...formData, scope: e.target.value })}
+                      className={`${formFieldClass} resize-y`}
+                    />
+                  </FormField>
+                  <FormField
+                    label="Description"
+                    htmlFor="admin-ps-description"
+                    hint="Detail the challenge, context and objectives."
+                    counter={`${formData.description.length} chars`}
+                  >
+                    <textarea
+                      id="admin-ps-description"
+                      required
+                      rows={6}
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      className={`${formFieldClass} resize-y`}
+                    />
+                  </FormField>
+                  <FormField
+                    label="Key deliverables"
+                    htmlFor="admin-ps-deliverables"
+                    optional
+                    hint="One deliverable per line."
+                    counter={
+                      formData.deliverablesText.trim()
+                        ? `${formData.deliverablesText.split("\n").filter((line) => line.trim()).length} listed`
+                        : undefined
+                    }
+                  >
+                    <textarea
+                      id="admin-ps-deliverables"
+                      rows={4}
+                      value={formData.deliverablesText}
+                      onChange={(e) =>
+                        setFormData({ ...formData, deliverablesText: e.target.value })
+                      }
+                      placeholder={
+                        "Working prototype repo and deployment\nArchitecture design doc\nLive demonstration"
+                      }
+                      className={`${formFieldClass} resize-y`}
+                    />
+                  </FormField>
+                </FormSection>
               </div>
 
-              <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
+              <div className="flex justify-end gap-2 border-t border-border bg-(--color-background-alt) px-5 py-4 sm:px-7">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-lg border border-border bg-white px-4 py-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+                  className="btn-secondary"
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:opacity-95"
-                >
-                  {editingId ? "Save Changes" : "Create Statement"}
+                <button type="submit" className="btn-primary">
+                  <Save className="size-4" />
+                  {editingId ? "Save changes" : "Create statement"}
                 </button>
               </div>
             </form>
@@ -1568,32 +2046,26 @@ function AdminHackathonsPage() {
                   <label className="block text-xs font-medium text-foreground">
                     Target Domain Track
                   </label>
-                  <select
+                  <AppSelect
+                    ariaLabel="Target domain track"
                     value={bulkDomain}
-                    onChange={(e) => setBulkDomain(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden"
-                  >
-                    {domains.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name}
-                      </option>
-                    ))}
-                  </select>
+                    onValueChange={setBulkDomain}
+                    options={domains.map((d) => ({ value: d.id, label: d.name }))}
+                    className="mt-1"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-foreground">
                     Default Difficulty
                   </label>
-                  <select
+                  <AppSelect
+                    ariaLabel="Default difficulty"
                     value={bulkDifficulty}
-                    onChange={(e) => setBulkDifficulty(e.target.value as ProblemDifficulty)}
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden"
-                  >
-                    <option value="Beginner">Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
-                  </select>
+                    onValueChange={(value) => setBulkDifficulty(value as ProblemDifficulty)}
+                    options={DIFFICULTY_OPTIONS}
+                    className="mt-1"
+                  />
                 </div>
               </div>
 
@@ -1602,15 +2074,15 @@ function AdminHackathonsPage() {
                   Paste Problem Statements (Separated by empty lines)
                 </label>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  First line of each block becomes the Title, subsequent lines become the
-                  Description.
+                  First line of each block is the Title. Add optional Industry:, Scope:,
+                  Platform/Tech: and Description: lines; unlabeled lines become the Description.
                 </p>
                 <textarea
                   required
-                  rows={8}
+                  rows={10}
                   value={bulkText}
                   onChange={(e) => setBulkText(e.target.value)}
-                  placeholder={`1. Smart Dashboard Design\nCreate an intuitive analytics interface for IoT telemetry.\n\n2. Design System Tokens\nBuild an accessible color and typography system.`}
+                  placeholder={`1. Smart Dashboard Design\nIndustry: IoT / Manufacturing\nScope: Real-time telemetry dashboard for plant managers\nPlatform/Tech: Web, React, WebSockets\nDescription: Create an intuitive analytics interface for IoT telemetry.\n\n2. Design System Tokens\nBuild an accessible color and typography system.`}
                   className="mt-2 w-full rounded-lg border border-border bg-white p-3 text-xs text-foreground focus:border-primary focus:outline-hidden font-mono"
                 />
               </div>
@@ -1619,15 +2091,13 @@ function AdminHackathonsPage() {
                 <button
                   type="button"
                   onClick={() => setIsBulkModalOpen(false)}
-                  className="rounded-lg border border-border bg-white px-4 py-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+                  className="btn-secondary"
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:opacity-95"
-                >
-                  Import Problem Statements
+                <button type="submit" className="btn-primary">
+                  <Upload className="size-4" />
+                  Import statements
                 </button>
               </div>
             </form>

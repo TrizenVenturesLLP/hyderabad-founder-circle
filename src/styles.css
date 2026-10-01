@@ -136,7 +136,9 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     font-optical-sizing: auto;
-    font-feature-settings: "ss01" on, "ss02" on;
+    font-feature-settings:
+      "ss01" on,
+      "ss02" on;
     letter-spacing: -0.011em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -717,8 +719,76 @@
   }
 }
 
+@layer utilities {
+  .admin-shell .btn-primary,
+  .admin-shell .btn-secondary {
+    border-radius: 9999px;
+  }
+}
+
+@layer base {
+  :where(.admin-shell)
+    :where(
+      input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"]),
+      select,
+      textarea
+    ) {
+    border-radius: 0.625rem;
+    transition:
+      border-color 150ms ease,
+      box-shadow 150ms ease;
+  }
+  :where(.admin-shell) :where(input, select, textarea):focus {
+    border-color: var(--brand-accent);
+  }
+}
+
 /* Keep Razorpay checkout above the registration dialog overlay */
 .razorpay-container,
 .razorpay-checkout-frame {
   z-index: 2147483647 !important;
+}
+
+@keyframes partner-marquee-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.partner-marquee {
+  overflow: hidden;
+}
+
+.partner-marquee__track {
+  display: flex;
+  width: max-content;
+  animation: partner-marquee-scroll 36s linear infinite;
+}
+
+.partner-marquee:hover .partner-marquee__track,
+.partner-marquee:focus-within .partner-marquee__track {
+  animation-play-state: paused;
+}
+
+.partner-marquee__group {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .partner-marquee {
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .partner-marquee__track {
+    animation: none;
+  }
+
+  .partner-marquee__group[aria-hidden="true"] {
+    display: none;
+  }
 }

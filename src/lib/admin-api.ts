@@ -259,6 +259,168 @@ export async function fetchEmailHistory() {
   return adminFetch<{ items: EmailHistoryItem[] }>("/api/admin/emails/history");
 }
 
+export type AdminHackathonInvitation = {
+  _id: string;
+  email: string;
+  inviteeName?: string;
+  status: "pending" | "accepted" | "revoked" | "expired";
+  expiresAt: string;
+  createdAt: string;
+  acceptedAt?: string | null;
+  revokedAt?: string | null;
+  lastSentAt: string;
+  deliveryStatus: "sent" | "failed";
+  resendCount: number;
+  acceptedBy?: { name: string; email: string } | null;
+};
+
+export type AdminHackathonJuryMember = {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  status: "active" | "revoked";
+  accountStatus: "active" | "disabled";
+  joinedAt: string;
+  teamsEvaluated: number;
+  teamsPending: number;
+  completionPercent: number;
+};
+
+function adminHackathonPath(hackathonId: string) {
+  return `/api/admin/hackathons/${encodeURIComponent(hackathonId)}`;
+}
+
+export function fetchAdminHackathonInvitations(hackathonId: string) {
+  return adminFetch<{ items: AdminHackathonInvitation[]; total: number }>(
+    `${adminHackathonPath(hackathonId)}/jury-invitations`,
+  );
+}
+
+export function createAdminHackathonInvitation(
+  hackathonId: string,
+  payload: { email: string; name?: string },
+) {
+  return adminFetch<{
+    invitation: Pick<
+      AdminHackathonInvitation,
+      "email" | "status" | "expiresAt" | "lastSentAt" | "deliveryStatus"
+    > & { id: string; sentAt: string };
+    emailSent: boolean;
+  }>(`${adminHackathonPath(hackathonId)}/jury-invitations`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function resendAdminHackathonInvitation(hackathonId: string, invitationId: string) {
+  return adminFetch<{ emailSent: boolean }>(
+    `${adminHackathonPath(hackathonId)}/jury-invitations/${encodeURIComponent(invitationId)}/resend`,
+    { method: "POST", body: JSON.stringify({}) },
+  );
+}
+
+export function revokeAdminHackathonInvitation(hackathonId: string, invitationId: string) {
+  return adminFetch<{ ok: boolean; status: string }>(
+    `${adminHackathonPath(hackathonId)}/jury-invitations/${encodeURIComponent(invitationId)}/revoke`,
+    { method: "POST", body: JSON.stringify({}) },
+  );
+}
+
+export function fetchAdminHackathonJuryMembers(hackathonId: string) {
+  return adminFetch<{ items: AdminHackathonJuryMember[]; total: number; teamCount: number }>(
+    `${adminHackathonPath(hackathonId)}/jury-members`,
+  );
+}
+
+export function revokeAdminHackathonJuryMember(hackathonId: string, membershipId: string) {
+  return adminFetch<{ ok: boolean; accountDisabled?: boolean }>(
+    `${adminHackathonPath(hackathonId)}/jury-members/${encodeURIComponent(membershipId)}`,
+    { method: "DELETE" },
+  );
+}
+
+export type AdminHackathonLeaderboardEntry = {
+  teamId: string;
+  teamName: string;
+  leadName: string;
+  problemStatementId: string;
+  problemStatementTitle: string;
+  domainId: string;
+  submittedEvaluations: number;
+  totalJuryMembers: number;
+  averageScore: number | null;
+  highestScore: number | null;
+  lowestScore: number | null;
+  rank: number | null;
+};
+
+export type AdminHackathonLeaderboard = {
+  requiredEvaluations: number;
+  totalJuryMembers: number;
+  teamCount: number;
+  rankedCount: number;
+  items: AdminHackathonLeaderboardEntry[];
+};
+
+export function fetchAdminHackathonLeaderboard(hackathonId: string) {
+  return adminFetch<AdminHackathonLeaderboard>(`${adminHackathonPath(hackathonId)}/leaderboard`);
+}
+
+export type AdminHackathonEvaluation = {
+  _id: string;
+  status: "draft" | "submitted" | "pending";
+  totalScore: number;
+  comments: string;
+  criteriaScores: { criterionId: string; score: number }[];
+  submittedAt: string | null;
+  juryMemberId: { name: string; email: string };
+  teamId: {
+    _id: string;
+    team_name: string;
+    lead_name: string;
+    problem_statement_id: string | null;
+  };
+};
+
+export function fetchAdminHackathonEvaluations(hackathonId: string) {
+  return adminFetch<{
+    items: AdminHackathonEvaluation[];
+    total: number;
+    teamCount: number;
+    assignedJuryCount: number;
+    submittedCount: number;
+    pendingCount: number;
+    rubric: { id: string; name: string; maxMarks: number; order: number }[];
+  }>(`${adminHackathonPath(hackathonId)}/evaluations`);
+}
+
+export function reopenAdminHackathonEvaluation(hackathonId: string, evaluationId: string) {
+  return adminFetch<{ evaluation: AdminHackathonEvaluation }>(
+    `${adminHackathonPath(hackathonId)}/evaluations/${encodeURIComponent(evaluationId)}/reopen`,
+    { method: "POST", body: JSON.stringify({}) },
+  );
+}
+
+export function reviewAdminHackathonProblemStatement(
+  hackathonId: string,
+  statementId: string,
+  payload: { action: "approve" | "reject"; reason?: string },
+) {
+  return adminFetch<{
+    statement: {
+      id: string;
+      status: "active" | "rejected";
+      reviewedAt: string;
+      rejectionReason: string;
+      createdBy: { name: string } | null;
+    };
+  }>(
+    `${adminHackathonPath(hackathonId)}/problem-statements/${encodeURIComponent(statementId)}/approval`,
+    { method: "PATCH", body: JSON.stringify(payload) },
+  );
+}
+
 export type AdminRsvp = {
   _id: string;
   name: string;

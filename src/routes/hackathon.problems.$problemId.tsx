@@ -298,10 +298,43 @@ function ProblemStatementDetailsPage() {
                     {statement.title}
                   </h3>
 
+                  {(statement.industry || statement.platform) && (
+                    <dl className="mt-6 grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-lg border border-[#e5e7ef] bg-[#f8f8fc] px-4 py-3">
+                        <dt className="text-[11px] font-semibold uppercase tracking-wider text-[#7c82a1]">
+                          Industry
+                        </dt>
+                        <dd className="mt-1 text-sm font-semibold text-[#151934]">
+                          {statement.industry || "Not specified"}
+                        </dd>
+                      </div>
+                      <div className="rounded-lg border border-[#e5e7ef] bg-[#f8f8fc] px-4 py-3">
+                        <dt className="text-[11px] font-semibold uppercase tracking-wider text-[#7c82a1]">
+                          Platform / Tech
+                        </dt>
+                        <dd className="mt-1 text-sm font-semibold text-[#151934]">
+                          {statement.platform || "Not specified"}
+                        </dd>
+                      </div>
+                    </dl>
+                  )}
+
+                  {statement.scope && (
+                    <div className="mt-8 border-t border-[#e5e7ef] pt-6">
+                      <h4 className="text-sm font-bold uppercase tracking-wider text-[#151934]">
+                        Scope
+                      </h4>
+
+                      <p className="mt-4 whitespace-pre-line text-sm leading-7 text-[#59617a]">
+                        {statement.scope}
+                      </p>
+                    </div>
+                  )}
+
                   {/* Description */}
                   <div className="mt-8 border-t border-[#e5e7ef] pt-6">
                     <h4 className="text-sm font-bold uppercase tracking-wider text-[#151934]">
-                      Problem Statement
+                      Description
                     </h4>
 
                     <p className="mt-4 whitespace-pre-line text-sm leading-7 text-[#59617a]">

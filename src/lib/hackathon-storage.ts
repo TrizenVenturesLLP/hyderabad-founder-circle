@@ -188,6 +188,9 @@ export function addProblemStatement(
     title: statement.title.trim(),
     category: statement.category?.trim() || "General",
     difficulty: statement.difficulty || "Intermediate",
+    industry: statement.industry?.trim() || "",
+    scope: statement.scope?.trim() || "",
+    platform: statement.platform?.trim() || "",
     description: statement.description.trim(),
     deliverables: statement.deliverables?.filter((d) => Boolean(d.trim())) || [],
   };
@@ -227,6 +230,9 @@ export function bulkAddProblemStatements(
       title: item.title.trim(),
       category: item.category?.trim() || "General",
       difficulty: item.difficulty || "Intermediate",
+      industry: item.industry?.trim() || "",
+      scope: item.scope?.trim() || "",
+      platform: item.platform?.trim() || "",
       description: item.description.trim(),
       deliverables: item.deliverables?.filter((d) => Boolean(d.trim())) || [],
     };
@@ -247,6 +253,9 @@ export function updateProblemStatement(statement: ProblemStatement): boolean {
     ...statement,
     title: statement.title.trim(),
     category: statement.category?.trim() || "General",
+    industry: statement.industry?.trim() || "",
+    scope: statement.scope?.trim() || "",
+    platform: statement.platform?.trim() || "",
     description: statement.description.trim(),
     deliverables: (statement.deliverables || []).filter((d) => Boolean(d.trim())),
   };

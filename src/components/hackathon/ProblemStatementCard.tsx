@@ -52,7 +52,7 @@ export function ProblemStatementCard({ statement, domainName }: ProblemStatement
           <div className="flex items-center gap-1.5">
             <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
               <Layers className="size-3" />
-              {statement.category}
+              {statement.industry || statement.category}
             </span>
             <button
               type="button"
@@ -73,6 +73,18 @@ export function ProblemStatementCard({ statement, domainName }: ProblemStatement
         <h3 className="mt-3.5 font-display text-lg font-bold tracking-tight text-foreground transition-colors group-hover:text-primary">
           {statement.title}
         </h3>
+
+        {statement.platform ? (
+          <p className="mt-1.5 text-xs text-foreground/80">
+            <span className="font-semibold">Platform / Tech:</span> {statement.platform}
+          </p>
+        ) : null}
+
+        {statement.scope ? (
+          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+            <span className="font-semibold text-foreground/80">Scope:</span> {statement.scope}
+          </p>
+        ) : null}
 
         {/* Description */}
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">

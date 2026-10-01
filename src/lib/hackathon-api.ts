@@ -1,3 +1,6 @@
+import { adminAuthHeaders } from "./admin-auth";
+import type { ProblemStatement } from "./hackathon";
+
 const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 
 async function hackathonFetch<T>(path: string, payload: Record<string, unknown>): Promise<T> {
@@ -75,7 +78,10 @@ export function loginHackathonStudent(payload: { email: string; phone: string })
 }
 
 export function getHackathonUserDetails(payload: { email: string; phone: string }) {
-  return hackathonFetch<{ message?: string; user?: any }>("/api/hackathon/user", payload);
+  return hackathonFetch<{ message?: string; user?: HackathonRegisteredUser }>(
+    "/api/hackathon/user",
+    payload,
+  );
 }
 
 export function addHackathonTeamMember(payload: {
@@ -106,7 +112,7 @@ export function confirmHackathonProblem(payload: {
   phone: string;
   problem_statement_id: string;
 }) {
-  return hackathonFetch<{ message?: string; user?: any }>(
+  return hackathonFetch<{ message?: string; user?: HackathonRegisteredUser }>(
     "/api/hackathon/confirm-problem",
     payload,
   );
@@ -154,7 +160,7 @@ export async function saveHackathonEvaluation(
 ) {
   const response = await fetch(`${API_BASE}/api/hackathon/users/${id}/evaluation`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: adminAuthHeaders(),
     body: JSON.stringify(evaluation),
   });
   const responseText = await response.text();
@@ -162,7 +168,9 @@ export async function saveHackathonEvaluation(
 
   try {
     data = JSON.parse(responseText);
-  } catch {}
+  } catch {
+    data = {};
+  }
 
   if (!response.ok) {
     throw new Error(
@@ -176,9 +184,7 @@ export async function saveHackathonEvaluation(
 export async function getHackathonRegisteredUsers() {
   const response = await fetch(`${API_BASE}/api/hackathon/users`, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: adminAuthHeaders(),
   });
 
   const responseText = await response.text();
@@ -242,7 +248,7 @@ export async function submitHackathonProject(payload: HackathonSubmissionPayload
   let data: {
     message?: string;
     error?: string;
-    user?: any;
+    user?: HackathonRegisteredUser;
   } = {};
 
   try {
@@ -266,9 +272,7 @@ export async function submitHackathonProject(payload: HackathonSubmissionPayload
 export async function suspendHackathonUser(id: string) {
   const response = await fetch(`${API_BASE}/api/hackathon/users/${id}/suspend`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: adminAuthHeaders(),
   });
 
   const responseText = await response.text();
@@ -277,7 +281,9 @@ export async function suspendHackathonUser(id: string) {
 
   try {
     data = JSON.parse(responseText);
-  } catch {}
+  } catch {
+    data = {};
+  }
 
   if (!response.ok) {
     throw new Error(
@@ -291,9 +297,7 @@ export async function suspendHackathonUser(id: string) {
 export async function activateHackathonUser(id: string) {
   const response = await fetch(`${API_BASE}/api/hackathon/users/${id}/activate`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: adminAuthHeaders(),
   });
 
   const responseText = await response.text();
@@ -302,7 +306,9 @@ export async function activateHackathonUser(id: string) {
 
   try {
     data = JSON.parse(responseText);
-  } catch {}
+  } catch {
+    data = {};
+  }
 
   if (!response.ok) {
     throw new Error(
@@ -316,9 +322,7 @@ export async function activateHackathonUser(id: string) {
 export async function removeHackathonUser(id: string) {
   const response = await fetch(`${API_BASE}/api/hackathon/users/${id}`, {
     method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: adminAuthHeaders(),
   });
 
   const responseText = await response.text();
@@ -327,7 +331,9 @@ export async function removeHackathonUser(id: string) {
 
   try {
     data = JSON.parse(responseText);
-  } catch {}
+  } catch {
+    data = {};
+  }
 
   if (!response.ok) {
     throw new Error(
@@ -357,9 +363,7 @@ export async function getHackathonReleaseTimer() {
 export async function saveHackathonReleaseTimer(releaseAt: string) {
   const response = await fetch(`${API_BASE}/api/hackathon/release-timer`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: adminAuthHeaders(),
     body: JSON.stringify({ releaseAt }),
   });
 
@@ -375,9 +379,7 @@ export async function saveHackathonReleaseTimer(releaseAt: string) {
 export async function clearHackathonReleaseTimer() {
   const response = await fetch(`${API_BASE}/api/hackathon/release-timer`, {
     method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: adminAuthHeaders(),
   });
 
   const responseText = await response.text();
@@ -406,20 +408,44 @@ export async function getHackathonProblemStatements() {
   return JSON.parse(responseText);
 }
 
+export async function getAdminHackathonProblemStatements(hackathonId: string) {
+  const response = await fetch(
+    `${API_BASE}/api/admin/hackathons/${encodeURIComponent(hackathonId)}/problem-statements`,
+    { headers: adminAuthHeaders() },
+  );
+  const responseText = await response.text();
+  let data: {
+    error?: string;
+    statements?: (ProblemStatement & { createdBy: { name: string } | null })[];
+  } = {};
+  try {
+    data = JSON.parse(responseText);
+  } catch {
+    data = {};
+  }
+  if (!response.ok) {
+    throw new Error(
+      data.error || responseText.trim() || `Request failed with status ${response.status}.`,
+    );
+  }
+  return data;
+}
+
 export async function saveHackathonProblemStatement(statement: {
   id: string;
   domainId: string;
   title: string;
   category: string;
   difficulty: string;
+  industry?: string;
+  scope?: string;
+  platform?: string;
   description: string;
   deliverables: string[];
 }) {
   const response = await fetch(`${API_BASE}/api/hackathon/problem-statements`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: adminAuthHeaders(),
     body: JSON.stringify(statement),
   });
 
@@ -432,14 +458,55 @@ export async function saveHackathonProblemStatement(statement: {
   return JSON.parse(responseText);
 }
 
+export async function bulkAddHackathonProblemStatements(
+  statements: {
+    domainId: string;
+    title: string;
+    description: string;
+    difficulty: string;
+    industry?: string;
+    scope?: string;
+    platform?: string;
+  }[],
+) {
+  const response = await fetch(`${API_BASE}/api/hackathon/problem-statements/bulk`, {
+    method: "POST",
+    headers: adminAuthHeaders(),
+    body: JSON.stringify({ statements }),
+  });
+  const responseText = await response.text();
+  let data: { message?: string; statements?: unknown[] } = {};
+  try {
+    data = JSON.parse(responseText);
+  } catch {
+    data = {};
+  }
+  if (!response.ok) {
+    throw new Error(
+      data.message || responseText.trim() || `Request failed with status ${response.status}.`,
+    );
+  }
+  return data;
+}
+
+export async function clearHackathonProblemStatements() {
+  const response = await fetch(`${API_BASE}/api/hackathon/problem-statements`, {
+    method: "DELETE",
+    headers: adminAuthHeaders(),
+  });
+  const responseText = await response.text();
+  if (!response.ok) {
+    throw new Error(responseText.trim() || `Request failed with status ${response.status}.`);
+  }
+  return JSON.parse(responseText);
+}
+
 export async function deleteHackathonProblemStatement(id: string) {
   const response = await fetch(
     `${API_BASE}/api/hackathon/problem-statements/${encodeURIComponent(id)}`,
     {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: adminAuthHeaders(),
     },
   );
 
@@ -450,4 +517,14 @@ export async function deleteHackathonProblemStatement(id: string) {
   }
 
   return JSON.parse(responseText);
+}
+
+export async function fetchAdminHackathonSubmission(fileUrl: string) {
+  const response = await fetch(`${API_BASE}${fileUrl}`, {
+    headers: adminAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error((await response.text()) || `Request failed with status ${response.status}.`);
+  }
+  return URL.createObjectURL(await response.blob());
 }

@@ -62,6 +62,11 @@ export function SiteFooter() {
                   Organizer Login
                 </Link>
               </li>
+              <li>
+                <Link to="/jury/login" className={linkClassName}>
+                  Jury Login
+                </Link>
+              </li>
             </ul>
           </div>
 

@@ -42,8 +42,8 @@ function AdminContactsPage() {
         description={loading ? "Loading…" : `${items.length} submission(s)`}
       />
 
-      <div className="mt-5 flex h-10 w-full max-w-xl overflow-hidden border border-[var(--color-border)] bg-white focus-within:border-[var(--brand-accent)]">
-        <div className="flex items-center pl-3 text-[var(--color-text-muted)]">
+      <div className="mt-5 flex h-11 w-full max-w-xl overflow-hidden rounded-full border border-[var(--color-border)] bg-white shadow-(--shadow-small) transition-colors focus-within:border-[var(--brand-accent)]">
+        <div className="flex items-center pl-4 text-[var(--color-text-muted)]">
           <Search className="size-4" strokeWidth={1.75} />
         </div>
         <input
@@ -58,7 +58,7 @@ function AdminContactsPage() {
         <button
           type="button"
           onClick={() => void load()}
-          className="shrink-0 border-l border-[var(--color-border)] bg-[var(--color-background-alt)] px-3 text-sm font-semibold text-foreground transition-colors hover:bg-[var(--brand-primary-soft)] sm:px-4"
+          className="m-1 shrink-0 rounded-full bg-[var(--brand-accent)] px-4 text-sm font-semibold text-white transition-colors hover:bg-[var(--brand-accent-hover)] sm:px-5"
         >
           Search
         </button>
@@ -70,13 +70,11 @@ function AdminContactsPage() {
         {items.map((item) => (
           <li
             key={item._id}
-            className="flex flex-col border border-[var(--color-border)] bg-white p-4"
+            className="flex flex-col rounded-2xl border border-[var(--color-border)] bg-white p-5 shadow-(--shadow-small) transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:border-[var(--color-border-strong)] hover:shadow-(--shadow-card)"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="truncate text-[14px] font-medium text-foreground">
-                  {item.name}
-                </p>
+                <p className="truncate text-[14px] font-medium text-foreground">{item.name}</p>
                 <a
                   href={`mailto:${item.email}`}
                   className="mt-1 inline-flex max-w-full items-center gap-1.5 text-[12px] text-[var(--brand-accent)] hover:underline"

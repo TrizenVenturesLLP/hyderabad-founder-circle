@@ -142,7 +142,10 @@ function AdminApplicationsPage() {
           </li>
         ) : (
           items.map((item) => (
-            <li key={item._id} className="border border-(--color-border) bg-white p-4">
+            <li
+              key={item._id}
+              className="rounded-2xl border border-(--color-border) bg-white p-5 shadow-(--shadow-small) transition-[border-color,box-shadow] duration-300 hover:border-(--color-border-strong) hover:shadow-(--shadow-card)"
+            >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-[14px] font-medium text-foreground">{item.organizationName}</p>

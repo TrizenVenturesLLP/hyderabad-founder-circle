@@ -14,6 +14,7 @@ import { Route as StoriesRouteImport } from './routes/stories'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as OrgLoginRouteImport } from './routes/org-login'
+import { Route as JuryRouteImport } from './routes/jury'
 import { Route as HostRouteImport } from './routes/host'
 import { Route as HackathonRouteImport } from './routes/hackathon'
 import { Route as EventsRouteImport } from './routes/events'
@@ -26,9 +27,13 @@ import { Route as AdminLoginRouteImport } from './routes/admin-login'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as JuryIndexRouteImport } from './routes/jury.index'
 import { Route as EventsIndexRouteImport } from './routes/events.index'
 import { Route as CommunitiesIndexRouteImport } from './routes/communities.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as JurySignupRouteImport } from './routes/jury.signup'
+import { Route as JuryLoginRouteImport } from './routes/jury.login'
+import { Route as JuryInvitationRouteImport } from './routes/jury.invitation'
 import { Route as HackathonRegisterRouteImport } from './routes/hackathon.register'
 import { Route as HackathonLoginRouteImport } from './routes/hackathon.login'
 import { Route as EventsSlugRouteImport } from './routes/events.$slug'
@@ -40,7 +45,16 @@ import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminContactsRouteImport } from './routes/admin.contacts'
 import { Route as AdminApplicationsRouteImport } from './routes/admin.applications'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
+import { Route as JuryHackathonsHackathonIdRouteImport } from './routes/jury.hackathons.$hackathonId'
 import { Route as HackathonProblemsProblemIdRouteImport } from './routes/hackathon.problems.$problemId'
+import { Route as JuryHackathonsHackathonIdTeamsRouteImport } from './routes/jury.hackathons.$hackathonId.teams'
+import { Route as JuryHackathonsHackathonIdProblemStatementsRouteImport } from './routes/jury.hackathons.$hackathonId.problem-statements'
+import { Route as JuryHackathonsHackathonIdOverviewRouteImport } from './routes/jury.hackathons.$hackathonId.overview'
+import { Route as JuryHackathonsHackathonIdLeaderboardRouteImport } from './routes/jury.hackathons.$hackathonId.leaderboard'
+import { Route as AdminHackathonsHackathonIdLeaderboardRouteImport } from './routes/admin.hackathons.$hackathonId.leaderboard'
+import { Route as AdminHackathonsHackathonIdJuryRouteImport } from './routes/admin.hackathons.$hackathonId.jury'
+import { Route as AdminHackathonsHackathonIdEvaluationsRouteImport } from './routes/admin.hackathons.$hackathonId.evaluations'
+import { Route as JuryHackathonsHackathonIdTeamsTeamIdRouteImport } from './routes/jury.hackathons.$hackathonId.teams.$teamId'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -65,6 +79,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const OrgLoginRoute = OrgLoginRouteImport.update({
   id: '/org-login',
   path: '/org-login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JuryRoute = JuryRouteImport.update({
+  id: '/jury',
+  path: '/jury',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HostRoute = HostRouteImport.update({
@@ -127,6 +146,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JuryIndexRoute = JuryIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => JuryRoute,
+} as any)
 const EventsIndexRoute = EventsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -141,6 +165,21 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
+} as any)
+const JurySignupRoute = JurySignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => JuryRoute,
+} as any)
+const JuryLoginRoute = JuryLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => JuryRoute,
+} as any)
+const JuryInvitationRoute = JuryInvitationRouteImport.update({
+  id: '/invitation',
+  path: '/invitation',
+  getParentRoute: () => JuryRoute,
 } as any)
 const HackathonRegisterRoute = HackathonRegisterRouteImport.update({
   id: '/register',
@@ -197,11 +236,65 @@ const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AdminRoute,
 } as any)
+const JuryHackathonsHackathonIdRoute =
+  JuryHackathonsHackathonIdRouteImport.update({
+    id: '/hackathons/$hackathonId',
+    path: '/hackathons/$hackathonId',
+    getParentRoute: () => JuryRoute,
+  } as any)
 const HackathonProblemsProblemIdRoute =
   HackathonProblemsProblemIdRouteImport.update({
     id: '/problems/$problemId',
     path: '/problems/$problemId',
     getParentRoute: () => HackathonRoute,
+  } as any)
+const JuryHackathonsHackathonIdTeamsRoute =
+  JuryHackathonsHackathonIdTeamsRouteImport.update({
+    id: '/teams',
+    path: '/teams',
+    getParentRoute: () => JuryHackathonsHackathonIdRoute,
+  } as any)
+const JuryHackathonsHackathonIdProblemStatementsRoute =
+  JuryHackathonsHackathonIdProblemStatementsRouteImport.update({
+    id: '/problem-statements',
+    path: '/problem-statements',
+    getParentRoute: () => JuryHackathonsHackathonIdRoute,
+  } as any)
+const JuryHackathonsHackathonIdOverviewRoute =
+  JuryHackathonsHackathonIdOverviewRouteImport.update({
+    id: '/overview',
+    path: '/overview',
+    getParentRoute: () => JuryHackathonsHackathonIdRoute,
+  } as any)
+const JuryHackathonsHackathonIdLeaderboardRoute =
+  JuryHackathonsHackathonIdLeaderboardRouteImport.update({
+    id: '/leaderboard',
+    path: '/leaderboard',
+    getParentRoute: () => JuryHackathonsHackathonIdRoute,
+  } as any)
+const AdminHackathonsHackathonIdLeaderboardRoute =
+  AdminHackathonsHackathonIdLeaderboardRouteImport.update({
+    id: '/$hackathonId/leaderboard',
+    path: '/$hackathonId/leaderboard',
+    getParentRoute: () => AdminHackathonsRoute,
+  } as any)
+const AdminHackathonsHackathonIdJuryRoute =
+  AdminHackathonsHackathonIdJuryRouteImport.update({
+    id: '/$hackathonId/jury',
+    path: '/$hackathonId/jury',
+    getParentRoute: () => AdminHackathonsRoute,
+  } as any)
+const AdminHackathonsHackathonIdEvaluationsRoute =
+  AdminHackathonsHackathonIdEvaluationsRouteImport.update({
+    id: '/$hackathonId/evaluations',
+    path: '/$hackathonId/evaluations',
+    getParentRoute: () => AdminHackathonsRoute,
+  } as any)
+const JuryHackathonsHackathonIdTeamsTeamIdRoute =
+  JuryHackathonsHackathonIdTeamsTeamIdRouteImport.update({
+    id: '/$teamId',
+    path: '/$teamId',
+    getParentRoute: () => JuryHackathonsHackathonIdTeamsRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -217,6 +310,7 @@ export interface FileRoutesByFullPath {
   '/events': typeof EventsRouteWithChildren
   '/hackathon': typeof HackathonRouteWithChildren
   '/host': typeof HostRoute
+  '/jury': typeof JuryRouteWithChildren
   '/org-login': typeof OrgLoginRoute
   '/privacy': typeof PrivacyRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -226,17 +320,30 @@ export interface FileRoutesByFullPath {
   '/admin/applications': typeof AdminApplicationsRoute
   '/admin/contacts': typeof AdminContactsRoute
   '/admin/events': typeof AdminEventsRoute
-  '/admin/hackathons': typeof AdminHackathonsRoute
+  '/admin/hackathons': typeof AdminHackathonsRouteWithChildren
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/communities/$slug': typeof CommunitiesSlugRoute
   '/dashboard/team': typeof DashboardTeamRoute
   '/events/$slug': typeof EventsSlugRoute
   '/hackathon/login': typeof HackathonLoginRoute
   '/hackathon/register': typeof HackathonRegisterRoute
+  '/jury/invitation': typeof JuryInvitationRoute
+  '/jury/login': typeof JuryLoginRoute
+  '/jury/signup': typeof JurySignupRoute
   '/admin/': typeof AdminIndexRoute
   '/communities/': typeof CommunitiesIndexRoute
   '/events/': typeof EventsIndexRoute
+  '/jury/': typeof JuryIndexRoute
   '/hackathon/problems/$problemId': typeof HackathonProblemsProblemIdRoute
+  '/jury/hackathons/$hackathonId': typeof JuryHackathonsHackathonIdRouteWithChildren
+  '/admin/hackathons/$hackathonId/evaluations': typeof AdminHackathonsHackathonIdEvaluationsRoute
+  '/admin/hackathons/$hackathonId/jury': typeof AdminHackathonsHackathonIdJuryRoute
+  '/admin/hackathons/$hackathonId/leaderboard': typeof AdminHackathonsHackathonIdLeaderboardRoute
+  '/jury/hackathons/$hackathonId/leaderboard': typeof JuryHackathonsHackathonIdLeaderboardRoute
+  '/jury/hackathons/$hackathonId/overview': typeof JuryHackathonsHackathonIdOverviewRoute
+  '/jury/hackathons/$hackathonId/problem-statements': typeof JuryHackathonsHackathonIdProblemStatementsRoute
+  '/jury/hackathons/$hackathonId/teams': typeof JuryHackathonsHackathonIdTeamsRouteWithChildren
+  '/jury/hackathons/$hackathonId/teams/$teamId': typeof JuryHackathonsHackathonIdTeamsTeamIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -257,17 +364,30 @@ export interface FileRoutesByTo {
   '/admin/applications': typeof AdminApplicationsRoute
   '/admin/contacts': typeof AdminContactsRoute
   '/admin/events': typeof AdminEventsRoute
-  '/admin/hackathons': typeof AdminHackathonsRoute
+  '/admin/hackathons': typeof AdminHackathonsRouteWithChildren
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/communities/$slug': typeof CommunitiesSlugRoute
   '/dashboard/team': typeof DashboardTeamRoute
   '/events/$slug': typeof EventsSlugRoute
   '/hackathon/login': typeof HackathonLoginRoute
   '/hackathon/register': typeof HackathonRegisterRoute
+  '/jury/invitation': typeof JuryInvitationRoute
+  '/jury/login': typeof JuryLoginRoute
+  '/jury/signup': typeof JurySignupRoute
   '/admin': typeof AdminIndexRoute
   '/communities': typeof CommunitiesIndexRoute
   '/events': typeof EventsIndexRoute
+  '/jury': typeof JuryIndexRoute
   '/hackathon/problems/$problemId': typeof HackathonProblemsProblemIdRoute
+  '/jury/hackathons/$hackathonId': typeof JuryHackathonsHackathonIdRouteWithChildren
+  '/admin/hackathons/$hackathonId/evaluations': typeof AdminHackathonsHackathonIdEvaluationsRoute
+  '/admin/hackathons/$hackathonId/jury': typeof AdminHackathonsHackathonIdJuryRoute
+  '/admin/hackathons/$hackathonId/leaderboard': typeof AdminHackathonsHackathonIdLeaderboardRoute
+  '/jury/hackathons/$hackathonId/leaderboard': typeof JuryHackathonsHackathonIdLeaderboardRoute
+  '/jury/hackathons/$hackathonId/overview': typeof JuryHackathonsHackathonIdOverviewRoute
+  '/jury/hackathons/$hackathonId/problem-statements': typeof JuryHackathonsHackathonIdProblemStatementsRoute
+  '/jury/hackathons/$hackathonId/teams': typeof JuryHackathonsHackathonIdTeamsRouteWithChildren
+  '/jury/hackathons/$hackathonId/teams/$teamId': typeof JuryHackathonsHackathonIdTeamsTeamIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -283,6 +403,7 @@ export interface FileRoutesById {
   '/events': typeof EventsRouteWithChildren
   '/hackathon': typeof HackathonRouteWithChildren
   '/host': typeof HostRoute
+  '/jury': typeof JuryRouteWithChildren
   '/org-login': typeof OrgLoginRoute
   '/privacy': typeof PrivacyRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -292,17 +413,30 @@ export interface FileRoutesById {
   '/admin/applications': typeof AdminApplicationsRoute
   '/admin/contacts': typeof AdminContactsRoute
   '/admin/events': typeof AdminEventsRoute
-  '/admin/hackathons': typeof AdminHackathonsRoute
+  '/admin/hackathons': typeof AdminHackathonsRouteWithChildren
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/communities/$slug': typeof CommunitiesSlugRoute
   '/dashboard/team': typeof DashboardTeamRoute
   '/events/$slug': typeof EventsSlugRoute
   '/hackathon/login': typeof HackathonLoginRoute
   '/hackathon/register': typeof HackathonRegisterRoute
+  '/jury/invitation': typeof JuryInvitationRoute
+  '/jury/login': typeof JuryLoginRoute
+  '/jury/signup': typeof JurySignupRoute
   '/admin/': typeof AdminIndexRoute
   '/communities/': typeof CommunitiesIndexRoute
   '/events/': typeof EventsIndexRoute
+  '/jury/': typeof JuryIndexRoute
   '/hackathon/problems/$problemId': typeof HackathonProblemsProblemIdRoute
+  '/jury/hackathons/$hackathonId': typeof JuryHackathonsHackathonIdRouteWithChildren
+  '/admin/hackathons/$hackathonId/evaluations': typeof AdminHackathonsHackathonIdEvaluationsRoute
+  '/admin/hackathons/$hackathonId/jury': typeof AdminHackathonsHackathonIdJuryRoute
+  '/admin/hackathons/$hackathonId/leaderboard': typeof AdminHackathonsHackathonIdLeaderboardRoute
+  '/jury/hackathons/$hackathonId/leaderboard': typeof JuryHackathonsHackathonIdLeaderboardRoute
+  '/jury/hackathons/$hackathonId/overview': typeof JuryHackathonsHackathonIdOverviewRoute
+  '/jury/hackathons/$hackathonId/problem-statements': typeof JuryHackathonsHackathonIdProblemStatementsRoute
+  '/jury/hackathons/$hackathonId/teams': typeof JuryHackathonsHackathonIdTeamsRouteWithChildren
+  '/jury/hackathons/$hackathonId/teams/$teamId': typeof JuryHackathonsHackathonIdTeamsTeamIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -319,6 +453,7 @@ export interface FileRouteTypes {
     | '/events'
     | '/hackathon'
     | '/host'
+    | '/jury'
     | '/org-login'
     | '/privacy'
     | '/sitemap.xml'
@@ -335,10 +470,23 @@ export interface FileRouteTypes {
     | '/events/$slug'
     | '/hackathon/login'
     | '/hackathon/register'
+    | '/jury/invitation'
+    | '/jury/login'
+    | '/jury/signup'
     | '/admin/'
     | '/communities/'
     | '/events/'
+    | '/jury/'
     | '/hackathon/problems/$problemId'
+    | '/jury/hackathons/$hackathonId'
+    | '/admin/hackathons/$hackathonId/evaluations'
+    | '/admin/hackathons/$hackathonId/jury'
+    | '/admin/hackathons/$hackathonId/leaderboard'
+    | '/jury/hackathons/$hackathonId/leaderboard'
+    | '/jury/hackathons/$hackathonId/overview'
+    | '/jury/hackathons/$hackathonId/problem-statements'
+    | '/jury/hackathons/$hackathonId/teams'
+    | '/jury/hackathons/$hackathonId/teams/$teamId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -366,10 +514,23 @@ export interface FileRouteTypes {
     | '/events/$slug'
     | '/hackathon/login'
     | '/hackathon/register'
+    | '/jury/invitation'
+    | '/jury/login'
+    | '/jury/signup'
     | '/admin'
     | '/communities'
     | '/events'
+    | '/jury'
     | '/hackathon/problems/$problemId'
+    | '/jury/hackathons/$hackathonId'
+    | '/admin/hackathons/$hackathonId/evaluations'
+    | '/admin/hackathons/$hackathonId/jury'
+    | '/admin/hackathons/$hackathonId/leaderboard'
+    | '/jury/hackathons/$hackathonId/leaderboard'
+    | '/jury/hackathons/$hackathonId/overview'
+    | '/jury/hackathons/$hackathonId/problem-statements'
+    | '/jury/hackathons/$hackathonId/teams'
+    | '/jury/hackathons/$hackathonId/teams/$teamId'
   id:
     | '__root__'
     | '/'
@@ -384,6 +545,7 @@ export interface FileRouteTypes {
     | '/events'
     | '/hackathon'
     | '/host'
+    | '/jury'
     | '/org-login'
     | '/privacy'
     | '/sitemap.xml'
@@ -400,10 +562,23 @@ export interface FileRouteTypes {
     | '/events/$slug'
     | '/hackathon/login'
     | '/hackathon/register'
+    | '/jury/invitation'
+    | '/jury/login'
+    | '/jury/signup'
     | '/admin/'
     | '/communities/'
     | '/events/'
+    | '/jury/'
     | '/hackathon/problems/$problemId'
+    | '/jury/hackathons/$hackathonId'
+    | '/admin/hackathons/$hackathonId/evaluations'
+    | '/admin/hackathons/$hackathonId/jury'
+    | '/admin/hackathons/$hackathonId/leaderboard'
+    | '/jury/hackathons/$hackathonId/leaderboard'
+    | '/jury/hackathons/$hackathonId/overview'
+    | '/jury/hackathons/$hackathonId/problem-statements'
+    | '/jury/hackathons/$hackathonId/teams'
+    | '/jury/hackathons/$hackathonId/teams/$teamId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -419,6 +594,7 @@ export interface RootRouteChildren {
   EventsRoute: typeof EventsRouteWithChildren
   HackathonRoute: typeof HackathonRouteWithChildren
   HostRoute: typeof HostRoute
+  JuryRoute: typeof JuryRouteWithChildren
   OrgLoginRoute: typeof OrgLoginRoute
   PrivacyRoute: typeof PrivacyRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -461,6 +637,13 @@ declare module '@tanstack/react-router' {
       path: '/org-login'
       fullPath: '/org-login'
       preLoaderRoute: typeof OrgLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jury': {
+      id: '/jury'
+      path: '/jury'
+      fullPath: '/jury'
+      preLoaderRoute: typeof JuryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/host': {
@@ -547,6 +730,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/jury/': {
+      id: '/jury/'
+      path: '/'
+      fullPath: '/jury/'
+      preLoaderRoute: typeof JuryIndexRouteImport
+      parentRoute: typeof JuryRoute
+    }
     '/events/': {
       id: '/events/'
       path: '/'
@@ -567,6 +757,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/jury/signup': {
+      id: '/jury/signup'
+      path: '/signup'
+      fullPath: '/jury/signup'
+      preLoaderRoute: typeof JurySignupRouteImport
+      parentRoute: typeof JuryRoute
+    }
+    '/jury/login': {
+      id: '/jury/login'
+      path: '/login'
+      fullPath: '/jury/login'
+      preLoaderRoute: typeof JuryLoginRouteImport
+      parentRoute: typeof JuryRoute
+    }
+    '/jury/invitation': {
+      id: '/jury/invitation'
+      path: '/invitation'
+      fullPath: '/jury/invitation'
+      preLoaderRoute: typeof JuryInvitationRouteImport
+      parentRoute: typeof JuryRoute
     }
     '/hackathon/register': {
       id: '/hackathon/register'
@@ -645,6 +856,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAnalyticsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/jury/hackathons/$hackathonId': {
+      id: '/jury/hackathons/$hackathonId'
+      path: '/hackathons/$hackathonId'
+      fullPath: '/jury/hackathons/$hackathonId'
+      preLoaderRoute: typeof JuryHackathonsHackathonIdRouteImport
+      parentRoute: typeof JuryRoute
+    }
     '/hackathon/problems/$problemId': {
       id: '/hackathon/problems/$problemId'
       path: '/problems/$problemId'
@@ -652,15 +870,89 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HackathonProblemsProblemIdRouteImport
       parentRoute: typeof HackathonRoute
     }
+    '/jury/hackathons/$hackathonId/teams': {
+      id: '/jury/hackathons/$hackathonId/teams'
+      path: '/teams'
+      fullPath: '/jury/hackathons/$hackathonId/teams'
+      preLoaderRoute: typeof JuryHackathonsHackathonIdTeamsRouteImport
+      parentRoute: typeof JuryHackathonsHackathonIdRoute
+    }
+    '/jury/hackathons/$hackathonId/problem-statements': {
+      id: '/jury/hackathons/$hackathonId/problem-statements'
+      path: '/problem-statements'
+      fullPath: '/jury/hackathons/$hackathonId/problem-statements'
+      preLoaderRoute: typeof JuryHackathonsHackathonIdProblemStatementsRouteImport
+      parentRoute: typeof JuryHackathonsHackathonIdRoute
+    }
+    '/jury/hackathons/$hackathonId/overview': {
+      id: '/jury/hackathons/$hackathonId/overview'
+      path: '/overview'
+      fullPath: '/jury/hackathons/$hackathonId/overview'
+      preLoaderRoute: typeof JuryHackathonsHackathonIdOverviewRouteImport
+      parentRoute: typeof JuryHackathonsHackathonIdRoute
+    }
+    '/jury/hackathons/$hackathonId/leaderboard': {
+      id: '/jury/hackathons/$hackathonId/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/jury/hackathons/$hackathonId/leaderboard'
+      preLoaderRoute: typeof JuryHackathonsHackathonIdLeaderboardRouteImport
+      parentRoute: typeof JuryHackathonsHackathonIdRoute
+    }
+    '/admin/hackathons/$hackathonId/leaderboard': {
+      id: '/admin/hackathons/$hackathonId/leaderboard'
+      path: '/$hackathonId/leaderboard'
+      fullPath: '/admin/hackathons/$hackathonId/leaderboard'
+      preLoaderRoute: typeof AdminHackathonsHackathonIdLeaderboardRouteImport
+      parentRoute: typeof AdminHackathonsRoute
+    }
+    '/admin/hackathons/$hackathonId/jury': {
+      id: '/admin/hackathons/$hackathonId/jury'
+      path: '/$hackathonId/jury'
+      fullPath: '/admin/hackathons/$hackathonId/jury'
+      preLoaderRoute: typeof AdminHackathonsHackathonIdJuryRouteImport
+      parentRoute: typeof AdminHackathonsRoute
+    }
+    '/admin/hackathons/$hackathonId/evaluations': {
+      id: '/admin/hackathons/$hackathonId/evaluations'
+      path: '/$hackathonId/evaluations'
+      fullPath: '/admin/hackathons/$hackathonId/evaluations'
+      preLoaderRoute: typeof AdminHackathonsHackathonIdEvaluationsRouteImport
+      parentRoute: typeof AdminHackathonsRoute
+    }
+    '/jury/hackathons/$hackathonId/teams/$teamId': {
+      id: '/jury/hackathons/$hackathonId/teams/$teamId'
+      path: '/$teamId'
+      fullPath: '/jury/hackathons/$hackathonId/teams/$teamId'
+      preLoaderRoute: typeof JuryHackathonsHackathonIdTeamsTeamIdRouteImport
+      parentRoute: typeof JuryHackathonsHackathonIdTeamsRoute
+    }
   }
 }
+
+interface AdminHackathonsRouteChildren {
+  AdminHackathonsHackathonIdEvaluationsRoute: typeof AdminHackathonsHackathonIdEvaluationsRoute
+  AdminHackathonsHackathonIdJuryRoute: typeof AdminHackathonsHackathonIdJuryRoute
+  AdminHackathonsHackathonIdLeaderboardRoute: typeof AdminHackathonsHackathonIdLeaderboardRoute
+}
+
+const AdminHackathonsRouteChildren: AdminHackathonsRouteChildren = {
+  AdminHackathonsHackathonIdEvaluationsRoute:
+    AdminHackathonsHackathonIdEvaluationsRoute,
+  AdminHackathonsHackathonIdJuryRoute: AdminHackathonsHackathonIdJuryRoute,
+  AdminHackathonsHackathonIdLeaderboardRoute:
+    AdminHackathonsHackathonIdLeaderboardRoute,
+}
+
+const AdminHackathonsRouteWithChildren = AdminHackathonsRoute._addFileChildren(
+  AdminHackathonsRouteChildren,
+)
 
 interface AdminRouteChildren {
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminApplicationsRoute: typeof AdminApplicationsRoute
   AdminContactsRoute: typeof AdminContactsRoute
   AdminEventsRoute: typeof AdminEventsRoute
-  AdminHackathonsRoute: typeof AdminHackathonsRoute
+  AdminHackathonsRoute: typeof AdminHackathonsRouteWithChildren
   AdminRegistrationsRoute: typeof AdminRegistrationsRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -670,7 +962,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminApplicationsRoute: AdminApplicationsRoute,
   AdminContactsRoute: AdminContactsRoute,
   AdminEventsRoute: AdminEventsRoute,
-  AdminHackathonsRoute: AdminHackathonsRoute,
+  AdminHackathonsRoute: AdminHackathonsRouteWithChildren,
   AdminRegistrationsRoute: AdminRegistrationsRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
@@ -732,6 +1024,63 @@ const HackathonRouteWithChildren = HackathonRoute._addFileChildren(
   HackathonRouteChildren,
 )
 
+interface JuryHackathonsHackathonIdTeamsRouteChildren {
+  JuryHackathonsHackathonIdTeamsTeamIdRoute: typeof JuryHackathonsHackathonIdTeamsTeamIdRoute
+}
+
+const JuryHackathonsHackathonIdTeamsRouteChildren: JuryHackathonsHackathonIdTeamsRouteChildren =
+  {
+    JuryHackathonsHackathonIdTeamsTeamIdRoute:
+      JuryHackathonsHackathonIdTeamsTeamIdRoute,
+  }
+
+const JuryHackathonsHackathonIdTeamsRouteWithChildren =
+  JuryHackathonsHackathonIdTeamsRoute._addFileChildren(
+    JuryHackathonsHackathonIdTeamsRouteChildren,
+  )
+
+interface JuryHackathonsHackathonIdRouteChildren {
+  JuryHackathonsHackathonIdLeaderboardRoute: typeof JuryHackathonsHackathonIdLeaderboardRoute
+  JuryHackathonsHackathonIdOverviewRoute: typeof JuryHackathonsHackathonIdOverviewRoute
+  JuryHackathonsHackathonIdProblemStatementsRoute: typeof JuryHackathonsHackathonIdProblemStatementsRoute
+  JuryHackathonsHackathonIdTeamsRoute: typeof JuryHackathonsHackathonIdTeamsRouteWithChildren
+}
+
+const JuryHackathonsHackathonIdRouteChildren: JuryHackathonsHackathonIdRouteChildren =
+  {
+    JuryHackathonsHackathonIdLeaderboardRoute:
+      JuryHackathonsHackathonIdLeaderboardRoute,
+    JuryHackathonsHackathonIdOverviewRoute:
+      JuryHackathonsHackathonIdOverviewRoute,
+    JuryHackathonsHackathonIdProblemStatementsRoute:
+      JuryHackathonsHackathonIdProblemStatementsRoute,
+    JuryHackathonsHackathonIdTeamsRoute:
+      JuryHackathonsHackathonIdTeamsRouteWithChildren,
+  }
+
+const JuryHackathonsHackathonIdRouteWithChildren =
+  JuryHackathonsHackathonIdRoute._addFileChildren(
+    JuryHackathonsHackathonIdRouteChildren,
+  )
+
+interface JuryRouteChildren {
+  JuryInvitationRoute: typeof JuryInvitationRoute
+  JuryLoginRoute: typeof JuryLoginRoute
+  JurySignupRoute: typeof JurySignupRoute
+  JuryIndexRoute: typeof JuryIndexRoute
+  JuryHackathonsHackathonIdRoute: typeof JuryHackathonsHackathonIdRouteWithChildren
+}
+
+const JuryRouteChildren: JuryRouteChildren = {
+  JuryInvitationRoute: JuryInvitationRoute,
+  JuryLoginRoute: JuryLoginRoute,
+  JurySignupRoute: JurySignupRoute,
+  JuryIndexRoute: JuryIndexRoute,
+  JuryHackathonsHackathonIdRoute: JuryHackathonsHackathonIdRouteWithChildren,
+}
+
+const JuryRouteWithChildren = JuryRoute._addFileChildren(JuryRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
@@ -745,6 +1094,7 @@ const rootRouteChildren: RootRouteChildren = {
   EventsRoute: EventsRouteWithChildren,
   HackathonRoute: HackathonRouteWithChildren,
   HostRoute: HostRoute,
+  JuryRoute: JuryRouteWithChildren,
   OrgLoginRoute: OrgLoginRoute,
   PrivacyRoute: PrivacyRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,

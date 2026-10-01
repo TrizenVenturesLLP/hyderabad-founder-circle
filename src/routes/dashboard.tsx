@@ -782,6 +782,14 @@ function DashboardPage() {
                           {confirmedStatement.title}
                         </h3>
 
+                        {confirmedStatement.industry || confirmedStatement.platform ? (
+                          <p className="mt-1.5 text-xs text-[#4b5270]">
+                            {[confirmedStatement.industry, confirmedStatement.platform]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        ) : null}
+
                         <p className="mt-2 text-sm leading-6 text-[#707792]">
                           {confirmedStatement.description}
                         </p>
@@ -864,6 +872,14 @@ function DashboardPage() {
                             </div>
 
                             <p className="mt-2 font-semibold text-[#151934]">{statement.title}</p>
+
+                            {statement.industry || statement.platform ? (
+                              <p className="mt-1 text-[11.5px] text-[#4b5270]">
+                                {[statement.industry, statement.platform]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </p>
+                            ) : null}
 
                             <p className="mt-1 text-xs leading-5 text-[#707792]">
                               {statement.description}
