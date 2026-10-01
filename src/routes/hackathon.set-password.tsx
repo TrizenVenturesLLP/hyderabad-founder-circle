@@ -199,7 +199,7 @@ function HackathonSetPasswordPage() {
                   <KeyRound className="size-4 text-primary" /> Get a new link
                 </p>
                 <label className="block text-xs font-semibold text-foreground">
-                  Team Lead email address
+                  Email address
                   <span className="relative mt-1 block">
                     <Mail className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
                     <input

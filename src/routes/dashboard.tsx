@@ -46,6 +46,7 @@ import {
   type HackathonStudentProfile,
   type ProblemStatement,
 } from "@/lib/hackathon";
+import { tabIndicatorClass, useTabIndicator } from "@/components/admin/useTabIndicator";
 
 export const Route = createFileRoute("/dashboard")({
   beforeLoad: () => {
@@ -82,6 +83,7 @@ function DashboardPage() {
   const [details] = useState<HackathonDetails>(getHackathonDetails());
   const [statements, setStatements] = useState<ProblemStatement[]>([]);
   const [selectedDomainId, setSelectedDomainId] = useState<string>("ui-ux");
+  const trackTabs = useTabIndicator("dashboard-tracks", selectedDomainId);
   const [confirmedStatementId, setConfirmedStatementId] = useState<string | null>(
     getSelectedProblemStatementId(),
   );
@@ -116,9 +118,8 @@ function DashboardPage() {
         .then((res) => {
           if (res.user) {
             setBackendUser(res.user);
-
+            setConfirmedStatementId(res.user.problem_statement_id || null);
             if (res.user.problem_statement_id) {
-              setConfirmedStatementId(res.user.problem_statement_id);
               saveSelectedProblemStatementId(res.user.problem_statement_id);
             }
           }
@@ -210,6 +211,7 @@ function DashboardPage() {
   const initial = String(displayName).charAt(0).toUpperCase() || "P";
   const isLead =
     !!backendUser && backendUser.email?.toLowerCase() === localProfile?.email?.toLowerCase();
+  const leadName = backendUser?.lead_name || "your Team Lead";
   const roleLabel = isLead ? "Team Lead" : "Team Member";
   const memberCount = backendUser?.members?.length || 1;
   const submittedAt = backendUser?.submission?.submitted_at;
@@ -467,7 +469,35 @@ function DashboardPage() {
 
               <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_17rem]">
                 <div className="min-w-0 space-y-5">
-                  {confirmedStatement && (
+                  {confirmedStatement && backendUser && !isLead && (
+                    <div className={`${cardClass} flex flex-wrap items-center gap-3 p-4 sm:p-5`}>
+                      <span className="grid size-9 shrink-0 place-items-center rounded-md bg-(--brand-accent-soft) text-(--brand-accent)">
+                        <Upload className="size-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-semibold tracking-[0.08em] text-(--brand-accent) uppercase">
+                          Final submission
+                        </p>
+                        <p className="mt-0.5 text-[13px] text-(--color-text-secondary)">
+                          {submittedAt
+                            ? `${leadName} submitted your team's project.`
+                            : `${leadName} submits the project for your team.`}
+                        </p>
+                      </div>
+                      <span
+                        className={`inline-flex items-center gap-1.5 border px-2 py-1 text-[11px] font-semibold ${submittedAt ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-(--color-border) bg-(--color-background-alt) text-(--color-text-secondary)"}`}
+                      >
+                        {submittedAt ? (
+                          <CheckCircle2 className="size-3.5" />
+                        ) : (
+                          <Clock3 className="size-3.5" />
+                        )}
+                        {submittedAt ? "Submitted" : "Not submitted"}
+                      </span>
+                    </div>
+                  )}
+
+                  {confirmedStatement && isLead && (
                     <div className={`${cardClass} p-4 sm:p-5`}>
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
@@ -478,7 +508,7 @@ function DashboardPage() {
                             Submit your project
                           </h2>
                           <p className="mt-0.5 text-[12.5px] text-(--color-text-secondary)">
-                            Team Leads submit the repository, presentation and demo video here.
+                            Submit the repository, presentation and demo video for your team.
                           </p>
                         </div>
                         <span
@@ -602,21 +632,23 @@ function DashboardPage() {
                           They appear here when the countdown reaches zero.
                         </p>
                       </div>
-                    ) : (
-                      <>
-                        {confirmedStatement && (
-                          <div className="mb-5 border border-(--brand-accent)/40 bg-(--brand-accent-soft) p-4">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.08em] text-(--brand-accent) uppercase">
-                                <CheckCircle2 className="size-3.5" /> Confirmed challenge
-                              </span>
-                              <span className="border border-(--color-border) bg-white px-1.5 py-0.5 text-[10.5px] font-semibold text-(--color-text-secondary)">
-                                {confirmedStatement.difficulty}
-                              </span>
-                            </div>
-                            <p className="mt-2 font-mono text-[11.5px] font-bold text-(--brand-accent)">
-                              {confirmedStatement.id}
-                            </p>
+                    ) : confirmedStatementId ? (
+                      <div className="border border-(--brand-accent)/40 bg-(--brand-accent-soft) p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.08em] text-(--brand-accent) uppercase">
+                            <CheckCircle2 className="size-3.5" /> Your team&apos;s problem statement
+                          </span>
+                          {confirmedStatement ? (
+                            <span className="border border-(--color-border) bg-white px-1.5 py-0.5 text-[10.5px] font-semibold text-(--color-text-secondary)">
+                              {confirmedStatement.difficulty}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-2 font-mono text-[11.5px] font-bold text-(--brand-accent)">
+                          {confirmedStatementId}
+                        </p>
+                        {confirmedStatement ? (
+                          <>
                             <h3 className="mt-0.5 text-base font-bold">
                               {confirmedStatement.title}
                             </h3>
@@ -637,28 +669,61 @@ function DashboardPage() {
                             >
                               View full details <ArrowRight className="size-3.5" />
                             </Link>
-                          </div>
-                        )}
-
+                          </>
+                        ) : null}
+                        <p className="mt-3 flex items-center gap-1.5 border-t border-(--brand-accent)/20 pt-3 text-[11.5px] text-(--color-text-secondary)">
+                          <LockKeyhole className="size-3.5 shrink-0" />
+                          Confirmed by {isLead ? "you" : leadName}. A team can confirm only one
+                          problem statement, so this can&apos;t be changed.
+                        </p>
+                      </div>
+                    ) : !backendUser ? (
+                      <p className="py-10 text-center text-[12.5px] text-(--color-text-secondary)">
+                        Loading your team…
+                      </p>
+                    ) : !isLead ? (
+                      <div className="flex min-h-48 flex-col items-center justify-center text-center">
+                        <span className="grid size-11 place-items-center rounded-full bg-(--brand-accent-soft) text-(--brand-accent)">
+                          <Clock3 className="size-5" />
+                        </span>
+                        <p className="mt-3 text-[11px] font-semibold tracking-[0.08em] text-(--brand-accent) uppercase">
+                          Waiting for your Team Lead
+                        </p>
+                        <h2 className="mt-1 text-base font-bold sm:text-lg">
+                          No problem statement confirmed yet
+                        </h2>
+                        <p className="mt-1 max-w-sm text-[12.5px] text-(--color-text-secondary)">
+                          {leadName} selects and confirms your team&apos;s problem statement. It
+                          will appear here once it&apos;s confirmed.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
                             <p className="text-[11px] font-semibold tracking-[0.08em] text-(--brand-accent) uppercase">
-                              {confirmedStatement
-                                ? "Other problem statements"
-                                : "Problem statements"}
+                              Problem statements
                             </p>
                             <h2 className="mt-1 text-base font-bold sm:text-lg">
-                              {confirmedStatement
-                                ? "Explore more challenges"
-                                : "Choose your challenge"}
+                              Choose your challenge
                             </h2>
                           </div>
                           <span className="border border-(--color-border) bg-(--color-background-alt) px-2 py-0.5 text-[11px] font-semibold text-(--color-text-secondary)">
                             {statements.length} available
                           </span>
                         </div>
+                        <p className="mt-2 flex items-start gap-1.5 border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] leading-5 text-amber-800">
+                          <LockKeyhole className="mt-0.5 size-3.5 shrink-0" />
+                          Your team can confirm only one problem statement, and it can&apos;t be
+                          changed afterwards. Review it carefully before confirming.
+                        </p>
 
-                        <div className="mt-3 flex flex-wrap gap-1.5" role="tablist">
+                        <div
+                          ref={trackTabs.containerRef}
+                          role="tablist"
+                          aria-label="Competition tracks"
+                          className="relative mt-4 flex gap-5 overflow-x-auto border-b border-(--color-border) [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                        >
                           {details.domains.map((domain) => {
                             const active = selectedDomainId === domain.id;
                             return (
@@ -666,14 +731,20 @@ function DashboardPage() {
                                 key={domain.id}
                                 type="button"
                                 role="tab"
+                                data-tab-key={domain.id}
                                 aria-selected={active}
                                 onClick={() => setSelectedDomainId(domain.id)}
-                                className={`h-8 border px-3 text-[12px] font-semibold transition-colors ${active ? "border-(--brand-accent) bg-(--brand-accent-soft) text-(--brand-accent)" : "border-(--color-border) bg-white text-(--color-text-secondary) hover:bg-(--color-background-alt)"}`}
+                                className={`shrink-0 px-0.5 pt-1 pb-2.5 text-[13px] font-semibold whitespace-nowrap transition-colors duration-200 outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--brand-accent) ${active ? "text-(--brand-accent)" : "text-(--color-text-secondary) hover:text-foreground"}`}
                               >
                                 {domain.shortName}
                               </button>
                             );
                           })}
+                          <span
+                            aria-hidden
+                            className={tabIndicatorClass}
+                            style={trackTabs.indicatorStyle}
+                          />
                         </div>
 
                         {activeDomain && (
@@ -682,7 +753,10 @@ function DashboardPage() {
                           </p>
                         )}
 
-                        <div className="mt-3 divide-y divide-(--color-border) border border-(--color-border)">
+                        <div
+                          key={selectedDomainId}
+                          className="mt-3 divide-y divide-(--color-border) border border-(--color-border) animate-in fade-in-0 slide-in-from-bottom-1 duration-300 motion-reduce:animate-none"
+                        >
                           {domainStatements.length > 0 ? (
                             domainStatements.map((statement) => (
                               <Link

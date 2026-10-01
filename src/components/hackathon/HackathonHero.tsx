@@ -1,7 +1,6 @@
 import mrduPoster from "@/assets/poster.jpg";
 import {
   ArrowRight,
-  Award,
   CalendarDays,
   Clock3,
   Flame,
@@ -15,6 +14,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { HackathonDetails } from "@/lib/hackathon";
+import { MallaReddyEmblem } from "@/components/hackathon/MallaReddyEmblem";
 import { Link } from "@tanstack/react-router";
 import { useInView } from "@/hooks/use-in-view";
 import { cn } from "@/lib/utils";
@@ -79,9 +79,7 @@ export function HackathonHero({ details }: HackathonHeroProps) {
       <div className="page-container relative">
         <div className="hero-reveal flex flex-col gap-3 border-b border-(--color-border) py-3.5 md:flex-row md:items-center md:justify-between">
           <div className="flex min-w-0 items-center gap-2.5">
-            <span className="grid size-8 shrink-0 place-items-center rounded-md bg-(--brand-primary) text-white">
-              <Award className="size-4" strokeWidth={1.75} />
-            </span>
+            <MallaReddyEmblem className="h-11" />
             <div className="min-w-0">
               <p className="text-[10px] font-semibold tracking-[0.08em] text-(--brand-accent) uppercase">
                 {accreditation}

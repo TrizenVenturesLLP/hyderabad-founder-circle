@@ -7,19 +7,28 @@ export function JuryBrandLink({
   subtitle = "Jury workspace",
   className,
   onNavigate,
+  reloadDocument = false,
 }: {
   tone?: "light" | "dark";
   subtitle?: string;
   className?: string;
   onNavigate?: () => void;
+  reloadDocument?: boolean;
 }) {
   const dark = tone === "dark";
   return (
     <Link
       to="/"
+      reloadDocument={reloadDocument}
+      preload={reloadDocument ? false : "intent"}
       onClick={onNavigate}
-      aria-label="Trizen Community home"
-      className={cn("group inline-flex min-w-0 items-center gap-2.5 rounded-xl", className)}
+      aria-label="Go to Trizen Community home page"
+      title="Go to home page"
+      className={cn(
+        "group inline-flex min-w-0 cursor-pointer items-center gap-2.5 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-(--brand-accent) focus-visible:ring-offset-2",
+        dark && "focus-visible:ring-offset-(--brand-primary)",
+        className,
+      )}
     >
       <span
         className={cn(

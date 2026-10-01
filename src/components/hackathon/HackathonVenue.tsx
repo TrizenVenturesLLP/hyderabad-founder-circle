@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { HackathonCoordinator, HackathonVenue as VenueType } from "@/lib/hackathon";
 import { useInView } from "@/hooks/use-in-view";
+import { MallaReddyEmblem } from "@/components/hackathon/MallaReddyEmblem";
 import { cn } from "@/lib/utils";
 
 interface HackathonVenueProps {
@@ -132,10 +133,8 @@ export function HackathonVenueSection({ venue, coordinators }: HackathonVenuePro
           )}
         >
           <div className="flex flex-col rounded-md border border-(--color-border) bg-white p-4 lg:col-span-5">
-            <div className="flex items-start gap-2.5">
-              <span className="grid size-9 shrink-0 place-items-center rounded-md bg-(--brand-primary) text-white">
-                <Building className="size-4" strokeWidth={1.75} />
-              </span>
+            <div className="flex items-center gap-2.5">
+              <MallaReddyEmblem />
               <div>
                 <h3 className="font-display text-[15px] font-bold text-foreground">{venue.name}</h3>
                 <p className="text-[13px] font-semibold text-(--brand-accent)">{venue.campus}</p>

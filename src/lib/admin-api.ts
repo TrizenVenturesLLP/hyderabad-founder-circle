@@ -327,6 +327,20 @@ export function revokeAdminHackathonInvitation(hackathonId: string, invitationId
   );
 }
 
+export function deleteAdminHackathonInvitation(hackathonId: string, invitationId: string) {
+  return adminFetch<{ ok: boolean }>(
+    `${adminHackathonPath(hackathonId)}/jury-invitations/${encodeURIComponent(invitationId)}`,
+    { method: "DELETE" },
+  );
+}
+
+export function deleteAdminHackathonJuryMemberRecord(hackathonId: string, membershipId: string) {
+  return adminFetch<{ ok: boolean }>(
+    `${adminHackathonPath(hackathonId)}/jury-members/${encodeURIComponent(membershipId)}/permanent`,
+    { method: "DELETE" },
+  );
+}
+
 export function fetchAdminHackathonJuryMembers(hackathonId: string) {
   return adminFetch<{ items: AdminHackathonJuryMember[]; total: number; teamCount: number }>(
     `${adminHackathonPath(hackathonId)}/jury-members`,

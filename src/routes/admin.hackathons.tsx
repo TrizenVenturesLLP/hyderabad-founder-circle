@@ -15,7 +15,13 @@ import {
   Eye,
   Save,
   Check,
+  ClipboardCheck,
   FilePlus2,
+  CalendarDays,
+  MapPin,
+  Trophy,
+  Gavel,
+  ArrowRight,
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
@@ -45,9 +51,19 @@ import {
   type HackathonEvaluationScores,
   type HackathonRegisteredUser,
 } from "@/lib/hackathon-api";
-import { reviewAdminHackathonProblemStatement } from "@/lib/admin-api";
+import { reviewAdminHackathonProblemStatement, type AdminSessionUser } from "@/lib/admin-api";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { adminHackathons, findAdminHackathon } from "@/lib/admin-hackathons";
-import { HackathonNav } from "@/components/admin/HackathonNav";
+import { HackathonNav, hackathonSectionPageClass } from "@/components/admin/HackathonNav";
+import { tabIndicatorClass, useTabIndicator } from "@/components/admin/useTabIndicator";
 import { AppSelect } from "@/components/AppSelect";
 import { ProblemStatementFacts } from "@/components/hackathon/ProblemStatementFacts";
 import { FormField, FormSection, SegmentedControl, formFieldClass } from "@/components/FormLayout";
@@ -104,6 +120,9 @@ const emptyForm: FormState = {
 };
 
 const hackathons = adminHackathons;
+
+const hackathonQuickLinkClass =
+  "inline-flex h-8 cursor-pointer items-center gap-1.5 border border-(--color-border) bg-white px-2.5 text-(--color-text-secondary) transition-colors hover:border-(--brand-accent) hover:bg-(--brand-accent-soft) hover:text-(--brand-accent)";
 
 type BulkField = "title" | "industry" | "scope" | "platform" | "description";
 
@@ -223,6 +242,8 @@ function AdminHackathonsPage() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   const search = Route.useSearch();
+  const { admin } = Route.useRouteContext() as { admin?: AdminSessionUser };
+  const isSuperAdmin = admin?.role === "platform_admin";
   const selectedHackathon = findAdminHackathon(search.hackathon);
   const showRegisteredStudents = Boolean(selectedHackathon) && search.view === "teams";
   const [registeredUsers, setRegisteredUsers] = useState<RegisteredUserWithStatus[]>([]);
@@ -233,6 +254,8 @@ function AdminHackathonsPage() {
     "registration-date" | "team-name" | "score-high-low" | "score-low-high"
   >("registration-date");
   const [registeredActionId, setRegisteredActionId] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<RegisteredUserWithStatus | null>(null);
+  const [removeConfirmText, setRemoveConfirmText] = useState("");
   const [evaluationDrafts, setEvaluationDrafts] = useState<Record<string, EvaluationDraft>>({});
   const [savingEvaluationId, setSavingEvaluationId] = useState<string | null>(null);
 
@@ -258,6 +281,17 @@ function AdminHackathonsPage() {
     mode: "view" | "reject";
   } | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [isQueueOpen, setIsQueueOpen] = useState(false);
+  const trackTabs = useTabIndicator("problem-tracks", selectedDomain);
+
+  useEffect(() => {
+    if (!isQueueOpen || reviewTarget) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsQueueOpen(false);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isQueueOpen, reviewTarget]);
 
   // Bulk Add Modal
   const [isBulkModalOpen, setIsBulkModalOpen] = useState<boolean>(false);
@@ -436,15 +470,20 @@ function AdminHackathonsPage() {
     }
   }
 
-  async function handleRemoveTeam(team: RegisteredUserWithStatus) {
-    if (!window.confirm(`Remove team "${team.team_name}" permanently? This cannot be undone.`)) {
-      return;
-    }
+  function handleRemoveTeam(team: RegisteredUserWithStatus) {
+    setRemoveConfirmText("");
+    setRemoveTarget(team);
+  }
+
+  async function confirmRemoveTeam() {
+    const team = removeTarget;
+    if (!team || removeConfirmText.trim() !== team.team_name.trim()) return;
 
     setRegisteredActionId(team._id);
     try {
       await removeHackathonUser(team._id);
-      toast.success("Team removed successfully");
+      toast.success(`Team "${team.team_name}" removed`);
+      setRemoveTarget(null);
       await handleOpenRegisteredStudents();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not remove team.");
@@ -532,6 +571,8 @@ function AdminHackathonsPage() {
     [statements],
   );
   const pendingApprovalCount = pendingStatements.length;
+  const liveStatementCount = statements.filter((s) => !s.status || s.status === "active").length;
+  const rejectedStatementCount = statements.filter((s) => s.status === "rejected").length;
 
   const filteredStatements = useMemo(() => {
     return domainStatements.filter((item) => {
@@ -756,57 +797,163 @@ function AdminHackathonsPage() {
     }
   }
 
-  if (pathname.includes("/jury") || pathname.includes("/evaluations")) return <Outlet />;
+  if (pathname.replace(/\/+$/, "") !== "/admin/hackathons") return <Outlet />;
 
   if (!selectedHackathon) {
     return (
       <div className="space-y-6 p-4 sm:p-5 md:p-6">
         <AdminPageHeader
           title="Hackathons"
-          description="Select a hackathon to manage its problem statements."
+          description="Manage problem statements, registered teams, jury and results for each hackathon."
         />
 
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {hackathons.map((hackathon) => (
-            <Link
-              key={hackathon.id}
-              to="/admin/hackathons"
-              search={{ hackathon: hackathon.id }}
-              className="group block rounded-2xl border border-border bg-white p-5 text-left shadow-(--shadow-small) transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:border-(--color-border-strong) hover:shadow-(--shadow-card-hover)"
-            >
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-bold text-foreground">{hackathon.title}</h2>
-                  <p className="mt-1 text-xs text-muted-foreground">{hackathon.date}</p>
+        <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+          {hackathons.map((hackathon) => {
+            const isActive = hackathon.id === activeHackathonId;
+            const liveCount = isActive ? liveStatementCount : null;
+            const pendingCount = isActive ? pendingApprovalCount : null;
+            const statusClass =
+              hackathon.status === "Ongoing"
+                ? "bg-emerald-400/15 text-emerald-200 ring-emerald-300/30"
+                : hackathon.status === "Completed"
+                  ? "bg-white/10 text-white/70 ring-white/20"
+                  : "bg-indigo-300/15 text-indigo-100 ring-indigo-200/30";
+
+            return (
+              <article
+                key={hackathon.id}
+                className="flex flex-col border border-(--color-border) bg-white transition-shadow hover:shadow-md"
+              >
+                <div className="relative overflow-hidden bg-(--brand-primary) px-5 py-4 text-white">
+                  <div
+                    className="pointer-events-none absolute inset-0"
+                    aria-hidden
+                    style={{
+                      background:
+                        "radial-gradient(ellipse 70% 90% at 100% 0%, color-mix(in oklab, var(--brand-accent) 45%, transparent) 0%, transparent 65%)",
+                    }}
+                  />
+                  <div className="relative flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[10.5px] font-semibold tracking-[0.08em] text-indigo-200 uppercase">
+                        Hackathon
+                      </p>
+                      <h2 className="mt-1 truncate text-lg font-bold tracking-tight">
+                        {hackathon.title}
+                      </h2>
+                    </div>
+                    <span
+                      className={`shrink-0 px-2 py-0.5 text-[11px] font-semibold ring-1 ${statusClass}`}
+                    >
+                      {hackathon.status}
+                    </span>
+                  </div>
                 </div>
 
-                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                  {hackathon.status}
-                </span>
-              </div>
+                <dl className="grid gap-3 px-5 py-4 text-[13px] sm:grid-cols-3">
+                  <div className="flex items-start gap-2">
+                    <CalendarDays className="mt-0.5 size-4 shrink-0 text-(--brand-accent)" />
+                    <div className="min-w-0">
+                      <dt className="text-[10.5px] font-semibold tracking-wider text-(--color-text-muted) uppercase">
+                        Dates
+                      </dt>
+                      <dd className="font-semibold text-foreground">{hackathon.date}</dd>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <MapPin className="mt-0.5 size-4 shrink-0 text-(--brand-accent)" />
+                    <div className="min-w-0">
+                      <dt className="text-[10.5px] font-semibold tracking-wider text-(--color-text-muted) uppercase">
+                        Venue
+                      </dt>
+                      <dd
+                        className="truncate font-semibold text-foreground"
+                        title={hackathon.venue}
+                      >
+                        {hackathon.venue}
+                      </dd>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Trophy className="mt-0.5 size-4 shrink-0 text-(--brand-accent)" />
+                    <div className="min-w-0">
+                      <dt className="text-[10.5px] font-semibold tracking-wider text-(--color-text-muted) uppercase">
+                        Prize pool
+                      </dt>
+                      <dd className="font-semibold text-foreground">{hackathon.prizePool}</dd>
+                    </div>
+                  </div>
+                </dl>
 
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <p>📍 {hackathon.venue}</p>
-                <p>🏆 Prize Pool: {hackathon.prizePool}</p>
-              </div>
+                {liveCount !== null ? (
+                  <div className="mx-5 grid grid-cols-2 border border-(--color-border)">
+                    <div className="px-3 py-2.5">
+                      <p className="text-[10.5px] font-semibold tracking-wider text-(--color-text-muted) uppercase">
+                        Live statements
+                      </p>
+                      <p className="mt-0.5 text-lg font-bold text-foreground">{liveCount}</p>
+                    </div>
+                    <div
+                      className={`border-l border-(--color-border) px-3 py-2.5 ${pendingCount ? "bg-amber-50" : ""}`}
+                    >
+                      <p
+                        className={`text-[10.5px] font-semibold tracking-wider uppercase ${pendingCount ? "text-amber-700" : "text-(--color-text-muted)"}`}
+                      >
+                        Awaiting approval
+                      </p>
+                      <p
+                        className={`mt-0.5 text-lg font-bold ${pendingCount ? "text-amber-800" : "text-foreground"}`}
+                      >
+                        {pendingCount}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
 
-              {hackathon.id === activeHackathonId && pendingApprovalCount > 0 ? (
-                <p className="mt-4 inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
-                  {pendingApprovalCount} Problem Statement
-                  {pendingApprovalCount === 1 ? "" : "s"} awaiting approval
-                </p>
-              ) : null}
-
-              <div className="mt-5 text-sm font-semibold text-primary">Open Hackathon →</div>
-            </Link>
-          ))}
+                <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-(--color-border) px-5 py-3 text-[12px] font-semibold">
+                  <Link
+                    to="/admin/hackathons"
+                    search={{ hackathon: hackathon.id, view: "teams" }}
+                    className={hackathonQuickLinkClass}
+                  >
+                    <Users className="size-3.5" />
+                    Teams
+                  </Link>
+                  <Link
+                    to="/admin/hackathons/$hackathonId/jury"
+                    params={{ hackathonId: hackathon.id }}
+                    className={hackathonQuickLinkClass}
+                  >
+                    <Gavel className="size-3.5" />
+                    Jury
+                  </Link>
+                  <Link
+                    to="/admin/hackathons/$hackathonId/leaderboard"
+                    params={{ hackathonId: hackathon.id }}
+                    className={hackathonQuickLinkClass}
+                  >
+                    <Trophy className="size-3.5" />
+                    Leaderboard
+                  </Link>
+                  <Link
+                    to="/admin/hackathons"
+                    search={{ hackathon: hackathon.id }}
+                    className="ml-auto inline-flex h-8 items-center gap-1.5 bg-(--brand-primary) px-3 text-white transition-colors hover:bg-(--brand-primary-hover)"
+                  >
+                    Open hackathon
+                    <ArrowRight className="size-3.5" />
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </div>
     );
   }
   if (showRegisteredStudents) {
     return (
-      <div className="space-y-6 p-4 sm:p-5 md:p-6">
+      <div key="teams" className={`space-y-4 p-4 sm:p-5 md:p-6 ${hackathonSectionPageClass}`}>
         <HackathonNav
           hackathonId={selectedHackathon.id}
           active="teams"
@@ -814,12 +961,12 @@ function AdminHackathonsPage() {
         />
         <AdminPageHeader
           title="Registered Teams"
-          description="View registered teams, team leads, members, and problem statement selections."
+          description="Team leads, members, and their problem statement selections."
           actions={
             <button
               type="button"
               onClick={handleOpenRegisteredStudents}
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-white px-4 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
+              className="inline-flex h-8 items-center gap-1.5 border border-border bg-white px-3 text-xs font-semibold whitespace-nowrap text-foreground transition-colors hover:bg-muted"
             >
               <RotateCcw className="size-3.5" />
               Refresh
@@ -827,50 +974,55 @@ function AdminHackathonsPage() {
           }
         />
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <AdminPanel className="rounded-xl border-border bg-white p-4">
-            <p className="text-xs font-medium text-muted-foreground">Total Teams</p>
-            <p className="mt-1 text-2xl font-bold text-foreground">{registeredStats.total}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">Registered teams</p>
-          </AdminPanel>
-
-          <AdminPanel className="rounded-xl border-border bg-white p-4">
-            <p className="text-xs font-medium text-muted-foreground">Problem Selected</p>
-            <p className="mt-1 text-2xl font-bold text-primary">{registeredStats.selected}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">Confirmed challenges</p>
-          </AdminPanel>
-
-          <AdminPanel className="rounded-xl border-border bg-white p-4">
-            <p className="text-xs font-medium text-muted-foreground">Awaiting Selection</p>
-            <p className="mt-1 text-2xl font-bold text-foreground">{registeredStats.pending}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">No problem selected</p>
-          </AdminPanel>
-        </div>
-
-        <AdminPanel className="rounded-xl p-4">
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              value={registeredSearch}
-              onChange={(e) => setRegisteredSearch(e.target.value)}
-              placeholder="Search team, lead, email, phone, member, or problem ID..."
-              className="w-full rounded-lg border border-border bg-white py-2.5 pl-9 pr-9 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
-            />
-            {registeredSearch && (
-              <button
-                type="button"
-                onClick={() => setRegisteredSearch("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        <AdminPanel className="overflow-hidden rounded-xl">
+          <dl className="grid grid-cols-3 divide-x divide-border border-b border-border">
+            {[
+              { label: "Total teams", value: registeredStats.total, tone: "text-foreground" },
+              { label: "Problem selected", value: registeredStats.selected, tone: "text-primary" },
+              {
+                label: "Awaiting selection",
+                value: registeredStats.pending,
+                tone: registeredStats.pending > 0 ? "text-amber-600" : "text-foreground",
+              },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className="flex flex-col gap-0.5 px-3 py-2.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3 sm:px-4"
               >
-                <X className="size-3.5" />
-              </button>
-            )}
-          </div>
+                <dt className="truncate text-[11.5px] font-medium text-muted-foreground">
+                  {stat.label}
+                </dt>
+                <dd className={`text-lg leading-none font-bold tabular-nums ${stat.tone}`}>
+                  {stat.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
 
-          <div className="mt-3 flex justify-end">
-            <div className="flex items-center gap-2 text-xs font-medium text-foreground">
-              <span>Sort by</span>
+          <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center">
+            <div className="relative min-w-0 flex-1">
+              <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                value={registeredSearch}
+                onChange={(e) => setRegisteredSearch(e.target.value)}
+                placeholder="Search team, lead, email, phone, member, or problem ID..."
+                className="h-9 w-full border border-border bg-white pl-8 pr-8 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
+              />
+              {registeredSearch && (
+                <button
+                  type="button"
+                  onClick={() => setRegisteredSearch("")}
+                  aria-label="Clear search"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex shrink-0 items-center justify-end gap-2 text-xs font-medium text-muted-foreground">
+              <span className="whitespace-nowrap">Sort by</span>
               <AppSelect
                 ariaLabel="Sort teams"
                 value={registeredSort}
@@ -988,6 +1140,22 @@ function AdminHackathonsPage() {
                         {team.members.length} member
                         {team.members.length === 1 ? "" : "s"}
                       </span>
+                      {isSuperAdmin ? (
+                        <button
+                          type="button"
+                          disabled={registeredActionId === team._id}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            handleRemoveTeam(team);
+                          }}
+                          aria-label={`Remove team ${team.team_name}`}
+                          title="Remove team"
+                          className="inline-flex size-8 items-center justify-center border border-destructive/20 bg-white text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      ) : null}
                       <Eye className="size-4 transition-transform group-open:rotate-180" />
                     </div>
                   </summary>
@@ -1267,14 +1435,17 @@ function AdminHackathonsPage() {
                         </button>
                       )}
 
-                      <button
-                        type="button"
-                        disabled={registeredActionId === team._id}
-                        onClick={() => handleRemoveTeam(team)}
-                        className="rounded-lg border border-destructive/20 bg-white px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        Remove
-                      </button>
+                      {isSuperAdmin ? (
+                        <button
+                          type="button"
+                          disabled={registeredActionId === team._id}
+                          onClick={() => handleRemoveTeam(team)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/20 bg-white px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Trash2 className="size-3.5" />
+                          Remove team
+                        </button>
+                      ) : null}
                     </div>
                   </div>
                 </details>
@@ -1282,30 +1453,117 @@ function AdminHackathonsPage() {
             </div>
           </AdminPanel>
         )}
+
+        <AlertDialog
+          open={Boolean(removeTarget)}
+          onOpenChange={(open) => {
+            if (!open && !registeredActionId) setRemoveTarget(null);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Remove team &quot;{removeTarget?.team_name}&quot;?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This permanently deletes the team registration, its members, problem selection,
+                submission file, jury evaluations and the Team Lead&apos;s sign-in password. This
+                cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <label className="block text-xs font-semibold text-foreground">
+              Type <span className="font-mono text-destructive">{removeTarget?.team_name}</span> to
+              confirm
+              <input
+                type="text"
+                value={removeConfirmText}
+                onChange={(event) => setRemoveConfirmText(event.target.value)}
+                autoFocus
+                autoComplete="off"
+                className="mt-1.5 h-9 w-full border border-border bg-background px-3 text-[13px] font-normal outline-none focus:border-destructive"
+              />
+            </label>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={Boolean(registeredActionId)}>Cancel</AlertDialogCancel>
+              <button
+                type="button"
+                onClick={confirmRemoveTeam}
+                disabled={
+                  !removeTarget ||
+                  removeConfirmText.trim() !== removeTarget.team_name.trim() ||
+                  Boolean(registeredActionId)
+                }
+                className="inline-flex h-10 items-center justify-center gap-1.5 bg-destructive px-4 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Trash2 className="size-4" />
+                {registeredActionId ? "Removing..." : "Remove team"}
+              </button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-4 sm:p-5 md:p-6">
+    <div key="statements" className={`space-y-6 p-4 sm:p-5 md:p-6 ${hackathonSectionPageClass}`}>
       <HackathonNav
         hackathonId={selectedHackathon.id}
         active="statements"
         pendingCount={pendingApprovalCount}
       />
       <AdminPageHeader
-        title="Problem Statements"
-        description="Approve Jury submissions and manage live problem statements for the 4 competition tracks."
+        title={
+          <span className="inline-flex flex-wrap items-center gap-2.5">
+            Problem Statements
+            <span
+              className="inline-flex items-center gap-1 bg-(--brand-accent-soft) px-2 py-0.5 align-middle text-[12px] font-bold tracking-normal text-(--brand-accent)"
+              style={{ fontFamily: "var(--font-sans)" }}
+              title="Unique problem statements. A statement shared across tracks is counted once."
+            >
+              {statements.length} total
+            </span>
+          </span>
+        }
+        description={
+          <>
+            {liveStatementCount} live
+            {pendingApprovalCount ? ` · ${pendingApprovalCount} awaiting approval` : ""}
+            {rejectedStatementCount ? ` · ${rejectedStatementCount} rejected` : ""} across the 4
+            competition tracks. Statements shared across tracks are counted once here, but appear in
+            each track&apos;s tab.
+          </>
+        }
         actions={
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end lg:flex-nowrap">
             <button
               type="button"
               onClick={handleReset}
-              className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap px-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               title="Reset to starter seeds"
             >
               <RotateCcw className="size-3.5" />
               Reset
+            </button>
+            <span className="hidden h-6 w-px bg-border sm:block" aria-hidden />
+            <button
+              type="button"
+              onClick={() => setIsQueueOpen(true)}
+              className={`inline-flex h-9 items-center gap-1.5 whitespace-nowrap border px-3.5 text-xs font-semibold transition-colors ${
+                pendingApprovalCount
+                  ? "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                  : "border-border bg-white text-foreground hover:bg-muted"
+              }`}
+            >
+              <ClipboardCheck className="size-3.5" />
+              Approval queue
+              {pendingApprovalCount ? (
+                <span className="inline-flex min-w-5 items-center justify-center bg-amber-500 px-1.5 py-0.5 text-[10.5px] font-bold text-white">
+                  {pendingApprovalCount}
+                </span>
+              ) : null}
             </button>
             <button
               type="button"
@@ -1313,7 +1571,7 @@ function AdminHackathonsPage() {
                 setBulkDomains([selectedDomain]);
                 setIsBulkModalOpen(true);
               }}
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-white px-4 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
+              className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap border border-border bg-white px-3.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
             >
               <Upload className="size-3.5" />
               Bulk add
@@ -1321,7 +1579,7 @@ function AdminHackathonsPage() {
             <button
               type="button"
               onClick={handleOpenCreate}
-              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-[0_6px_16px_-10px_var(--brand-accent)] transition-colors hover:bg-(--brand-accent-hover)"
+              className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap border border-primary bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-(--brand-accent-hover)"
             >
               <Plus className="size-3.5" />
               Add statement
@@ -1330,91 +1588,127 @@ function AdminHackathonsPage() {
         }
       />
 
-      <AdminPanel className="overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
-          <div>
-            <h2 className="text-sm font-bold text-foreground">Approval queue</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Problem Statements added by Jury members go live only after you approve them.
-            </p>
+      {isQueueOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="approval-queue-title"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setIsQueueOpen(false);
+          }}
+        >
+          <div className="flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-border bg-white shadow-large">
+            <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3
+                    id="approval-queue-title"
+                    className="font-display text-base font-bold text-foreground"
+                  >
+                    Approval queue
+                  </h3>
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${pendingApprovalCount ? "bg-amber-100 text-amber-800" : "bg-emerald-50 text-emerald-700"}`}
+                  >
+                    {pendingApprovalCount ? `${pendingApprovalCount} pending` : "All caught up"}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Problem Statements added by Jury members go live only after you approve them.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsQueueOpen(false)}
+                className="rounded-lg p-1 text-muted-foreground hover:text-foreground"
+                aria-label="Close"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-auto">
+              {pendingApprovalCount ? (
+                <table className="w-full min-w-[760px] text-left text-sm">
+                  <thead className="sticky top-0 z-10 bg-(--color-background-alt) text-[11px] font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+                    <tr>
+                      <th className="px-4 py-2.5">ID</th>
+                      <th className="px-4 py-2.5">Title</th>
+                      <th className="px-4 py-2.5">Track</th>
+                      <th className="px-4 py-2.5">Submitted by</th>
+                      <th className="px-4 py-2.5">Date</th>
+                      <th className="px-4 py-2.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {pendingStatements.map((item) => (
+                      <tr key={item.id} className="align-middle hover:bg-muted/30">
+                        <td className="px-4 py-3 font-mono text-xs font-semibold text-primary">
+                          {item.id}
+                        </td>
+                        <td className="max-w-[280px] px-4 py-3">
+                          <p className="truncate font-medium text-foreground">{item.title}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {item.description}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">
+                          {trackNames(item)}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-foreground">
+                          {item.createdBy?.name ? `Jury · ${item.createdBy.name}` : "—"}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">
+                          {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "—"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => openReview(item, "view")}
+                              className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted"
+                            >
+                              <Eye className="size-3.5" />
+                              View
+                            </button>
+                            <button
+                              type="button"
+                              disabled={reviewingStatementId === item.id}
+                              onClick={() => void handleReviewStatement(item, "approve")}
+                              className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                            >
+                              <Check className="size-3.5" />
+                              Approve
+                            </button>
+                            <button
+                              type="button"
+                              disabled={reviewingStatementId === item.id}
+                              onClick={() => openReview(item, "reject")}
+                              className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                            >
+                              <X className="size-3.5" />
+                              Reject
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="px-4 py-12 text-center">
+                  <Check className="mx-auto size-8 text-emerald-600" />
+                  <p className="mt-2 text-sm font-semibold text-foreground">All caught up</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    No Problem Statements are waiting for approval.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
-          <span
-            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${pendingApprovalCount ? "bg-amber-100 text-amber-800" : "bg-emerald-50 text-emerald-700"}`}
-          >
-            {pendingApprovalCount ? `${pendingApprovalCount} pending` : "All caught up"}
-          </span>
         </div>
-        {pendingApprovalCount ? (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="bg-(--color-background-alt) text-[11px] font-semibold tracking-[0.06em] text-muted-foreground uppercase">
-                <tr>
-                  <th className="px-4 py-2.5">ID</th>
-                  <th className="px-4 py-2.5">Title</th>
-                  <th className="px-4 py-2.5">Track</th>
-                  <th className="px-4 py-2.5">Submitted by</th>
-                  <th className="px-4 py-2.5">Date</th>
-                  <th className="px-4 py-2.5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {pendingStatements.map((item) => (
-                  <tr key={item.id} className="align-middle hover:bg-muted/30">
-                    <td className="px-4 py-3 font-mono text-xs font-semibold text-primary">
-                      {item.id}
-                    </td>
-                    <td className="max-w-[280px] px-4 py-3">
-                      <p className="truncate font-medium text-foreground">{item.title}</p>
-                      <p className="truncate text-xs text-muted-foreground">{item.description}</p>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">{trackNames(item)}</td>
-                    <td className="px-4 py-3 text-xs text-foreground">
-                      {item.createdBy?.name ? `Jury · ${item.createdBy.name}` : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => openReview(item, "view")}
-                          className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted"
-                        >
-                          <Eye className="size-3.5" />
-                          View
-                        </button>
-                        <button
-                          type="button"
-                          disabled={reviewingStatementId === item.id}
-                          onClick={() => void handleReviewStatement(item, "approve")}
-                          className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
-                        >
-                          <Check className="size-3.5" />
-                          Approve
-                        </button>
-                        <button
-                          type="button"
-                          disabled={reviewingStatementId === item.id}
-                          onClick={() => openReview(item, "reject")}
-                          className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
-                        >
-                          <X className="size-3.5" />
-                          Reject
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="px-4 py-5 text-center text-xs text-muted-foreground">
-            No Problem Statements are waiting for approval.
-          </p>
-        )}
-      </AdminPanel>
+      ) : null}
 
       <AdminPanel className="rounded-xl border-primary/20 bg-primary/5 p-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -1472,8 +1766,12 @@ function AdminHackathonsPage() {
         </div>
       </AdminPanel>
 
-      {/* Domain Selection Tabs (4 Tracks) */}
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+      <div
+        ref={trackTabs.containerRef}
+        role="tablist"
+        aria-label="Competition tracks"
+        className="relative flex gap-6 overflow-x-auto border-b border-(--color-border) [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {domains.map((domain) => {
           const isSelected = domain.id === selectedDomain;
           const count = statements.filter((s) =>
@@ -1486,37 +1784,41 @@ function AdminHackathonsPage() {
             <button
               key={domain.id}
               type="button"
+              role="tab"
+              data-tab-key={domain.id}
+              aria-selected={isSelected}
               onClick={() => {
                 setSelectedDomain(domain.id);
                 setSearchQuery("");
               }}
-              className={`flex items-center justify-between rounded-xl border p-3.5 text-left transition-all ${
+              className={`relative inline-flex shrink-0 items-center gap-2 px-1 pt-1 pb-3 text-[13.5px] font-medium whitespace-nowrap transition-colors duration-200 outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--brand-accent) ${
                 isSelected
-                  ? "border-primary bg-primary/5 ring-1 ring-primary"
-                  : "border-border bg-white hover:border-border-strong hover:bg-muted/30"
+                  ? "text-(--brand-primary)"
+                  : "text-(--color-text-secondary) hover:text-foreground"
               }`}
             >
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Track
-                </p>
-                <p className="font-semibold text-sm text-foreground">{domain.name}</p>
-                {pendingCount > 0 ? (
-                  <p className="mt-0.5 text-[11px] font-semibold text-amber-700">
-                    {pendingCount} pending approval
-                  </p>
-                ) : null}
-              </div>
+              {domain.name}
               <span
-                className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                  isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                className={`min-w-5 px-1.5 py-0.5 text-center text-[10.5px] font-bold ${
+                  isSelected
+                    ? "bg-(--brand-accent) text-white"
+                    : "bg-muted text-(--color-text-secondary)"
                 }`}
               >
                 {count}
               </span>
+              {pendingCount > 0 ? (
+                <span
+                  className="bg-amber-100 px-1.5 py-0.5 text-[10.5px] font-bold text-amber-800"
+                  title={`${pendingCount} pending approval`}
+                >
+                  {pendingCount} pending
+                </span>
+              ) : null}
             </button>
           );
         })}
+        <span aria-hidden className={tabIndicatorClass} style={trackTabs.indicatorStyle} />
       </div>
 
       {/* Filter and Search Panel */}
@@ -1580,148 +1882,196 @@ function AdminHackathonsPage() {
         </div>
 
         {filteredStatements.length > 0 ? (
-          <div className="divide-y divide-border overflow-x-auto">
+          <div
+            key={selectedDomain}
+            className="grid gap-3 p-3 animate-in fade-in-0 slide-in-from-bottom-1 duration-300 motion-reduce:animate-none sm:grid-cols-2 sm:p-4 xl:grid-cols-3"
+          >
             {filteredStatements.map((item) => (
-              <div
+              <article
                 key={item.id}
-                className="flex flex-col gap-3 p-4 transition-colors hover:bg-muted/30 sm:flex-row sm:items-start sm:justify-between"
+                className={`flex min-h-[280px] flex-col border bg-white transition-shadow hover:shadow-md ${
+                  item.status === "pending_approval"
+                    ? "border-amber-300"
+                    : item.status === "rejected"
+                      ? "border-red-200"
+                      : "border-border"
+                }`}
               >
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded bg-primary/10 px-2 py-0.5 font-mono text-xs font-bold text-primary">
-                      {item.id}
-                    </span>
-                    <span className="rounded bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
-                      {item.difficulty}
-                    </span>
-                    {getStatementDomainIds(item).length > 1 && (
-                      <span
-                        className="rounded bg-(--brand-accent-soft) px-2 py-0.5 text-[11px] font-semibold text-(--brand-accent)"
-                        title={trackNames(item)}
-                      >
-                        {getStatementDomainIds(item).length} tracks: {trackNames(item)}
-                      </span>
-                    )}
-                    {item.category && (
-                      <span className="rounded bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                        {item.category}
-                      </span>
-                    )}
+                <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+                  <span className="truncate font-mono text-[11px] font-bold text-primary">
+                    {item.id}
+                  </span>
+                  <div className="flex shrink-0 items-center gap-1.5">
                     {item.status === "pending_approval" ? (
-                      <span className="rounded bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
-                        Pending Approval
+                      <span className="bg-amber-100 px-2 py-0.5 text-[10.5px] font-semibold text-amber-800">
+                        Pending
                       </span>
                     ) : item.status === "rejected" ? (
-                      <span className="rounded bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-800">
+                      <span className="bg-red-100 px-2 py-0.5 text-[10.5px] font-semibold text-red-800">
                         Rejected
                       </span>
                     ) : null}
+                    <span className="bg-muted px-2 py-0.5 text-[10.5px] font-semibold text-muted-foreground">
+                      {item.difficulty}
+                    </span>
                   </div>
-
-                  <h3 className="mt-2 text-sm font-bold text-foreground">{item.title}</h3>
-                  {item.industry || item.platform ? (
-                    <p className="mt-1 text-[11.5px] text-foreground/80">
-                      {item.industry ? (
-                        <>
-                          <span className="text-muted-foreground">Industry:</span> {item.industry}
-                        </>
-                      ) : null}
-                      {item.industry && item.platform ? (
-                        <span className="mx-1.5 text-muted-foreground">·</span>
-                      ) : null}
-                      {item.platform ? (
-                        <>
-                          <span className="text-muted-foreground">Platform / Tech:</span>{" "}
-                          {item.platform}
-                        </>
-                      ) : null}
-                    </p>
-                  ) : null}
-                  {item.scope ? (
-                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                      <span className="font-semibold text-foreground/80">Scope:</span> {item.scope}
-                    </p>
-                  ) : null}
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    {item.description}
-                  </p>
-                  <p className="mt-2 text-[11px] text-muted-foreground">
-                    Added by {item.createdBy?.name ? `Jury · ${item.createdBy.name}` : "Admin"}
-                  </p>
-
-                  {item.deliverables && item.deliverables.length > 0 && (
-                    <div className="mt-2.5 flex flex-wrap gap-1.5">
-                      {item.deliverables.map((d, i) => (
-                        <span
-                          key={i}
-                          className="rounded-md border border-border bg-card px-2 py-0.5 text-[11px] text-muted-foreground"
-                        >
-                          • {d}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
-                <div className="flex shrink-0 items-center gap-1.5 sm:self-start">
-                  {item.status === "pending_approval" ? (
-                    <>
-                      <button
-                        type="button"
-                        disabled={reviewingStatementId === item.id}
-                        onClick={() => void handleReviewStatement(item, "approve")}
-                        className="rounded-md bg-emerald-700 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        type="button"
-                        disabled={reviewingStatementId === item.id}
-                        onClick={() => openReview(item, "reject")}
-                        className="rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
-                      >
-                        Reject
-                      </button>
-                    </>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() => handleOpenEdit(item)}
-                    className="inline-flex items-center gap-1 rounded-md border border-border bg-white px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
-                  >
-                    <Pencil className="size-3" />
-                    Edit
-                  </button>
-
-                  {deleteConfirmId === item.id ? (
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(item.id)}
-                        className="rounded-md bg-destructive px-2.5 py-1.5 text-xs font-semibold text-destructive-foreground hover:opacity-90"
-                      >
-                        Confirm
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeleteConfirmId(null)}
-                        className="rounded-md border border-border bg-white px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
+                <div className="flex flex-1 flex-col px-4 py-3.5">
+                  <h3 className="line-clamp-2 text-sm font-bold leading-snug text-foreground">
                     <button
                       type="button"
-                      onClick={() => setDeleteConfirmId(item.id)}
-                      className="inline-flex items-center gap-1 rounded-md border border-border bg-white px-2.5 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10"
+                      onClick={() => openReview(item, "view")}
+                      title={item.title}
+                      className="text-left hover:text-(--brand-accent) hover:underline"
                     >
-                      <Trash2 className="size-3" />
-                      Delete
+                      {item.title}
                     </button>
-                  )}
+                  </h3>
+
+                  {item.industry || item.platform || item.scope ? (
+                    <dl className="mt-2 space-y-0.5 text-[11.5px]">
+                      {item.industry ? (
+                        <div className="flex gap-1">
+                          <dt className="shrink-0 text-muted-foreground">Industry:</dt>
+                          <dd className="truncate text-foreground/80" title={item.industry}>
+                            {item.industry}
+                          </dd>
+                        </div>
+                      ) : null}
+                      {item.platform ? (
+                        <div className="flex gap-1">
+                          <dt className="shrink-0 text-muted-foreground">Tech:</dt>
+                          <dd className="truncate text-foreground/80" title={item.platform}>
+                            {item.platform}
+                          </dd>
+                        </div>
+                      ) : null}
+                      {item.scope ? (
+                        <div className="flex gap-1">
+                          <dt className="shrink-0 text-muted-foreground">Scope:</dt>
+                          <dd className="truncate text-foreground/80" title={item.scope}>
+                            {item.scope}
+                          </dd>
+                        </div>
+                      ) : null}
+                    </dl>
+                  ) : null}
+
+                  <p
+                    className="mt-2.5 line-clamp-4 text-xs leading-relaxed text-muted-foreground"
+                    title={item.description}
+                  >
+                    {item.description}
+                  </p>
+
+                  <div className="mt-auto flex flex-wrap gap-1.5 pt-3">
+                    {getStatementDomainIds(item).length > 1 ? (
+                      <span
+                        className="bg-(--brand-accent-soft) px-2 py-0.5 text-[10.5px] font-semibold text-(--brand-accent)"
+                        title={trackNames(item)}
+                      >
+                        {getStatementDomainIds(item).length} tracks
+                      </span>
+                    ) : null}
+                    {item.category ? (
+                      <span className="bg-muted px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground">
+                        {item.category}
+                      </span>
+                    ) : null}
+                    {item.deliverables?.length ? (
+                      <span
+                        className="bg-muted px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground"
+                        title={item.deliverables.join("\n")}
+                      >
+                        {item.deliverables.length} deliverable
+                        {item.deliverables.length === 1 ? "" : "s"}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
+
+                <div className="flex items-center justify-between gap-2 border-t border-border bg-muted/30 px-4 py-2.5">
+                  <p className="min-w-0 truncate text-[11px] text-muted-foreground">
+                    {item.createdBy?.name ? `Jury · ${item.createdBy.name}` : "Admin"}
+                  </p>
+
+                  <div className="flex shrink-0 items-center gap-1">
+                    {item.status === "pending_approval" ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={reviewingStatementId === item.id}
+                          onClick={() => void handleReviewStatement(item, "approve")}
+                          className="inline-flex h-7 items-center gap-1 bg-emerald-700 px-2 text-[11px] font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+                        >
+                          <Check className="size-3" />
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          disabled={reviewingStatementId === item.id}
+                          onClick={() => openReview(item, "reject")}
+                          aria-label="Reject"
+                          title="Reject"
+                          className="inline-flex size-7 items-center justify-center border border-red-200 bg-white text-red-700 hover:bg-red-50 disabled:opacity-60"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </>
+                    ) : null}
+
+                    {deleteConfirmId === item.id ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(item.id)}
+                          className="inline-flex h-7 items-center bg-destructive px-2 text-[11px] font-semibold text-destructive-foreground hover:opacity-90"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteConfirmId(null)}
+                          className="inline-flex h-7 items-center border border-border bg-white px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => openReview(item, "view")}
+                          aria-label={`View ${item.title}`}
+                          title="View"
+                          className="inline-flex size-7 items-center justify-center border border-border bg-white text-foreground hover:bg-muted"
+                        >
+                          <Eye className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(item)}
+                          aria-label={`Edit ${item.title}`}
+                          title="Edit"
+                          className="inline-flex size-7 items-center justify-center border border-border bg-white text-foreground hover:bg-muted"
+                        >
+                          <Pencil className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteConfirmId(item.id)}
+                          aria-label={`Delete ${item.title}`}
+                          title="Delete"
+                          className="inline-flex size-7 items-center justify-center border border-border bg-white text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </article>
             ))}
           </div>
         ) : (
@@ -1778,11 +2128,16 @@ function AdminHackathonsPage() {
               description={reviewTarget.statement.description}
             />
             {reviewTarget.statement.deliverables?.length ? (
-              <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-                {reviewTarget.statement.deliverables.map((d, i) => (
-                  <li key={i}>{d}</li>
-                ))}
-              </ul>
+              <div className="mt-4">
+                <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                  Key deliverables
+                </p>
+                <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                  {reviewTarget.statement.deliverables.map((d, i) => (
+                    <li key={i}>{d}</li>
+                  ))}
+                </ul>
+              </div>
             ) : null}
 
             {reviewTarget.mode === "reject" ? (
@@ -1800,7 +2155,30 @@ function AdminHackathonsPage() {
             ) : null}
 
             <div className="mt-6 flex flex-wrap justify-end gap-2 border-t border-border pt-4">
-              {reviewTarget.mode === "view" ? (
+              {reviewTarget.mode === "view" &&
+              reviewTarget.statement.status !== "pending_approval" ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setReviewTarget(null)}
+                    className="rounded-full border border-border bg-white px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const statement = reviewTarget.statement;
+                      setReviewTarget(null);
+                      handleOpenEdit(statement);
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:opacity-95"
+                  >
+                    <Pencil className="size-3.5" />
+                    Edit statement
+                  </button>
+                </>
+              ) : reviewTarget.mode === "view" ? (
                 <>
                   <button
                     type="button"

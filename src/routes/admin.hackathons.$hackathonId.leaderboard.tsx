@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, RotateCcw, Search, Trophy } from "lucide-react";
 import { AdminPageHeader, AdminPanel } from "@/components/admin/AdminPageChrome";
-import { HackathonNav } from "@/components/admin/HackathonNav";
+import { HackathonNav, hackathonSectionPageClass } from "@/components/admin/HackathonNav";
 import {
   fetchAdminHackathonLeaderboard,
   type AdminHackathonLeaderboard,
@@ -132,7 +132,7 @@ function AdminHackathonLeaderboardPage() {
       : `${data.requiredEvaluations} submitted Jury evaluations`;
 
   return (
-    <div className="space-y-6 p-4 sm:p-5 md:p-6">
+    <div className={`space-y-6 p-4 sm:p-5 md:p-6 ${hackathonSectionPageClass}`}>
       <HackathonNav hackathonId={hackathonId} active="leaderboard" />
       <AdminPageHeader
         title="Leaderboard"

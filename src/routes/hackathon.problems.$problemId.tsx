@@ -17,16 +17,18 @@ import {
 
 import {
   areProblemStatementsReleased,
-  getAllProblemStatements,
   getHackathonDetails,
   getHackathonStudentProfile,
-  getSelectedProblemStatementId,
   logoutHackathonStudent,
   saveSelectedProblemStatementId,
 } from "@/lib/hackathon-storage";
 
-import { confirmHackathonProblem, getHackathonProblemStatements } from "@/lib/hackathon-api";
-import { getStatementDomainIds } from "@/lib/hackathon";
+import {
+  confirmHackathonProblem,
+  getHackathonProblemStatements,
+  getHackathonUserDetails,
+} from "@/lib/hackathon-api";
+import { getStatementDomainIds, type ProblemStatement } from "@/lib/hackathon";
 
 export const Route = createFileRoute("/hackathon/problems/$problemId")({
   beforeLoad: () => {
@@ -41,10 +43,23 @@ export const Route = createFileRoute("/hackathon/problems/$problemId")({
       throw redirect({ to: "/dashboard" });
     }
 
-    const data = await getHackathonProblemStatements();
+    const profile = getHackathonStudentProfile();
+    const [data, teamResponse] = await Promise.all([
+      getHackathonProblemStatements(),
+      profile
+        ? getHackathonUserDetails({ email: profile.email, phone: profile.mobile }).catch(() => null)
+        : null,
+    ]);
+    const team = teamResponse?.user ?? null;
+    const isLead = !!team && team.email?.toLowerCase() === profile?.email?.toLowerCase();
+    const teamStatementId = team?.problem_statement_id?.toUpperCase() || null;
+
+    if (!isLead && teamStatementId !== params.problemId.toUpperCase()) {
+      throw redirect({ to: "/dashboard" });
+    }
 
     const statement = data.statements?.find(
-      (item: any) => item.id.toLowerCase() === params.problemId.toLowerCase(),
+      (item: ProblemStatement) => item.id.toLowerCase() === params.problemId.toLowerCase(),
     );
 
     if (!statement) {
@@ -60,6 +75,9 @@ export const Route = createFileRoute("/hackathon/problems/$problemId")({
       statement,
       domainName,
       details: getHackathonDetails(),
+      isLead,
+      teamStatementId,
+      leadName: team?.lead_name || "your Team Lead",
     };
   },
 
@@ -85,13 +103,16 @@ export const Route = createFileRoute("/hackathon/problems/$problemId")({
 });
 
 function ProblemStatementDetailsPage() {
-  const { statement, domainName, details } = Route.useLoaderData();
+  const { statement, domainName, details, isLead, leadName, ...loaderData } = Route.useLoaderData();
 
   const profile = getHackathonStudentProfile();
 
   const [copied, setCopied] = useState(false);
 
-  const [confirmed, setConfirmed] = useState(getSelectedProblemStatementId() === statement.id);
+  const [teamStatementId, setTeamStatementId] = useState(loaderData.teamStatementId);
+  const confirmed = teamStatementId === String(statement.id).toUpperCase();
+  const lockedToOther = !!teamStatementId && !confirmed;
+  const roleLabel = isLead ? "Team Lead" : "Team Member";
 
   const [isConfirming, setIsConfirming] = useState(false);
 
@@ -110,6 +131,14 @@ function ProblemStatementDetailsPage() {
       toast.error("You must be logged in to confirm a problem statement.");
       return;
     }
+    if (!isLead || teamStatementId) return;
+    if (
+      !window.confirm(
+        `Confirm ${statement.id} for your team?\n\nA team can confirm only one problem statement, and it can't be changed afterwards.`,
+      )
+    ) {
+      return;
+    }
 
     setIsConfirming(true);
 
@@ -122,7 +151,7 @@ function ProblemStatementDetailsPage() {
 
       saveSelectedProblemStatementId(statement.id);
 
-      setConfirmed(true);
+      setTeamStatementId(String(statement.id).toUpperCase());
 
       toast.success(`${statement.id} confirmed as your problem statement`);
     } catch (error) {
@@ -197,7 +226,7 @@ function ProblemStatementDetailsPage() {
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-[#151934]">{userName}</p>
 
-                <p className="text-xs text-[#7c82a1]">Team Lead</p>
+                <p className="text-xs text-[#7c82a1]">{roleLabel}</p>
               </div>
             </div>
 
@@ -231,7 +260,7 @@ function ProblemStatementDetailsPage() {
               <div className="hidden text-right sm:block">
                 <p className="text-sm font-semibold text-[#151934]">{userName}</p>
 
-                <p className="text-xs text-[#7c82a1]">Team Lead</p>
+                <p className="text-xs text-[#7c82a1]">{roleLabel}</p>
               </div>
 
               <div className="flex size-10 items-center justify-center rounded-full bg-[#eeedff] font-semibold text-[#5b52e8]">
@@ -261,11 +290,13 @@ function ProblemStatementDetailsPage() {
               </p>
 
               <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#151934]">
-                Review & Confirm Problem Statement
+                {confirmed ? "Your Team's Problem Statement" : "Review & Confirm Problem Statement"}
               </h2>
 
               <p className="mt-2 text-sm text-[#7c82a1]">
-                Review the challenge carefully before confirming it for your team.
+                {confirmed
+                  ? `Confirmed by ${isLead ? "you" : leadName}. This is the challenge your team is building for.`
+                  : "Review the challenge carefully. Your team can confirm only one problem statement."}
               </p>
             </div>
 
@@ -354,7 +385,7 @@ function ProblemStatementDetailsPage() {
                       </h4>
 
                       <ul className="mt-4 space-y-3">
-                        {statement.deliverables.map((item: any) => (
+                        {statement.deliverables.map((item: string) => (
                           <li
                             key={item}
                             className="flex items-start gap-3 text-sm leading-6 text-[#59617a]"
@@ -388,36 +419,42 @@ function ProblemStatementDetailsPage() {
                         <p className="text-sm font-semibold text-[#151934]">
                           {confirmed
                             ? "Problem Statement Confirmed"
-                            : "Confirm this problem statement"}
+                            : lockedToOther
+                              ? `Your team already confirmed ${teamStatementId}`
+                              : "Confirm this problem statement"}
                         </p>
 
                         <p className="mt-1 text-xs leading-5 text-[#7c82a1]">
                           {confirmed
-                            ? "This problem statement has been selected for your team."
-                            : "Once confirmed, this problem statement will be assigned to your team."}
+                            ? "This problem statement is assigned to your team and can't be changed."
+                            : lockedToOther
+                              ? "A team can confirm only one problem statement, so this one can't be selected."
+                              : "Only the Team Lead can confirm. Once confirmed, it's assigned to your team and can't be changed."}
                         </p>
                       </div>
                     </div>
 
                     <div className="mt-5 flex flex-wrap gap-3">
-                      <button
-                        type="button"
-                        onClick={() => void handleConfirmStatement()}
-                        disabled={confirmed || isConfirming}
-                        className={`inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition ${
-                          confirmed
-                            ? "cursor-default bg-emerald-600 text-white"
-                            : "bg-[#5b52e8] text-white hover:bg-[#4e46d6]"
-                        } disabled:opacity-90`}
-                      >
-                        <Check className="size-4" />
+                      {isLead || confirmed ? (
+                        <button
+                          type="button"
+                          onClick={() => void handleConfirmStatement()}
+                          disabled={confirmed || lockedToOther || isConfirming}
+                          className={`inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition ${
+                            confirmed
+                              ? "cursor-default bg-emerald-600 text-white disabled:opacity-90"
+                              : "bg-[#5b52e8] text-white hover:bg-[#4e46d6] disabled:cursor-not-allowed disabled:opacity-50"
+                          }`}
+                        >
+                          <Check className="size-4" />
 
-                        {isConfirming
-                          ? "Confirming..."
-                          : confirmed
-                            ? "Confirmed"
-                            : "Confirm Problem Statement"}
-                      </button>
+                          {isConfirming
+                            ? "Confirming..."
+                            : confirmed
+                              ? "Confirmed"
+                              : "Confirm Problem Statement"}
+                        </button>
+                      ) : null}
 
                       <button
                         type="button"

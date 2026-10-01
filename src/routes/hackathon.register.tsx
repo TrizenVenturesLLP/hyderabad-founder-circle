@@ -42,8 +42,8 @@ type Step = "register" | "login" | "reset";
 
 const stepCopy: Record<Step, { eyebrow: string; title: string }> = {
   register: { eyebrow: "Team registration", title: "Register Your Team" },
-  login: { eyebrow: "Team sign in", title: "Student Login" },
-  reset: { eyebrow: "Team Lead password", title: "Set or reset password" },
+  login: { eyebrow: "Team sign in", title: "Sign in to your team" },
+  reset: { eyebrow: "Team password", title: "Set your password" },
 };
 
 type TeamMember = {
@@ -59,9 +59,9 @@ type FieldProps = InputHTMLAttributes<HTMLInputElement> & {
 };
 
 const registrationSteps = [
-  "Register your team. The Team Lead gets a confirmation email.",
-  "The Team Lead sets a password from the link in that email.",
-  "The Team Lead signs in to pick a problem statement and submit.",
+  "Register your team. The Team Lead and every member get an email.",
+  "Everyone sets a password from the link in their email and signs in.",
+  "The Team Lead confirms one problem statement and submits the project.",
 ];
 
 function HackathonRegistrationPage() {
@@ -143,7 +143,7 @@ function HackathonRegistrationPage() {
     const email = resetEmail.trim().toLowerCase();
     setLinkStatus(null);
     if (!/^\S+@\S+\.\S+$/.test(email)) {
-      setLinkStatus({ tone: "error", text: "Please enter a valid Team Lead email address." });
+      setLinkStatus({ tone: "error", text: "Please enter a valid email address." });
       return;
     }
 
@@ -354,8 +354,8 @@ function HackathonRegistrationPage() {
   );
 
   return (
-    <div className="min-h-dvh bg-background lg:grid lg:grid-cols-2">
-      <aside className="relative overflow-hidden bg-(--brand-primary) text-white lg:sticky lg:top-0 lg:h-dvh">
+    <div className="min-h-dvh bg-background lg:grid lg:h-dvh lg:grid-cols-2 lg:overflow-hidden">
+      <aside className="relative overflow-hidden bg-(--brand-primary) text-white lg:h-dvh">
         <div
           className="pointer-events-none absolute inset-0"
           aria-hidden
@@ -433,8 +433,8 @@ function HackathonRegistrationPage() {
         </div>
       </aside>
 
-      <main className="flex justify-center px-4 py-6 sm:px-8 lg:items-center lg:py-10">
-        <div className={`w-full ${step === "register" ? "max-w-md" : "max-w-[340px]"}`}>
+      <main className="flex justify-center px-4 py-6 sm:px-8 lg:h-dvh lg:overflow-y-auto lg:py-8">
+        <div className={`my-auto w-full ${step === "register" ? "max-w-md" : "max-w-[340px]"}`}>
           <p className="text-[10.5px] font-semibold uppercase tracking-wider text-primary">
             {stepCopy[step].eyebrow}
           </p>
@@ -447,21 +447,21 @@ function HackathonRegistrationPage() {
             {step === "register"
               ? "Register your team and add your team members."
               : step === "reset"
-                ? "Enter the email your team was registered with. We'll email the Team Lead a link to set a new password."
+                ? "Enter the email you were registered or invited with. We'll email you a secure link to set your password. It works once and expires in 10 minutes."
                 : isInvitation
-                  ? "You have been added to a team. Only your Team Lead signs in to the team dashboard."
-                  : "Team Leads sign in with their registered email and password."}
+                  ? "You've been added to a team. If you haven't set a password yet, use Set your password below, then sign in."
+                  : "Team Leads and team members sign in with their registered email and password."}
           </p>
 
           {step === "reset" ? (
             <form onSubmit={handleSendLink} className="mt-5 space-y-3.5">
               <Field
                 icon={Mail}
-                label="Team Lead email address"
+                label="Email address"
                 name="resetEmail"
                 value={resetEmail}
                 onChange={(event) => setResetEmail(event.target.value)}
-                placeholder="Enter the Team Lead's email"
+                placeholder="Enter your registered or invited email"
                 type="email"
                 autoComplete="email"
                 autoFocus
@@ -475,7 +475,7 @@ function HackathonRegistrationPage() {
                 disabled={isSendingLink}
                 className="h-10 w-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-95 disabled:cursor-wait disabled:opacity-70"
               >
-                {isSendingLink ? "Sending link..." : "Send link"}
+                {isSendingLink ? "Sending link..." : "Email me a set-password link"}
               </button>
 
               <button
@@ -647,11 +647,11 @@ function HackathonRegistrationPage() {
             <form onSubmit={handleLogin} className="mt-5 space-y-3.5">
               <Field
                 icon={Mail}
-                label="Team Lead email address"
+                label="Email address"
                 name="email"
                 value={login.email}
                 onChange={updateLogin}
-                placeholder="Enter the Team Lead's email"
+                placeholder="Enter your registered email"
                 type="email"
                 autoComplete="email"
               />
@@ -675,28 +675,30 @@ function HackathonRegistrationPage() {
                 disabled={isSubmitting}
                 className="h-10 w-full rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-95 disabled:cursor-wait disabled:opacity-70"
               >
-                {isSubmitting ? "Signing in..." : "Login and Open Dashboard"}
+                {isSubmitting ? "Signing in..." : "Sign in"}
               </button>
 
               <div
                 className={`border p-3 ${
-                  passwordNotSet ? "border-amber-300 bg-amber-50" : "border-border bg-muted/40"
+                  passwordNotSet || isInvitation
+                    ? "border-amber-300 bg-amber-50"
+                    : "border-border bg-muted/40"
                 }`}
               >
-                <p className="flex items-start gap-2 text-[12.5px] leading-5 text-foreground">
-                  <KeyRound className="mt-0.5 size-3.5 shrink-0 text-primary" />
-                  <span>
-                    <strong className="font-semibold">Don&apos;t have a password?</strong> The Team
-                    Lead sets it using the link in the registration confirmation email. Team members
-                    don&apos;t need to sign in.
-                  </span>
+                <p className="text-[12.5px] leading-5 text-foreground">
+                  <strong className="font-semibold">
+                    {isInvitation ? "Invited to a team?" : "First time here or forgot it?"}
+                  </strong>{" "}
+                  Team members and Team Leads set their own password from a secure link sent to
+                  their email.
                 </p>
                 <button
                   type="button"
                   onClick={openReset}
-                  className="mt-2 text-[12.5px] font-semibold text-primary hover:underline"
+                  className="mt-2.5 inline-flex h-9 w-full items-center justify-center gap-1.5 border border-primary bg-white px-3 text-[13px] font-semibold text-primary transition-colors hover:bg-primary/5"
                 >
-                  Didn&apos;t get it or forgot password? Send me a link
+                  <KeyRound className="size-3.5" />
+                  Set your password
                 </button>
               </div>
 

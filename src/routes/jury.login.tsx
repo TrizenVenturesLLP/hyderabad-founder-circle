@@ -1,12 +1,19 @@
 import { useState, type FormEvent } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, Eye, EyeOff, LockKeyhole, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { JuryBrandLink } from "@/components/jury/JuryBrandLink";
 import { acceptJuryInvitation, loginJury } from "@/lib/jury-api";
 
 export const Route = createFileRoute("/jury/login")({
   component: JuryLoginPage,
 });
+
+const juryResponsibilities = [
+  "Accept the invitation from your email and create your Jury account.",
+  "Sign in to see the teams assigned to your hackathon.",
+  "Review each team's problem statement and submission.",
+  "Score every team against the rubric and submit your evaluation.",
+];
 
 function readInvitationToken() {
   return new URLSearchParams(window.location.hash.slice(1)).get("token") || "";
@@ -37,108 +44,151 @@ function JuryLoginPage() {
   }
 
   return (
-    <div
-      className="flex min-h-dvh items-center justify-center px-4 py-10 sm:py-14"
-      style={{
-        background:
-          "radial-gradient(ellipse 70% 50% at 15% 0%, color-mix(in oklab, var(--brand-accent) 10%, transparent) 0%, transparent 60%), radial-gradient(ellipse 60% 45% at 100% 100%, color-mix(in oklab, var(--brand-primary) 7%, transparent) 0%, transparent 55%), var(--color-background-alt)",
-      }}
-    >
-      <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl border border-(--color-border) bg-white shadow-[0_24px_70px_-40px_rgba(15,23,42,0.45)] md:grid-cols-[0.9fr_1.1fr]">
-        <section className="relative flex flex-col justify-between overflow-hidden bg-(--brand-primary) p-6 text-white sm:p-9">
-          <div
-            className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-(--brand-accent) opacity-30 blur-3xl"
-            aria-hidden
-          />
-          <div className="relative">
-            <JuryBrandLink tone="dark" subtitle="Jury portal" />
-            <span className="mt-10 inline-flex size-11 items-center justify-center rounded-xl border border-white/15 bg-white/10">
-              <ShieldCheck className="size-5" />
+    <div className="min-h-dvh bg-background lg:grid lg:h-dvh lg:grid-cols-2 lg:overflow-hidden">
+      <aside className="relative overflow-hidden bg-(--brand-primary) text-white lg:h-dvh">
+        <div
+          className="pointer-events-none absolute inset-0"
+          aria-hidden
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 60% at 100% 0%, color-mix(in oklab, var(--brand-accent) 35%, transparent) 0%, transparent 60%)",
+          }}
+        />
+
+        <div className="relative flex h-full flex-col px-5 py-5 sm:px-8 lg:px-10 lg:py-8">
+          <div className="flex items-center justify-between gap-3">
+            <JuryBrandLink tone="dark" subtitle="Jury portal" className="w-fit" reloadDocument />
+            <Link
+              to="/"
+              reloadDocument
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 border border-white/20 bg-white/5 px-3 text-[13px] font-semibold text-white transition-colors hover:bg-white/10"
+            >
+              <ArrowLeft className="size-4" />
+              Back to home
+            </Link>
+          </div>
+
+          <div className="mt-6 lg:mt-auto">
+            <span className="inline-flex border border-white/20 bg-white/10 px-2 py-0.5 text-[10.5px] font-semibold tracking-wider uppercase">
+              Jury portal
             </span>
-            <h1 className="mt-5 max-w-sm font-display text-3xl font-semibold leading-tight">
+            <h2 className="mt-3 font-display text-2xl font-bold tracking-tight sm:text-3xl">
               Evaluate with clarity.
-            </h1>
-            <p className="mt-3 max-w-sm text-sm leading-relaxed text-white/75">
-              Sign in to review assigned teams, submissions, and your evaluation progress.
+            </h2>
+            <p className="mt-2 max-w-md text-[13px] leading-5 text-white/70">
+              Review assigned teams, open their submissions, and track your evaluation progress in
+              one place.
             </p>
           </div>
-          <p className="relative mt-10 text-xs text-white/60">
+
+          <div className="mt-6 hidden border-t border-white/15 pt-5 lg:block">
+            <p className="text-[10.5px] font-semibold tracking-wider text-white/55 uppercase">
+              How it works
+            </p>
+            <ol className="mt-3 space-y-2.5">
+              {juryResponsibilities.map((item, index) => (
+                <li key={item} className="flex items-start gap-2.5 text-[13px] text-white/85">
+                  <span className="flex size-5 shrink-0 items-center justify-center bg-white/10 text-[11px] font-semibold">
+                    {index + 1}
+                  </span>
+                  {item}
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <p className="mt-6 hidden text-[12px] text-white/60 lg:mt-auto lg:block lg:pt-6">
             Jury accounts are created from an administrator invitation.
           </p>
-        </section>
+        </div>
+      </aside>
 
-        <section className="flex items-center px-6 py-8 sm:px-10 sm:py-10">
-          <form onSubmit={submit} className="mx-auto w-full max-w-md">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--brand-accent)]">
-              Jury portal
+      <main className="flex justify-center px-4 py-8 sm:px-8 lg:h-dvh lg:overflow-y-auto lg:py-8">
+        <div className="my-auto w-full max-w-[340px]">
+          <p className="text-[10.5px] font-semibold tracking-wider text-primary uppercase">
+            Jury sign in
+          </p>
+          <h1 className="mt-1 font-display text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+            Welcome back
+          </h1>
+          <p className="mt-1 text-[13px] leading-5 text-muted-foreground">
+            Use the email address your Jury invitation was sent to.
+          </p>
+
+          {token ? (
+            <p className="mt-4 border-l-2 border-primary bg-primary/5 px-3 py-2 text-[12.5px] leading-5 text-foreground">
+              Your invitation will be accepted after you sign in.
             </p>
-            <h2 className="mt-2 font-display text-2xl font-semibold text-foreground">Sign in</h2>
-            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-              Use the email address associated with your Jury invitation.
-            </p>
-            {token ? (
-              <p className="mt-4 border-l-2 border-[var(--brand-accent)] bg-[var(--color-background-alt)] px-3 py-2 text-xs text-[var(--color-text-secondary)]">
-                Your invitation will be accepted after successful sign in.
-              </p>
-            ) : null}
-            <label className="mt-6 block text-sm font-medium">
+          ) : null}
+
+          <form onSubmit={submit} className="mt-5 space-y-3.5">
+            <label className="block text-xs font-semibold text-foreground">
               Email address
-              <input
-                required
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className="mt-1.5 h-11 w-full rounded-xl border border-(--color-border) bg-white px-3.5 outline-none transition focus:border-(--brand-accent) focus:ring-4 focus:ring-(--brand-accent)/12"
-                autoComplete="username"
-              />
+              <span className="relative mt-1 block">
+                <Mail className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  required
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="Enter your invited email"
+                  autoComplete="username"
+                  autoFocus
+                  className="h-9 w-full border border-border bg-background pr-3 pl-8 text-[13px] font-normal outline-none transition focus:border-primary"
+                />
+              </span>
             </label>
-            <label className="mt-4 block text-sm font-medium">
+
+            <label className="block text-xs font-semibold text-foreground">
               Password
-              <span className="relative mt-1.5 block">
+              <span className="relative mt-1 block">
+                <LockKeyhole className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
                 <input
                   required
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="h-11 w-full rounded-xl border border-(--color-border) bg-white py-2 pr-11 pl-3.5 outline-none transition focus:border-(--brand-accent) focus:ring-4 focus:ring-(--brand-accent)/12"
+                  placeholder="Enter your password"
                   autoComplete="current-password"
+                  className="h-9 w-full border border-border bg-background pr-9 pl-8 text-[13px] font-normal outline-none transition focus:border-primary"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((visible) => !visible)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
-                  title={showPassword ? "Hide password" : "Show password"}
-                  className="absolute inset-y-0 right-0 inline-flex w-11 items-center justify-center text-[var(--color-text-muted)] hover:text-foreground"
+                  aria-pressed={showPassword}
+                  className="absolute top-1/2 right-1 inline-flex size-7 -translate-y-1/2 items-center justify-center text-muted-foreground transition hover:text-foreground"
                 >
-                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
                 </button>
               </span>
             </label>
+
             {error ? (
               <p
                 role="alert"
-                className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+                className="border border-destructive/20 bg-destructive/5 px-3 py-2 text-[13px] text-destructive"
               >
                 {error}
               </p>
             ) : null}
+
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary mt-6 h-11 w-full justify-center gap-2 disabled:opacity-60"
+              className="h-10 w-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-95 disabled:cursor-wait disabled:opacity-70"
             >
-              <LockKeyhole className="size-4" />
-              {loading ? "Signing in…" : "Sign in to Jury workspace"}
-              {!loading ? <ArrowRight className="size-4" /> : null}
+              {loading ? "Signing in..." : "Sign in"}
             </button>
-            {token ? (
-              <p className="mt-4 text-xs text-[var(--color-text-secondary)]">
-                Need to create your invited account? Return to the invitation email link.
-              </p>
-            ) : null}
           </form>
-        </section>
-      </div>
+
+          <p className="mt-5 border-t border-border pt-4 text-[12px] leading-5 text-muted-foreground">
+            {token
+              ? "New to the Jury portal? Open the link in your invitation email to create your account first."
+              : "Don't have an account? Ask the hackathon administrator to send you a Jury invitation."}
+          </p>
+        </div>
+      </main>
     </div>
   );
 }

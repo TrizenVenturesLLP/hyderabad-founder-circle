@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Mail, Phone, Send, ShieldCheck, UserPlus, Users } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { Mail, Phone, Send, ShieldCheck, UserPlus, Users } from "lucide-react";
 
 import { getHackathonStudentProfile } from "@/lib/hackathon-storage";
 import {
@@ -114,16 +114,7 @@ function TeamPage() {
     <>
       <section className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <Link
-            to="/dashboard"
-            className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-(--brand-accent) hover:underline"
-          >
-            <ArrowLeft className="size-3.5" />
-            Overview
-          </Link>
-          <h1 className="mt-2 font-display text-xl font-bold tracking-tight sm:text-2xl">
-            {teamName}
-          </h1>
+          <h1 className="font-display text-xl font-bold tracking-tight sm:text-2xl">{teamName}</h1>
           <p className="mt-1 text-[13px] text-(--color-text-secondary)">
             Team Lead: <span className="font-semibold text-foreground">{teamLead}</span> ·{" "}
             {members.length || 1} member{(members.length || 1) !== 1 ? "s" : ""}
@@ -141,8 +132,8 @@ function TeamPage() {
             <div>
               <h2 className="text-[14px] font-semibold">Add a team member</h2>
               <p className="mt-0.5 text-[12px] text-(--color-text-muted)">
-                Up to four people per team, including the Team Lead. They get an email letting them
-                know they&apos;ve joined.
+                Up to four people per team, including the Team Lead. They get an invitation email
+                with a link to set their password and sign in.
               </p>
             </div>
             <span className="border border-(--color-border) bg-(--color-background-alt) px-2 py-0.5 text-[11px] font-semibold text-(--color-text-secondary)">

@@ -141,49 +141,46 @@ function AdminLayout() {
         <aside
           id="admin-sidebar"
           className={cn(
-            "fixed inset-y-0 right-0 z-50 flex h-dvh w-[280px] max-w-[85vw] shrink-0 flex-col border-l border-(--color-border) bg-white transition-[transform,visibility] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
-            "lg:visible lg:static lg:w-[260px] lg:max-w-none lg:translate-x-0 lg:border-r lg:border-l-0 lg:shadow-none",
+            "fixed inset-y-0 left-0 z-50 flex h-dvh w-[248px] max-w-[85vw] shrink-0 flex-col border-r border-(--color-border) bg-white transition-[transform,visibility] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+            "lg:visible lg:static lg:w-[232px] lg:max-w-none lg:translate-x-0 lg:shadow-none",
             mobileOpen
               ? "visible translate-x-0 shadow-(--shadow-large)"
-              : "invisible translate-x-full",
+              : "invisible -translate-x-full",
           )}
         >
-          <div className="flex items-center gap-2.5 px-5 pt-5 pb-4">
+          <div className="flex h-15 shrink-0 items-center gap-2.5 border-b border-(--color-border) px-4">
             <Link to="/" className="group flex min-w-0 flex-1 items-center gap-2.5">
-              <BrandLogo className="h-9 w-9 shrink-0 transition-transform duration-200 group-hover:scale-105" />
+              <BrandLogo className="size-8 shrink-0" />
               <span className="flex min-w-0 flex-col leading-tight">
                 <span
-                  className="truncate text-[15px] font-semibold tracking-tight text-foreground transition-colors group-hover:text-(--brand-accent)"
+                  className="truncate text-[14px] font-semibold tracking-tight text-foreground transition-colors group-hover:text-(--brand-accent)"
                   style={{ fontFamily: "var(--font-brand)" }}
                 >
                   Trizen Community
                 </span>
-                <span className="truncate text-[10.5px] font-medium text-(--color-text-muted)">
-                  {consoleLabel}
+                <span className="flex items-center gap-1.5 truncate text-[10.5px] font-medium text-(--color-text-muted)">
+                  <span className="size-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden />
+                  <span className="truncate">{isPlatform ? consoleLabel : workspaceLabel}</span>
                 </span>
               </span>
             </Link>
             <button
               type="button"
-              className="shrink-0 rounded-lg p-1.5 text-(--color-text-muted) transition-colors hover:bg-(--color-background-alt) hover:text-foreground lg:hidden"
+              className="inline-flex size-8 shrink-0 items-center justify-center text-(--color-text-muted) transition-colors hover:bg-(--color-background-alt) hover:text-foreground lg:hidden"
               onClick={() => setMobileOpen(false)}
               aria-label="Close menu"
             >
-              <X className="size-5" />
+              <X className="size-4.5" />
             </button>
           </div>
 
-          <div className="mx-4 mb-2 flex items-center gap-2 rounded-xl border border-(--color-border) bg-(--color-surface-soft) px-3 py-2">
-            <span className="size-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden />
-            <span className="truncate text-[12px] font-medium text-(--color-text-secondary)">
-              {workspaceLabel}
-            </span>
-          </div>
-
-          <nav className="flex flex-1 flex-col gap-5 overflow-y-auto px-3 py-3">
+          <nav
+            aria-label="Admin"
+            className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-2.5 py-4 [scrollbar-width:thin]"
+          >
             {navGroups.map((group) => (
-              <div key={group.label} className="flex flex-col gap-1">
-                <p className="mb-1 px-3 text-[11px] font-semibold tracking-[0.08em] text-(--brand-accent) uppercase">
+              <div key={group.label} className="flex flex-col gap-0.5">
+                <p className="mb-1 px-2.5 text-[10.5px] font-semibold tracking-[0.08em] text-(--color-text-muted) uppercase">
                   {group.label}
                 </p>
                 {group.items.map(({ to, label, icon: Icon }) => {
@@ -195,29 +192,26 @@ function AdminLayout() {
                       onClick={() => setMobileOpen(false)}
                       aria-current={active ? "page" : undefined}
                       className={cn(
-                        "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13.5px] font-medium transition-colors duration-200",
+                        "relative flex h-9 items-center gap-2.5 px-2.5 text-[13px] font-medium transition-colors duration-150",
                         active
-                          ? "bg-(--brand-accent-soft) text-(--brand-primary)"
+                          ? "bg-(--brand-accent-soft) font-semibold text-(--brand-primary)"
                           : "text-(--color-text-secondary) hover:bg-(--color-background-alt) hover:text-foreground",
                       )}
                     >
                       {active ? (
                         <span
-                          className="absolute top-2 bottom-2 left-0 w-[3px] rounded-full bg-(--brand-accent)"
+                          className="absolute inset-y-1.5 left-0 w-[3px] bg-(--brand-accent)"
                           aria-hidden
                         />
                       ) : null}
-                      <span
+                      <Icon
                         className={cn(
-                          "inline-flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors duration-200",
-                          active
-                            ? "bg-(--brand-accent) text-white shadow-[0_6px_16px_-8px_var(--brand-accent)]"
-                            : "bg-(--color-background-alt) text-(--color-text-secondary) group-hover:bg-(--brand-accent-soft) group-hover:text-(--brand-accent)",
+                          "size-4 shrink-0",
+                          active ? "text-(--brand-accent)" : "text-(--color-text-muted)",
                         )}
-                      >
-                        <Icon className="size-4" strokeWidth={1.75} />
-                      </span>
-                      {label}
+                        strokeWidth={1.9}
+                      />
+                      <span className="truncate">{label}</span>
                     </Link>
                   );
                 })}
@@ -225,24 +219,29 @@ function AdminLayout() {
             ))}
           </nav>
 
-          <div className="border-t border-(--color-border) p-3">
-            <div className="mb-1 flex items-center gap-2.5 rounded-xl px-2 py-2">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--brand-accent),var(--brand-primary))] text-[12px] font-semibold text-white">
+          <div className="shrink-0 border-t border-(--color-border) p-2.5">
+            <div className="flex items-center gap-2.5 px-1.5 py-1">
+              <span className="flex size-8 shrink-0 items-center justify-center bg-(--brand-primary) text-[11.5px] font-semibold text-white">
                 {initials || "A"}
               </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-medium text-foreground">{displayName}</p>
-                <p className="truncate text-[11.5px] text-(--color-text-muted)">{admin?.email}</p>
+              <div className="min-w-0 flex-1 leading-tight">
+                <p className="truncate text-[12.5px] font-semibold text-foreground">
+                  {displayName}
+                </p>
+                <p className="truncate text-[11px] text-(--color-text-muted)" title={admin?.email}>
+                  {admin?.email}
+                </p>
               </div>
+              <button
+                type="button"
+                onClick={logout}
+                aria-label="Sign out"
+                title="Sign out"
+                className="inline-flex size-8 shrink-0 items-center justify-center text-(--color-text-muted) transition-colors hover:bg-red-50 hover:text-red-700"
+              >
+                <LogOut className="size-4" strokeWidth={1.9} />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={logout}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13.5px] font-medium text-(--color-text-secondary) transition-colors hover:bg-red-50 hover:text-red-700"
-            >
-              <LogOut className="size-4 shrink-0" strokeWidth={1.75} />
-              Sign out
-            </button>
           </div>
         </aside>
 
@@ -257,6 +256,16 @@ function AdminLayout() {
           />
 
           <header className="relative z-10 flex h-15 shrink-0 items-center gap-3 border-b border-(--color-border)/80 bg-white/80 px-4 backdrop-blur-md lg:px-8">
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              className="-ml-1.5 flex size-9 shrink-0 items-center justify-center text-foreground transition-colors hover:bg-(--color-background-alt) lg:hidden"
+              aria-label="Open menu"
+              aria-expanded={mobileOpen}
+              aria-controls="admin-sidebar"
+            >
+              <Menu className="size-5" strokeWidth={1.75} />
+            </button>
             <nav
               aria-label="Breadcrumb"
               className="flex min-w-0 flex-1 items-center gap-1.5 text-[13px]"
@@ -279,16 +288,6 @@ function AdminLayout() {
               <ExternalLink className="size-3.5" strokeWidth={1.75} aria-hidden />
               <span className="hidden sm:inline">View site</span>
             </a>
-            <button
-              type="button"
-              onClick={() => setMobileOpen(true)}
-              className="flex size-10 shrink-0 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-(--color-background-alt) lg:hidden"
-              aria-label="Open menu"
-              aria-expanded={mobileOpen}
-              aria-controls="admin-sidebar"
-            >
-              <Menu className="size-5" strokeWidth={1.75} />
-            </button>
           </header>
 
           <div className="relative min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain">
