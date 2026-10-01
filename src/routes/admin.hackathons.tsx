@@ -589,11 +589,6 @@ function AdminHackathonsPage() {
       return;
     }
 
-    if (!formData.id?.trim()) {
-      toast.error("Problem statement ID is required");
-      return;
-    }
-
     if (formData.domainIds.length === 0) {
       toast.error("Select at least one domain track");
       return;
@@ -606,7 +601,7 @@ function AdminHackathonsPage() {
 
     try {
       await saveHackathonProblemStatement({
-        id: formData.id.trim(),
+        id: editingId ?? undefined,
         domainId: formData.domainIds[0],
         domainIds: formData.domainIds,
         title: formData.title.trim(),
@@ -1903,33 +1898,16 @@ function AdminHackathonsPage() {
                       className={formFieldClass}
                     />
                   </FormField>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <FormField label="Sub-category / topic" htmlFor="admin-ps-category" optional>
-                      <input
-                        id="admin-ps-category"
-                        type="text"
-                        value={formData.category}
-                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                        placeholder="e.g. Mobile UX, LLM Agents"
-                        className={formFieldClass}
-                      />
-                    </FormField>
-                    <FormField
-                      label="Custom ID"
-                      htmlFor="admin-ps-id"
-                      optional
-                      hint="Generated automatically if left blank."
-                    >
-                      <input
-                        id="admin-ps-id"
-                        type="text"
-                        value={formData.id || ""}
-                        onChange={(e) => setFormData({ ...formData, id: e.target.value })}
-                        placeholder="e.g. UX-01"
-                        className={`${formFieldClass} font-mono`}
-                      />
-                    </FormField>
-                  </div>
+                  <FormField label="Sub-category / topic" htmlFor="admin-ps-category" optional>
+                    <input
+                      id="admin-ps-category"
+                      type="text"
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      placeholder="e.g. Mobile UX, LLM Agents"
+                      className={formFieldClass}
+                    />
+                  </FormField>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <FormField label="Industry" htmlFor="admin-ps-industry">
                       <input

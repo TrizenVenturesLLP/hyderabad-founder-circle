@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, CheckCircle2, KeyRound, Loader2, Lock, Mail } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Eye, EyeOff, KeyRound, Loader2, Lock, Mail } from "lucide-react";
 import {
   requestHackathonPasswordLink,
   setHackathonPassword,
@@ -257,21 +257,32 @@ function PasswordField({
   autoComplete: string;
   placeholder: string;
 }) {
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
     <label className="block text-xs font-semibold text-foreground">
       {label}
       <span className="relative mt-1 block">
         <Lock className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
         <input
-          type="password"
+          type={showPassword ? "text" : "password"}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           autoComplete={autoComplete}
           placeholder={placeholder}
           minLength={8}
           maxLength={128}
-          className="h-9 w-full border border-border bg-background pl-8 pr-3 text-[13px] font-normal outline-none transition focus:border-primary"
+          className="h-9 w-full border border-border bg-background pl-8 pr-9 text-[13px] font-normal outline-none transition focus:border-primary"
         />
+        <button
+          type="button"
+          onClick={() => setShowPassword((current) => !current)}
+          aria-label={showPassword ? "Hide password" : "Show password"}
+          aria-pressed={showPassword}
+          className="absolute right-1 top-1/2 inline-flex size-7 -translate-y-1/2 items-center justify-center text-muted-foreground transition hover:text-foreground"
+        >
+          {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+        </button>
       </span>
     </label>
   );

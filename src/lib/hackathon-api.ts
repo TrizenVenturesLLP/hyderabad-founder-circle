@@ -463,7 +463,7 @@ export async function getAdminHackathonProblemStatements(hackathonId: string) {
 }
 
 export async function saveHackathonProblemStatement(statement: {
-  id: string;
+  id?: string;
   domainId: string;
   domainIds: string[];
   title: string;

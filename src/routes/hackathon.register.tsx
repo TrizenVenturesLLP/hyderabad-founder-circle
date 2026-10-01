@@ -9,6 +9,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
   CalendarDays,
+  Eye,
+  EyeOff,
   KeyRound,
   Lock,
   Mail,
@@ -36,7 +38,13 @@ export const Route = createFileRoute("/hackathon/register")({
   component: HackathonRegistrationPage,
 });
 
-type Step = "register" | "login";
+type Step = "register" | "login" | "reset";
+
+const stepCopy: Record<Step, { eyebrow: string; title: string }> = {
+  register: { eyebrow: "Team registration", title: "Register Your Team" },
+  login: { eyebrow: "Team sign in", title: "Student Login" },
+  reset: { eyebrow: "Team Lead password", title: "Set or reset password" },
+};
 
 type TeamMember = {
   name: string;
@@ -94,6 +102,7 @@ function HackathonRegistrationPage() {
     null,
   );
   const [isSendingLink, setIsSendingLink] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
 
   useEffect(() => {
     setDetails(getHackathonDetails());
@@ -116,11 +125,25 @@ function HackathonRegistrationPage() {
     }
   }, []);
 
-  async function handleSendLink() {
-    const email = login.email.trim().toLowerCase();
+  function openReset() {
+    setResetEmail(login.email);
+    setLinkStatus(null);
+    setError("");
+    setSuccessMessage("");
+    setStep("reset");
+  }
+
+  function backToLogin() {
+    setLinkStatus(null);
+    setStep("login");
+  }
+
+  async function handleSendLink(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const email = resetEmail.trim().toLowerCase();
     setLinkStatus(null);
     if (!/^\S+@\S+\.\S+$/.test(email)) {
-      setLinkStatus({ tone: "error", text: "Enter the Team Lead's email above first." });
+      setLinkStatus({ tone: "error", text: "Please enter a valid Team Lead email address." });
       return;
     }
 
@@ -413,22 +436,58 @@ function HackathonRegistrationPage() {
       <main className="flex justify-center px-4 py-6 sm:px-8 lg:items-center lg:py-10">
         <div className={`w-full ${step === "register" ? "max-w-md" : "max-w-[340px]"}`}>
           <p className="text-[10.5px] font-semibold uppercase tracking-wider text-primary">
-            {step === "register" ? "Team registration" : "Team sign in"}
+            {stepCopy[step].eyebrow}
           </p>
 
           <h1 className="mt-1 font-display text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-            {step === "register" ? "Register Your Team" : "Student Login"}
+            {stepCopy[step].title}
           </h1>
 
           <p className="mt-1 text-[13px] leading-5 text-muted-foreground">
             {step === "register"
               ? "Register your team and add your team members."
-              : isInvitation
-                ? "You have been added to a team. Only your Team Lead signs in to the team dashboard."
-                : "Team Leads sign in with their registered email and password."}
+              : step === "reset"
+                ? "Enter the email your team was registered with. We'll email the Team Lead a link to set a new password."
+                : isInvitation
+                  ? "You have been added to a team. Only your Team Lead signs in to the team dashboard."
+                  : "Team Leads sign in with their registered email and password."}
           </p>
 
-          {step === "register" ? (
+          {step === "reset" ? (
+            <form onSubmit={handleSendLink} className="mt-5 space-y-3.5">
+              <Field
+                icon={Mail}
+                label="Team Lead email address"
+                name="resetEmail"
+                value={resetEmail}
+                onChange={(event) => setResetEmail(event.target.value)}
+                placeholder="Enter the Team Lead's email"
+                type="email"
+                autoComplete="email"
+                autoFocus
+              />
+
+              {linkStatus?.tone === "error" && <FormError message={linkStatus.text} />}
+              {linkStatus?.tone === "success" && <FormSuccess message={linkStatus.text} />}
+
+              <button
+                type="submit"
+                disabled={isSendingLink}
+                className="h-10 w-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-95 disabled:cursor-wait disabled:opacity-70"
+              >
+                {isSendingLink ? "Sending link..." : "Send link"}
+              </button>
+
+              <button
+                type="button"
+                onClick={backToLogin}
+                className="inline-flex w-full items-center justify-center gap-1.5 text-[13px] font-medium text-primary hover:underline"
+              >
+                <ArrowLeft className="size-3.5" />
+                Back to sign in
+              </button>
+            </form>
+          ) : step === "register" ? (
             <form onSubmit={handleRegistration} className="mt-5 space-y-5">
               {/* Team Details */}
               <section>
@@ -634,23 +693,11 @@ function HackathonRegistrationPage() {
                 </p>
                 <button
                   type="button"
-                  onClick={handleSendLink}
-                  disabled={isSendingLink}
-                  className="mt-2 text-[12.5px] font-semibold text-primary hover:underline disabled:cursor-wait disabled:opacity-70"
+                  onClick={openReset}
+                  className="mt-2 text-[12.5px] font-semibold text-primary hover:underline"
                 >
-                  {isSendingLink
-                    ? "Sending link..."
-                    : "Didn't get it or forgot password? Send me a link"}
+                  Didn&apos;t get it or forgot password? Send me a link
                 </button>
-                {linkStatus && (
-                  <p
-                    className={`mt-1.5 text-[12px] leading-5 ${
-                      linkStatus.tone === "success" ? "text-emerald-700" : "text-destructive"
-                    }`}
-                  >
-                    {linkStatus.text}
-                  </p>
-                )}
               </div>
 
               <button
@@ -673,7 +720,10 @@ function HackathonRegistrationPage() {
   );
 }
 
-function Field({ icon: Icon, label, containerClassName, ...props }: FieldProps) {
+function Field({ icon: Icon, label, containerClassName, type, ...props }: FieldProps) {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPassword = type === "password";
+
   return (
     <label className={`block text-xs font-semibold text-foreground ${containerClassName ?? ""}`}>
       {label}
@@ -683,8 +733,23 @@ function Field({ icon: Icon, label, containerClassName, ...props }: FieldProps) 
 
         <input
           {...props}
-          className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-[13px] font-normal outline-none transition focus:border-primary"
+          type={isPassword && showPassword ? "text" : type}
+          className={`h-9 w-full rounded-md border border-border bg-background pl-8 text-[13px] font-normal outline-none transition focus:border-primary ${
+            isPassword ? "pr-9" : "pr-3"
+          }`}
         />
+
+        {isPassword ? (
+          <button
+            type="button"
+            onClick={() => setShowPassword((current) => !current)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-pressed={showPassword}
+            className="absolute right-1 top-1/2 inline-flex size-7 -translate-y-1/2 items-center justify-center text-muted-foreground transition hover:text-foreground"
+          >
+            {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+          </button>
+        ) : null}
       </span>
     </label>
   );
