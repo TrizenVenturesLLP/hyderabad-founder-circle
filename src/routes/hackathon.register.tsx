@@ -43,7 +43,7 @@ type Step = "register" | "login" | "reset";
 const stepCopy: Record<Step, { eyebrow: string; title: string }> = {
   register: { eyebrow: "Team registration", title: "Register Your Team" },
   login: { eyebrow: "Team sign in", title: "Sign in to your team" },
-  reset: { eyebrow: "Team password", title: "Set your password" },
+  reset: { eyebrow: "Team password", title: "Reset your password" },
 };
 
 type TeamMember = {
@@ -447,9 +447,9 @@ function HackathonRegistrationPage() {
             {step === "register"
               ? "Register your team and add your team members."
               : step === "reset"
-                ? "Enter the email you were registered or invited with. We'll email you a secure link to set your password. It works once and expires in 10 minutes."
+                ? "Enter your registered email. We'll send you a link to set a new password. It works once and expires in 10 minutes."
                 : isInvitation
-                  ? "You've been added to a team. If you haven't set a password yet, use Set your password below, then sign in."
+                  ? "You've been added to a team. Set your password from the invitation email, then sign in."
                   : "Team Leads and team members sign in with their registered email and password."}
           </p>
 
@@ -461,7 +461,7 @@ function HackathonRegistrationPage() {
                 name="resetEmail"
                 value={resetEmail}
                 onChange={(event) => setResetEmail(event.target.value)}
-                placeholder="Enter your registered or invited email"
+                placeholder="Enter your registered email"
                 type="email"
                 autoComplete="email"
                 autoFocus
@@ -475,7 +475,7 @@ function HackathonRegistrationPage() {
                 disabled={isSendingLink}
                 className="h-10 w-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-95 disabled:cursor-wait disabled:opacity-70"
               >
-                {isSendingLink ? "Sending link..." : "Email me a set-password link"}
+                {isSendingLink ? "Sending link..." : "Send link"}
               </button>
 
               <button
@@ -678,42 +678,39 @@ function HackathonRegistrationPage() {
                 {isSubmitting ? "Signing in..." : "Sign in"}
               </button>
 
-              <div
-                className={`border p-3 ${
-                  passwordNotSet || isInvitation
-                    ? "border-amber-300 bg-amber-50"
-                    : "border-border bg-muted/40"
+              <p
+                className={`text-center text-[12.5px] ${
+                  passwordNotSet ? "border border-amber-300 bg-amber-50 px-3 py-2" : ""
                 }`}
               >
-                <p className="text-[12.5px] leading-5 text-foreground">
-                  <strong className="font-semibold">
-                    {isInvitation ? "Invited to a team?" : "First time here or forgot it?"}
-                  </strong>{" "}
-                  Team members and Team Leads set their own password from a secure link sent to
-                  their email.
-                </p>
+                <span className="text-muted-foreground">
+                  Forgot or didn&apos;t set your password?
+                </span>{" "}
                 <button
                   type="button"
                   onClick={openReset}
-                  className="mt-2.5 inline-flex h-9 w-full items-center justify-center gap-1.5 border border-primary bg-white px-3 text-[13px] font-semibold text-primary transition-colors hover:bg-primary/5"
+                  className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
                 >
-                  <KeyRound className="size-3.5" />
-                  Set your password
+                  <KeyRound className="size-3" />
+                  Send me a link
+                </button>
+              </p>
+
+              <div className="border-t border-border pt-3.5 text-center text-[12.5px] text-muted-foreground">
+                New to the hackathon?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError("");
+                    setSuccessMessage("");
+                    setLinkStatus(null);
+                    setStep("register");
+                  }}
+                  className="font-semibold text-primary hover:underline"
+                >
+                  Register your team
                 </button>
               </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setError("");
-                  setSuccessMessage("");
-                  setLinkStatus(null);
-                  setStep("register");
-                }}
-                className="w-full text-[13px] font-medium text-primary hover:underline"
-              >
-                Register a new team
-              </button>
             </form>
           )}
         </div>

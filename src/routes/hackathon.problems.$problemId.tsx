@@ -1,17 +1,17 @@
-import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, notFound, redirect, useNavigate } from "@tanstack/react-router";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
-  ArrowLeft,
   CalendarDays,
   Check,
+  CheckCircle2,
   ClipboardCopy,
   Clock3,
   Layers,
-  LayoutDashboard,
-  LogOut,
+  LockKeyhole,
+  MapPin,
   ShieldCheck,
-  Target,
+  Upload,
   Users,
 } from "lucide-react";
 
@@ -29,6 +29,8 @@ import {
   getHackathonUserDetails,
 } from "@/lib/hackathon-api";
 import { getStatementDomainIds, type ProblemStatement } from "@/lib/hackathon";
+import { StudentShell } from "@/components/student/StudentShell";
+import { ProjectSubmissionDialog } from "@/components/student/ProjectSubmissionDialog";
 
 export const Route = createFileRoute("/hackathon/problems/$problemId")({
   beforeLoad: () => {
@@ -67,17 +69,20 @@ export const Route = createFileRoute("/hackathon/problems/$problemId")({
     }
 
     const domains = getHackathonDetails().domains;
-    const domainName = getStatementDomainIds(statement)
-      .map((id) => domains.find((item) => item.id === id)?.name || id)
-      .join(", ");
+    const domainNames = getStatementDomainIds(statement).map(
+      (id) => domains.find((item) => item.id === id)?.name || id,
+    );
 
     return {
       statement,
-      domainName,
+      domainNames,
       details: getHackathonDetails(),
       isLead,
       teamStatementId,
       leadName: team?.lead_name || "your Team Lead",
+      teamName: team?.team_name || null,
+      memberCount: team?.members?.length || null,
+      submittedAt: team?.submission?.submitted_at || null,
     };
   },
 
@@ -102,27 +107,47 @@ export const Route = createFileRoute("/hackathon/problems/$problemId")({
   component: ProblemStatementDetailsPage,
 });
 
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="border-t border-(--color-border) px-5 py-5 sm:px-6">
+      <h3 className="text-[11px] font-semibold tracking-[0.08em] text-(--color-text-muted) uppercase">
+        {title}
+      </h3>
+      <div className="mt-2.5">{children}</div>
+    </section>
+  );
+}
+
 function ProblemStatementDetailsPage() {
-  const { statement, domainName, details, isLead, leadName, ...loaderData } = Route.useLoaderData();
+  const navigate = useNavigate();
+  const {
+    statement,
+    domainNames,
+    details,
+    isLead,
+    leadName,
+    teamName,
+    memberCount,
+    ...loaderData
+  } = Route.useLoaderData();
 
   const profile = getHackathonStudentProfile();
 
   const [copied, setCopied] = useState(false);
-
   const [teamStatementId, setTeamStatementId] = useState(loaderData.teamStatementId);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [submittedAt, setSubmittedAt] = useState<string | null>(loaderData.submittedAt);
+  const [isSubmitOpen, setIsSubmitOpen] = useState(false);
+
   const confirmed = teamStatementId === String(statement.id).toUpperCase();
   const lockedToOther = !!teamStatementId && !confirmed;
   const roleLabel = isLead ? "Team Lead" : "Team Member";
-
-  const [isConfirming, setIsConfirming] = useState(false);
+  const pathname = `/hackathon/problems/${statement.id}`;
 
   function handleCopyReference() {
     void navigator.clipboard.writeText(`${statement.id}: ${statement.title}`);
-
     setCopied(true);
-
     toast.success(`Copied ${statement.id} to clipboard`);
-
     window.setTimeout(() => setCopied(false), 2000);
   }
 
@@ -141,18 +166,14 @@ function ProblemStatementDetailsPage() {
     }
 
     setIsConfirming(true);
-
     try {
       await confirmHackathonProblem({
         email: profile.email,
         phone: profile.mobile,
         problem_statement_id: statement.id,
       });
-
       saveSelectedProblemStatementId(statement.id);
-
       setTeamStatementId(String(statement.id).toUpperCase());
-
       toast.success(`${statement.id} confirmed as your problem statement`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to confirm statement");
@@ -161,422 +182,254 @@ function ProblemStatementDetailsPage() {
     }
   }
 
-  const userName = profile?.name || "Student";
-  const userInitial = userName.charAt(0).toUpperCase();
+  function handleLogout() {
+    logoutHackathonStudent();
+    void navigate({ to: "/hackathon", replace: true });
+  }
+
+  const statusTone = confirmed
+    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+    : lockedToOther
+      ? "border-(--color-border) bg-(--color-background-alt) text-(--color-text-secondary)"
+      : "border-amber-200 bg-amber-50 text-amber-800";
+
+  const competitionFacts = [
+    { Icon: CalendarDays, label: details.venue.dateLabel, hint: "Hackathon dates" },
+    { Icon: Clock3, label: details.durationBadge, hint: `${details.venue.format} event` },
+    { Icon: Users, label: details.venue.teamSize, hint: "Eligible team size" },
+    { Icon: MapPin, label: details.venue.name, hint: details.venue.area },
+  ];
 
   return (
-    <div className="min-h-screen bg-[#f6f7fb]">
-      {/* Student Dashboard Sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-[#e5e7ef] bg-white lg:block">
-        <div className="flex h-full flex-col">
-          {/* Brand */}
-          <div className="border-b border-[#e5e7ef] px-6 py-6">
-            <div className="flex items-center gap-3">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-[#302b6f] text-lg font-bold text-white">
-                T
-              </div>
-
-              <div>
-                <p className="text-sm font-bold text-[#151934]">Trizen Ventures</p>
-
-                <p className="text-xs text-[#7c82a1]">Student dashboard</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Navigation */}
-          <div className="flex-1 px-4 py-6">
-            <p className="px-3 text-xs font-semibold uppercase tracking-wider text-[#9ba1b8]">
-              Hackathon
-            </p>
-
-            <div className="mt-3">
-              <Link
-                to="/dashboard"
-                hash="challenge-selection"
-                className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-[#59617a] transition hover:bg-[#f1f2f8]"
-              >
-                <LayoutDashboard className="size-4" />
-                Dashboard
-              </Link>
-            </div>
-
-            <p className="mt-8 px-3 text-xs font-semibold uppercase tracking-wider text-[#9ba1b8]">
-              Account
-            </p>
-
-            <div className="mt-3">
-              <Link
-                to="/dashboard/team"
-                className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-[#59617a] transition hover:bg-[#f1f2f8]"
-              >
-                <Users className="size-4" />
-                My Team
-              </Link>
-            </div>
-          </div>
-
-          {/* User */}
-          <div className="border-t border-[#e5e7ef] p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-full bg-[#eeedff] text-sm font-semibold text-[#5b52e8]">
-                {userInitial}
-              </div>
-
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-[#151934]">{userName}</p>
-
-                <p className="text-xs text-[#7c82a1]">{roleLabel}</p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                logoutHackathonStudent();
-                window.location.replace("/hackathon");
-              }}
-              className="mt-4 flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-red-600 transition hover:bg-red-50"
-            >
-              <LogOut className="size-4" />
-              Logout
-            </button>
-          </div>
+    <StudentShell
+      pathname={pathname}
+      teamName={teamName}
+      roleLabel={roleLabel}
+      memberCount={memberCount}
+      displayName={profile?.name || "Student"}
+      email={profile?.email}
+      confirmedStatementId={teamStatementId}
+      onLogout={handleLogout}
+    >
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <p className="text-[11px] font-semibold tracking-[0.08em] text-(--brand-accent) uppercase">
+            {confirmed ? "Your team's challenge" : "Review challenge"}
+          </p>
+          <h1 className="mt-1 font-display text-xl font-bold tracking-tight sm:text-2xl">
+            Problem statement
+          </h1>
         </div>
-      </aside>
+      </div>
 
-      {/* Main */}
-      <main className="lg:ml-64">
-        {/* Header */}
-        <header className="border-b border-[#e5e7ef] bg-white">
-          <div className="flex h-20 items-center justify-between px-6 lg:px-8">
-            <div>
-              <p className="text-sm font-medium text-[#7c82a1]">Trizen Ventures</p>
-
-              <h1 className="text-xl font-bold text-[#151934]">Problem Statement</h1>
+      <div className="mt-4 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <article className="border border-(--color-border) bg-white">
+          <header className="px-5 pt-5 pb-4 sm:px-6">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="bg-(--brand-accent-soft) px-2 py-0.5 font-mono text-[11px] font-bold text-(--brand-accent)">
+                {statement.id}
+              </span>
+              <span className="bg-(--color-background-alt) px-2 py-0.5 text-[11px] font-semibold text-(--color-text-secondary)">
+                {statement.difficulty}
+              </span>
+              {statement.category ? (
+                <span className="inline-flex items-center gap-1 bg-(--color-background-alt) px-2 py-0.5 text-[11px] font-medium text-(--color-text-secondary)">
+                  <Layers className="size-3" />
+                  {statement.category}
+                </span>
+              ) : null}
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="hidden text-right sm:block">
-                <p className="text-sm font-semibold text-[#151934]">{userName}</p>
+            <h2 className="mt-3 font-display text-xl leading-tight font-bold tracking-tight text-foreground sm:text-[1.6rem]">
+              {statement.title}
+            </h2>
 
-                <p className="text-xs text-[#7c82a1]">{roleLabel}</p>
+            {domainNames.length ? (
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                {domainNames.map((name) => (
+                  <span
+                    key={name}
+                    className="border border-(--brand-accent)/25 px-2 py-0.5 text-[11px] font-semibold text-(--brand-accent)"
+                  >
+                    {name}
+                  </span>
+                ))}
               </div>
+            ) : null}
 
-              <div className="flex size-10 items-center justify-center rounded-full bg-[#eeedff] font-semibold text-[#5b52e8]">
-                {userInitial}
+            {statement.industry || statement.platform ? (
+              <dl className="mt-4 grid grid-cols-2 border border-(--color-border)">
+                <div className="px-3 py-2">
+                  <dt className="text-[10.5px] font-semibold tracking-wider text-(--color-text-muted) uppercase">
+                    Industry
+                  </dt>
+                  <dd className="mt-0.5 text-[13px] font-semibold text-foreground">
+                    {statement.industry || "Not specified"}
+                  </dd>
+                </div>
+                <div className="border-l border-(--color-border) px-3 py-2">
+                  <dt className="text-[10.5px] font-semibold tracking-wider text-(--color-text-muted) uppercase">
+                    Platform / Tech
+                  </dt>
+                  <dd className="mt-0.5 text-[13px] font-semibold text-foreground">
+                    {statement.platform || "Not specified"}
+                  </dd>
+                </div>
+              </dl>
+            ) : null}
+          </header>
+
+          {statement.scope ? (
+            <Section title="Scope">
+              <p className="text-[13.5px] leading-6 whitespace-pre-line text-(--color-text-secondary)">
+                {statement.scope}
+              </p>
+            </Section>
+          ) : null}
+
+          <Section title="Description">
+            <p className="text-[13.5px] leading-6 whitespace-pre-line text-(--color-text-secondary)">
+              {statement.description}
+            </p>
+          </Section>
+
+          {statement.deliverables && statement.deliverables.length > 0 ? (
+            <Section title="Key deliverables">
+              <ul className="grid gap-2">
+                {statement.deliverables.map((item: string) => (
+                  <li
+                    key={item}
+                    className="flex items-start gap-2.5 text-[13.5px] leading-6 text-(--color-text-secondary)"
+                  >
+                    <CheckCircle2 className="mt-1 size-3.5 shrink-0 text-(--brand-accent)" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          ) : null}
+        </article>
+
+        <aside className="space-y-4 lg:sticky lg:top-6">
+          <div className="border border-(--color-border) bg-white">
+            <div className={`flex items-start gap-2.5 border-b px-4 py-3 ${statusTone}`}>
+              {confirmed ? (
+                <Check className="mt-0.5 size-4 shrink-0" />
+              ) : lockedToOther ? (
+                <LockKeyhole className="mt-0.5 size-4 shrink-0" />
+              ) : (
+                <ShieldCheck className="mt-0.5 size-4 shrink-0" />
+              )}
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold">
+                  {confirmed
+                    ? "Confirmed for your team"
+                    : lockedToOther
+                      ? `Your team chose ${teamStatementId}`
+                      : "Not confirmed yet"}
+                </p>
+                <p className="mt-0.5 text-[11.5px] leading-5 opacity-90">
+                  {confirmed
+                    ? `Confirmed by ${isLead ? "you" : leadName}. It can't be changed.`
+                    : lockedToOther
+                      ? "A team can confirm only one problem statement."
+                      : isLead
+                        ? "You can confirm only one statement, and it can't be changed afterwards."
+                        : `Only ${leadName} can confirm a statement.`}
+                </p>
               </div>
             </div>
-          </div>
-        </header>
 
-        {/* Content */}
-        <div className="px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-6xl">
-            {/* Back */}
-            <Link
-              to="/dashboard"
-              hash="challenge-selection"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-[#5b52e8] transition hover:opacity-80"
-            >
-              <ArrowLeft className="size-4" />
-              Back to Dashboard
-            </Link>
-
-            {/* Page heading */}
-            <div className="mt-6">
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#5b52e8]">
-                Challenge Details
-              </p>
-
-              <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#151934]">
-                {confirmed ? "Your Team's Problem Statement" : "Review & Confirm Problem Statement"}
-              </h2>
-
-              <p className="mt-2 text-sm text-[#7c82a1]">
-                {confirmed
-                  ? `Confirmed by ${isLead ? "you" : leadName}. This is the challenge your team is building for.`
-                  : "Review the challenge carefully. Your team can confirm only one problem statement."}
-              </p>
-            </div>
-
-            {/* Main grid */}
-            <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-              {/* Problem */}
-              <section className="rounded-2xl border border-[#e2e3f0] bg-white shadow-sm">
-                <div className="p-6 sm:p-8">
-                  {/* Tags */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-lg bg-[#eeedff] px-3 py-1.5 font-mono text-xs font-bold text-[#5b52e8]">
-                      {statement.id}
-                    </span>
-
-                    <span className="rounded-lg bg-[#f1f2f8] px-3 py-1.5 text-xs font-semibold text-[#59617a]">
-                      {statement.difficulty}
-                    </span>
-
-                    {statement.category && (
-                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#f1f2f8] px-3 py-1.5 text-xs font-medium text-[#59617a]">
-                        <Layers className="size-3.5" />
-                        {statement.category}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Domain */}
-                  <p className="mt-6 text-xs font-semibold uppercase tracking-wider text-[#5b52e8]">
-                    {domainName}
-                  </p>
-
-                  {/* Title */}
-                  <h3 className="mt-2 text-3xl font-bold tracking-tight text-[#151934]">
-                    {statement.title}
-                  </h3>
-
-                  {(statement.industry || statement.platform) && (
-                    <dl className="mt-6 grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-lg border border-[#e5e7ef] bg-[#f8f8fc] px-4 py-3">
-                        <dt className="text-[11px] font-semibold uppercase tracking-wider text-[#7c82a1]">
-                          Industry
-                        </dt>
-                        <dd className="mt-1 text-sm font-semibold text-[#151934]">
-                          {statement.industry || "Not specified"}
-                        </dd>
-                      </div>
-                      <div className="rounded-lg border border-[#e5e7ef] bg-[#f8f8fc] px-4 py-3">
-                        <dt className="text-[11px] font-semibold uppercase tracking-wider text-[#7c82a1]">
-                          Platform / Tech
-                        </dt>
-                        <dd className="mt-1 text-sm font-semibold text-[#151934]">
-                          {statement.platform || "Not specified"}
-                        </dd>
-                      </div>
-                    </dl>
-                  )}
-
-                  {statement.scope && (
-                    <div className="mt-8 border-t border-[#e5e7ef] pt-6">
-                      <h4 className="text-sm font-bold uppercase tracking-wider text-[#151934]">
-                        Scope
-                      </h4>
-
-                      <p className="mt-4 whitespace-pre-line text-sm leading-7 text-[#59617a]">
-                        {statement.scope}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Description */}
-                  <div className="mt-8 border-t border-[#e5e7ef] pt-6">
-                    <h4 className="text-sm font-bold uppercase tracking-wider text-[#151934]">
-                      Description
-                    </h4>
-
-                    <p className="mt-4 whitespace-pre-line text-sm leading-7 text-[#59617a]">
-                      {statement.description}
+            <div className="space-y-2 p-4">
+              {confirmed ? (
+                <div className="flex items-center justify-between gap-2 border border-(--color-border) bg-(--color-background-alt) px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold tracking-[0.06em] text-(--color-text-muted) uppercase">
+                      Final submission
+                    </p>
+                    <p className="truncate text-[12.5px] font-medium text-foreground">
+                      {submittedAt
+                        ? `Submitted ${new Date(submittedAt).toLocaleString(undefined, {
+                            day: "numeric",
+                            month: "short",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}`
+                        : isLead
+                          ? "Not submitted yet"
+                          : `${leadName} submits for your team`}
                     </p>
                   </div>
-
-                  {/* Deliverables */}
-                  {statement.deliverables && statement.deliverables.length > 0 && (
-                    <div className="mt-8 border-t border-[#e5e7ef] pt-6">
-                      <h4 className="text-sm font-bold uppercase tracking-wider text-[#151934]">
-                        Key Deliverables & Objectives
-                      </h4>
-
-                      <ul className="mt-4 space-y-3">
-                        {statement.deliverables.map((item: string) => (
-                          <li
-                            key={item}
-                            className="flex items-start gap-3 text-sm leading-6 text-[#59617a]"
-                          >
-                            <span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#5b52e8]" />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Confirmation */}
-                  <div className="mt-8 rounded-xl border border-[#e5e7ef] bg-[#f8f8fc] p-5">
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${
-                          confirmed
-                            ? "bg-emerald-100 text-emerald-600"
-                            : "bg-[#eeedff] text-[#5b52e8]"
-                        }`}
-                      >
-                        {confirmed ? (
-                          <Check className="size-5" />
-                        ) : (
-                          <ShieldCheck className="size-5" />
-                        )}
-                      </div>
-
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-[#151934]">
-                          {confirmed
-                            ? "Problem Statement Confirmed"
-                            : lockedToOther
-                              ? `Your team already confirmed ${teamStatementId}`
-                              : "Confirm this problem statement"}
-                        </p>
-
-                        <p className="mt-1 text-xs leading-5 text-[#7c82a1]">
-                          {confirmed
-                            ? "This problem statement is assigned to your team and can't be changed."
-                            : lockedToOther
-                              ? "A team can confirm only one problem statement, so this one can't be selected."
-                              : "Only the Team Lead can confirm. Once confirmed, it's assigned to your team and can't be changed."}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-5 flex flex-wrap gap-3">
-                      {isLead || confirmed ? (
-                        <button
-                          type="button"
-                          onClick={() => void handleConfirmStatement()}
-                          disabled={confirmed || lockedToOther || isConfirming}
-                          className={`inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition ${
-                            confirmed
-                              ? "cursor-default bg-emerald-600 text-white disabled:opacity-90"
-                              : "bg-[#5b52e8] text-white hover:bg-[#4e46d6] disabled:cursor-not-allowed disabled:opacity-50"
-                          }`}
-                        >
-                          <Check className="size-4" />
-
-                          {isConfirming
-                            ? "Confirming..."
-                            : confirmed
-                              ? "Confirmed"
-                              : "Confirm Problem Statement"}
-                        </button>
-                      ) : null}
-
-                      <button
-                        type="button"
-                        onClick={handleCopyReference}
-                        className="inline-flex items-center gap-2 rounded-lg border border-[#dfe1eb] bg-white px-5 py-2.5 text-sm font-semibold text-[#59617a] transition hover:bg-[#f1f2f8]"
-                      >
-                        {copied ? (
-                          <Check className="size-4" />
-                        ) : (
-                          <ClipboardCopy className="size-4" />
-                        )}
-
-                        {copied ? "Copied" : "Copy Reference"}
-                      </button>
-                    </div>
-                  </div>
+                  <span
+                    className={`shrink-0 px-1.5 py-0.5 text-[10.5px] font-semibold ${submittedAt ? "bg-emerald-50 text-emerald-700" : "bg-white text-(--color-text-secondary)"}`}
+                  >
+                    {submittedAt ? "Submitted" : "Pending"}
+                  </span>
                 </div>
-              </section>
-
-              {/* Right side */}
-              <aside className="space-y-5">
-                {/* Competition details */}
-                <div className="rounded-2xl border border-[#e2e3f0] bg-white p-6 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-[#5b52e8]">
-                    Competition Details
-                  </p>
-
-                  <div className="mt-5 space-y-5">
-                    {/* Date */}
-                    <div className="flex items-start gap-3">
-                      <CalendarDays className="mt-0.5 size-5 shrink-0 text-[#5b52e8]" />
-
-                      <div>
-                        <p className="text-sm font-semibold text-[#151934]">
-                          {details.venue.dateLabel}
-                        </p>
-
-                        <p className="mt-0.5 text-xs text-[#7c82a1]">Hackathon dates</p>
-                      </div>
-                    </div>
-
-                    {/* Duration */}
-                    <div className="flex items-start gap-3">
-                      <Clock3 className="mt-0.5 size-5 shrink-0 text-[#5b52e8]" />
-
-                      <div>
-                        <p className="text-sm font-semibold text-[#151934]">
-                          {details.durationBadge}
-                        </p>
-
-                        <p className="mt-0.5 text-xs text-[#7c82a1]">
-                          {details.venue.format} event
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Team size */}
-                    <div className="flex items-start gap-3">
-                      <Users className="mt-0.5 size-5 shrink-0 text-[#5b52e8]" />
-
-                      <div>
-                        <p className="text-sm font-semibold text-[#151934]">
-                          {details.venue.teamSize}
-                        </p>
-
-                        <p className="mt-0.5 text-xs text-[#7c82a1]">Eligible team size</p>
-                      </div>
-                    </div>
-
-                    {/* Venue */}
-                    <div className="flex items-start gap-3">
-                      <Target className="mt-0.5 size-5 shrink-0 text-[#5b52e8]" />
-
-                      <div>
-                        <p className="text-sm font-semibold text-[#151934]">{details.venue.name}</p>
-
-                        <p className="mt-0.5 text-xs text-[#7c82a1]">{details.venue.area}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Selected Problem */}
-                <div className="rounded-2xl border border-[#e2e3f0] bg-white p-5 shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#eeedff] text-[#5b52e8]">
-                      {confirmed ? <Check className="size-5" /> : <Target className="size-5" />}
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-[#5b52e8]">
-                        Selected Problem
-                      </p>
-
-                      <p className="mt-2 font-mono text-xs font-bold text-[#59617a]">
-                        {statement.id}
-                      </p>
-
-                      <p className="mt-1 text-sm font-semibold leading-5 text-[#151934]">
-                        {statement.title}
-                      </p>
-
-                      <div className="mt-3">
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            confirmed
-                              ? "bg-emerald-50 text-emerald-600"
-                              : "bg-[#f1f2f8] text-[#7c82a1]"
-                          }`}
-                        >
-                          {confirmed && <Check className="size-3" />}
-                          {confirmed ? "Confirmed" : "Not confirmed"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </aside>
+              ) : null}
+              {confirmed && isLead && !submittedAt ? (
+                <button
+                  type="button"
+                  onClick={() => setIsSubmitOpen(true)}
+                  className="inline-flex h-9 w-full items-center justify-center gap-1.5 bg-(--brand-primary) px-4 text-[13px] font-semibold text-white transition hover:bg-(--brand-primary-hover)"
+                >
+                  <Upload className="size-4" />
+                  Submit project
+                </button>
+              ) : null}
+              {isLead && !confirmed && !lockedToOther ? (
+                <button
+                  type="button"
+                  onClick={() => void handleConfirmStatement()}
+                  disabled={isConfirming}
+                  className="inline-flex h-9 w-full items-center justify-center gap-1.5 bg-(--brand-accent) px-4 text-[13px] font-semibold text-white transition-opacity hover:opacity-95 disabled:cursor-wait disabled:opacity-60"
+                >
+                  <Check className="size-4" />
+                  {isConfirming ? "Confirming..." : "Confirm this statement"}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={handleCopyReference}
+                className="inline-flex h-9 w-full items-center justify-center gap-1.5 border border-(--color-border) bg-white px-4 text-[13px] font-semibold text-(--color-text-secondary) transition-colors hover:bg-(--color-background-alt) hover:text-foreground"
+              >
+                {copied ? <Check className="size-4" /> : <ClipboardCopy className="size-4" />}
+                {copied ? "Copied" : "Copy reference"}
+              </button>
             </div>
           </div>
-        </div>
-      </main>
-    </div>
+
+          <div className="border border-(--color-border) bg-white p-4">
+            <p className="text-[11px] font-semibold tracking-[0.08em] text-(--color-text-muted) uppercase">
+              Competition details
+            </p>
+            <dl className="mt-3 space-y-3">
+              {competitionFacts.map(({ Icon, label, hint }) => (
+                <div key={hint} className="flex items-start gap-2.5">
+                  <Icon className="mt-0.5 size-4 shrink-0 text-(--brand-accent)" />
+                  <div className="min-w-0">
+                    <dt className="text-[13px] leading-5 font-semibold text-foreground">{label}</dt>
+                    <dd className="text-[11.5px] text-(--color-text-muted)">{hint}</dd>
+                  </div>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </aside>
+      </div>
+
+      {isLead && confirmed && profile?.email && profile?.mobile ? (
+        <ProjectSubmissionDialog
+          open={isSubmitOpen}
+          onOpenChange={setIsSubmitOpen}
+          email={profile.email}
+          phone={profile.mobile}
+          statementId={statement.id}
+          onSubmitted={(user) =>
+            setSubmittedAt(user?.submission?.submitted_at || new Date().toISOString())
+          }
+        />
+      ) : null}
+    </StudentShell>
   );
 }
