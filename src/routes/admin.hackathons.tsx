@@ -21,7 +21,12 @@ import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { AdminPageHeader, AdminPanel } from "@/components/admin/AdminPageChrome";
 import { subscribeToHackathonData, getHackathonDetails } from "@/lib/hackathon-storage";
-import type { ProblemDifficulty, ProblemStatement } from "@/lib/hackathon";
+import {
+  getStatementDomainIds,
+  type ProblemDifficulty,
+  type ProblemStatement,
+} from "@/lib/hackathon";
+import { TrackMultiSelect } from "@/components/admin/TrackMultiSelect";
 import {
   activateHackathonUser,
   getHackathonRegisteredUsers,
@@ -69,7 +74,7 @@ export const Route = createFileRoute("/admin/hackathons")({
 
 interface FormState {
   id?: string;
-  domainId: string;
+  domainIds: string[];
   title: string;
   category: string;
   difficulty: ProblemDifficulty;
@@ -87,7 +92,7 @@ type AdminProblemStatement = ProblemStatement & {
 };
 
 const emptyForm: FormState = {
-  domainId: "ui-ux",
+  domainIds: ["ui-ux"],
   title: "",
   category: "",
   difficulty: "Intermediate",
@@ -257,7 +262,7 @@ function AdminHackathonsPage() {
   // Bulk Add Modal
   const [isBulkModalOpen, setIsBulkModalOpen] = useState<boolean>(false);
   const [bulkText, setBulkText] = useState<string>("");
-  const [bulkDomain, setBulkDomain] = useState<string>("ui-ux");
+  const [bulkDomains, setBulkDomains] = useState<string[]>(["ui-ux"]);
   const [bulkDifficulty, setBulkDifficulty] = useState<ProblemDifficulty>("Intermediate");
 
   useEffect(() => {
@@ -511,8 +516,16 @@ function AdminHackathonsPage() {
   }, [registeredUsers]);
 
   const domainStatements = useMemo(() => {
-    return statements.filter((s) => s.domainId === selectedDomain);
+    return statements.filter((s) => getStatementDomainIds(s).includes(selectedDomain));
   }, [statements, selectedDomain]);
+
+  const trackOptions = domains.map((d) => ({ value: d.id, label: d.name }));
+
+  function trackNames(statement: ProblemStatement) {
+    return getStatementDomainIds(statement)
+      .map((id) => domains.find((d) => d.id === id)?.name || id)
+      .join(", ");
+  }
 
   const pendingStatements = useMemo(
     () => statements.filter((s) => s.status === "pending_approval"),
@@ -541,7 +554,7 @@ function AdminHackathonsPage() {
     setEditingId(null);
     setFormData({
       ...emptyForm,
-      domainId: selectedDomain,
+      domainIds: [selectedDomain],
     });
     setIsModalOpen(true);
   }
@@ -550,7 +563,7 @@ function AdminHackathonsPage() {
     setEditingId(item.id);
     setFormData({
       id: item.id,
-      domainId: item.domainId,
+      domainIds: getStatementDomainIds(item),
       title: item.title,
       category: item.category || "",
       difficulty: item.difficulty,
@@ -581,6 +594,11 @@ function AdminHackathonsPage() {
       return;
     }
 
+    if (formData.domainIds.length === 0) {
+      toast.error("Select at least one domain track");
+      return;
+    }
+
     const deliverables = formData.deliverablesText
       .split("\n")
       .map((line) => line.trim())
@@ -589,7 +607,8 @@ function AdminHackathonsPage() {
     try {
       await saveHackathonProblemStatement({
         id: formData.id.trim(),
-        domainId: formData.domainId,
+        domainId: formData.domainIds[0],
+        domainIds: formData.domainIds,
         title: formData.title.trim(),
         category: formData.category.trim() || "General",
         difficulty: formData.difficulty,
@@ -624,9 +643,15 @@ function AdminHackathonsPage() {
       return;
     }
 
+    if (bulkDomains.length === 0) {
+      toast.error("Select at least one domain track");
+      return;
+    }
+
     const parsedItems = parseBulkProblemStatements(bulkText).map((item) => ({
       ...item,
-      domainId: bulkDomain,
+      domainId: bulkDomains[0],
+      domainIds: bulkDomains,
       difficulty: bulkDifficulty,
     }));
 
@@ -640,7 +665,9 @@ function AdminHackathonsPage() {
       const refreshed = await getAdminHackathonProblemStatements(activeHackathonId);
       setStatements(refreshed.statements || []);
       toast.success(
-        `Successfully imported ${result.statements?.length || 0} problem statements into ${bulkDomain}`,
+        `Imported ${result.statements?.length || 0} problem statements into ${bulkDomains
+          .map((id) => domains.find((d) => d.id === id)?.name || id)
+          .join(", ")}`,
       );
       setIsBulkModalOpen(false);
       setBulkText("");
@@ -1288,7 +1315,7 @@ function AdminHackathonsPage() {
             <button
               type="button"
               onClick={() => {
-                setBulkDomain(selectedDomain);
+                setBulkDomains([selectedDomain]);
                 setIsBulkModalOpen(true);
               }}
               className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-white px-4 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
@@ -1345,9 +1372,7 @@ function AdminHackathonsPage() {
                       <p className="truncate font-medium text-foreground">{item.title}</p>
                       <p className="truncate text-xs text-muted-foreground">{item.description}</p>
                     </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {domains.find((d) => d.id === item.domainId)?.name || item.domainId}
-                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{trackNames(item)}</td>
                     <td className="px-4 py-3 text-xs text-foreground">
                       {item.createdBy?.name ? `Jury · ${item.createdBy.name}` : "—"}
                     </td>
@@ -1456,9 +1481,11 @@ function AdminHackathonsPage() {
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
         {domains.map((domain) => {
           const isSelected = domain.id === selectedDomain;
-          const count = statements.filter((s) => s.domainId === domain.id).length;
+          const count = statements.filter((s) =>
+            getStatementDomainIds(s).includes(domain.id),
+          ).length;
           const pendingCount = statements.filter(
-            (s) => s.domainId === domain.id && s.status === "pending_approval",
+            (s) => getStatementDomainIds(s).includes(domain.id) && s.status === "pending_approval",
           ).length;
           return (
             <button
@@ -1572,6 +1599,14 @@ function AdminHackathonsPage() {
                     <span className="rounded bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
                       {item.difficulty}
                     </span>
+                    {getStatementDomainIds(item).length > 1 && (
+                      <span
+                        className="rounded bg-(--brand-accent-soft) px-2 py-0.5 text-[11px] font-semibold text-(--brand-accent)"
+                        title={trackNames(item)}
+                      >
+                        {getStatementDomainIds(item).length} tracks: {trackNames(item)}
+                      </span>
+                    )}
                     {item.category && (
                       <span className="rounded bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                         {item.category}
@@ -1713,9 +1748,7 @@ function AdminHackathonsPage() {
             <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
               <div className="min-w-0">
                 <p className="font-mono text-xs font-semibold text-primary">
-                  {reviewTarget.statement.id} ·{" "}
-                  {domains.find((d) => d.id === reviewTarget.statement.domainId)?.name ||
-                    reviewTarget.statement.domainId}
+                  {reviewTarget.statement.id} · {trackNames(reviewTarget.statement)}
                 </p>
                 <h3
                   id="review-statement-title"
@@ -1926,13 +1959,16 @@ function AdminHackathonsPage() {
                 </FormSection>
 
                 <FormSection title="Classification">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <FormField label="Domain track" htmlFor="admin-ps-domain">
-                      <AppSelect
-                        id="admin-ps-domain"
-                        value={formData.domainId}
-                        onValueChange={(domainId) => setFormData({ ...formData, domainId })}
-                        options={domains.map((d) => ({ value: d.id, label: d.name }))}
+                  <div className="grid gap-4">
+                    <FormField
+                      label="Domain tracks"
+                      hint="The statement appears under every selected track."
+                    >
+                      <TrackMultiSelect
+                        ariaLabel="Domain tracks"
+                        options={trackOptions}
+                        value={formData.domainIds}
+                        onChange={(domainIds) => setFormData({ ...formData, domainIds })}
                       />
                     </FormField>
                     <FormField label="Difficulty">
@@ -2041,21 +2077,22 @@ function AdminHackathonsPage() {
             </div>
 
             <form onSubmit={handleBulkImport} className="mt-4 space-y-4">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-foreground">
-                    Target Domain Track
-                  </label>
-                  <AppSelect
-                    ariaLabel="Target domain track"
-                    value={bulkDomain}
-                    onValueChange={setBulkDomain}
-                    options={domains.map((d) => ({ value: d.id, label: d.name }))}
-                    className="mt-1"
+                  <p className="block text-xs font-medium text-foreground">Target domain tracks</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    Every imported statement appears under all selected tracks.
+                  </p>
+                  <TrackMultiSelect
+                    ariaLabel="Target domain tracks"
+                    options={trackOptions}
+                    value={bulkDomains}
+                    onChange={setBulkDomains}
+                    className="mt-1.5"
                   />
                 </div>
 
-                <div>
+                <div className="sm:max-w-[50%]">
                   <label className="block text-xs font-medium text-foreground">
                     Default Difficulty
                   </label>

@@ -156,6 +156,7 @@ export type JuryProblemStatementStatus = "pending_approval" | "active" | "reject
 export type JuryProblemStatement = {
   id: string;
   domainId: string;
+  domainIds?: string[];
   title: string;
   category: string;
   difficulty: string;
@@ -210,6 +211,7 @@ export function getJuryTeam(hackathonId: string, teamId: string) {
     problemStatement: {
       id: string;
       domainId: string;
+      domainIds?: string[];
       title: string;
       category: string;
       difficulty: string;

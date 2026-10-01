@@ -18,12 +18,13 @@ async function hackathonFetch<T>(path: string, payload: Record<string, unknown>)
 
   const responseText = await response.text();
 
-  let data: { error?: unknown; message?: unknown } = {};
+  let data: { error?: unknown; message?: unknown; code?: unknown } = {};
 
   try {
     data = JSON.parse(responseText) as {
       error?: unknown;
       message?: unknown;
+      code?: unknown;
     };
   } catch {
     // Keep the raw response below when the backend does not return JSON.
@@ -37,10 +38,20 @@ async function hackathonFetch<T>(path: string, payload: Record<string, unknown>)
           ? data.message
           : responseText.trim() || `Request failed with status ${response.status}.`;
 
-    throw new Error(message);
+    throw new HackathonApiError(message, typeof data?.code === "string" ? data.code : undefined);
   }
 
   return (data || {}) as T;
+}
+
+export class HackathonApiError extends Error {
+  code?: string;
+
+  constructor(message: string, code?: string) {
+    super(message);
+    this.name = "HackathonApiError";
+    this.code = code;
+  }
 }
 
 export type HackathonTeamMemberPayload = {
@@ -59,10 +70,30 @@ export type HackathonRegistrationPayload = {
 };
 
 export function registerHackathonStudent(payload: HackathonRegistrationPayload) {
-  return hackathonFetch<{ ok?: boolean; message?: string }>("/api/hackathon/register", payload);
+  return hackathonFetch<{ ok?: boolean; message?: string; confirmationSent?: boolean }>(
+    "/api/hackathon/register",
+    payload,
+  );
 }
 
-export function loginHackathonStudent(payload: { email: string; phone: string }) {
+export function validateHackathonPasswordLink(token: string) {
+  return hackathonFetch<{
+    email: string;
+    name: string;
+    teamName: string;
+    hasPassword: boolean;
+  }>("/api/hackathon/password/validate", { token });
+}
+
+export function setHackathonPassword(payload: { token: string; password: string }) {
+  return hackathonFetch<{ message: string; email: string }>("/api/hackathon/password/set", payload);
+}
+
+export function requestHackathonPasswordLink(email: string) {
+  return hackathonFetch<{ message: string }>("/api/hackathon/password/request-link", { email });
+}
+
+export function loginHackathonStudent(payload: { email: string; password: string }) {
   return hackathonFetch<{
     ok?: boolean;
     message?: string;
@@ -434,6 +465,7 @@ export async function getAdminHackathonProblemStatements(hackathonId: string) {
 export async function saveHackathonProblemStatement(statement: {
   id: string;
   domainId: string;
+  domainIds: string[];
   title: string;
   category: string;
   difficulty: string;
@@ -461,6 +493,7 @@ export async function saveHackathonProblemStatement(statement: {
 export async function bulkAddHackathonProblemStatements(
   statements: {
     domainId: string;
+    domainIds: string[];
     title: string;
     description: string;
     difficulty: string;

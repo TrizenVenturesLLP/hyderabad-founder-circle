@@ -274,7 +274,7 @@ function AdminLayout() {
               href="/"
               target="_blank"
               rel="noreferrer"
-              className="btn-secondary group/cta min-h-9! gap-1.5 rounded-full! px-4! text-[12.5px]!"
+              className="btn-secondary group/cta min-h-9! gap-1.5 px-4! text-[12.5px]!"
             >
               <ExternalLink className="size-3.5" strokeWidth={1.75} aria-hidden />
               <span className="hidden sm:inline">View site</span>

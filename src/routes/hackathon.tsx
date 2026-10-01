@@ -49,7 +49,8 @@ function HackathonPublicPage() {
   if (
     pathname.startsWith("/hackathon/problems/") ||
     pathname === "/hackathon/register" ||
-    pathname === "/hackathon/login"
+    pathname === "/hackathon/login" ||
+    pathname === "/hackathon/set-password"
   ) {
     return <Outlet />;
   }

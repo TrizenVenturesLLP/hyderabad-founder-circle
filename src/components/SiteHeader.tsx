@@ -111,7 +111,7 @@ export function SiteHeader() {
           ))}
           <Link
             to="/host"
-            className="btn-primary ml-3 gap-1.5 min-h-9! rounded-full! px-4! text-[12.5px]!"
+            className="btn-primary ml-3 gap-1.5 min-h-9! px-4! text-[12.5px]!"
           >
             <CalendarPlus className="size-3.5" strokeWidth={1.75} aria-hidden />
             Host an Event
@@ -170,7 +170,7 @@ export function SiteHeader() {
           <div className="border-t border-(--color-border) px-6 pt-5 pb-[max(1.75rem,env(safe-area-inset-bottom))]">
             <Link
               to="/host"
-              className="btn-primary w-full gap-2 min-h-11! rounded-full! text-[13.5px]!"
+              className="btn-primary w-full gap-2 min-h-11! text-[13.5px]!"
               onClick={() => setOpen(false)}
             >
               <CalendarPlus className="size-4" strokeWidth={1.75} aria-hidden />

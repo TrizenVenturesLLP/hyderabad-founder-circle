@@ -173,7 +173,10 @@ function RootComponent() {
     pathname === "/host" ||
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/jury") ||
-    pathname.startsWith("/hackathon/problems/");
+    pathname.startsWith("/hackathon/problems/") ||
+    pathname === "/hackathon/register" ||
+    pathname === "/hackathon/login" ||
+    pathname === "/hackathon/set-password";
   useEffect(() => {
     if (
       pathname.startsWith("/admin") ||

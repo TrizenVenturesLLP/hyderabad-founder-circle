@@ -38,7 +38,6 @@ export function PosterShowcase({ details }: PosterShowcaseProps) {
     tagline,
     motto,
     prizePool,
-    feeInfo,
     venue,
     domains,
     perks,
@@ -165,10 +164,6 @@ export function PosterShowcase({ details }: PosterShowcaseProps) {
         {/* Registration note & Team size */}
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-cyan-500/20 bg-neutral-950 p-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-xl border border-cyan-500/40 bg-cyan-950 px-3 py-2 text-center">
-              <p className="text-[10px] uppercase font-bold text-cyan-400">For Registration</p>
-              <p className="font-mono text-base font-bold text-white">{feeInfo}</p>
-            </div>
             <div className="rounded-xl border border-cyan-500/40 bg-cyan-950 px-3 py-2 text-center">
               <p className="text-[10px] uppercase font-bold text-cyan-400">Team Size</p>
               <p className="font-mono text-base font-bold text-white">{venue.teamSize}</p>

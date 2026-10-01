@@ -13,6 +13,7 @@ export interface HackathonStudentProfile {
 export interface ProblemStatement {
   id: string;
   domainId: "ui-ux" | "web-dev" | "vibe-coding" | "agentic-ai" | string;
+  domainIds?: string[];
   title: string;
   category?: string;
   difficulty: ProblemDifficulty;
@@ -21,6 +22,10 @@ export interface ProblemStatement {
   platform?: string;
   description: string;
   deliverables?: string[];
+}
+
+export function getStatementDomainIds(statement: Pick<ProblemStatement, "domainId" | "domainIds">) {
+  return statement.domainIds?.length ? statement.domainIds : [statement.domainId];
 }
 
 export interface HackathonDomain {
@@ -75,7 +80,6 @@ export interface HackathonDetails {
   motto: string;
   blurb: string;
   prizePool: string;
-  feeInfo: string;
   posterImage: string;
   venue: HackathonVenue;
   domains: HackathonDomain[];

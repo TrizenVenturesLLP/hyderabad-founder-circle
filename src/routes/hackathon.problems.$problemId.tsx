@@ -26,6 +26,7 @@ import {
 } from "@/lib/hackathon-storage";
 
 import { confirmHackathonProblem, getHackathonProblemStatements } from "@/lib/hackathon-api";
+import { getStatementDomainIds } from "@/lib/hackathon";
 
 export const Route = createFileRoute("/hackathon/problems/$problemId")({
   beforeLoad: () => {
@@ -50,11 +51,14 @@ export const Route = createFileRoute("/hackathon/problems/$problemId")({
       throw notFound();
     }
 
-    const domain = getHackathonDetails().domains.find((item) => item.id === statement.domainId);
+    const domains = getHackathonDetails().domains;
+    const domainName = getStatementDomainIds(statement)
+      .map((id) => domains.find((item) => item.id === id)?.name || id)
+      .join(", ");
 
     return {
       statement,
-      domainName: domain?.name || statement.domainId,
+      domainName,
       details: getHackathonDetails(),
     };
   },

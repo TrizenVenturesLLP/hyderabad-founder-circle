@@ -118,7 +118,7 @@ export function HackathonVenueSection({ venue, coordinators }: HackathonVenuePro
             href={venue.mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-secondary inline-flex min-h-9 gap-1.5 self-start rounded-md! px-4 text-[13px] md:self-auto"
+            className="btn-secondary inline-flex min-h-9 gap-1.5 self-start px-4 text-[13px] md:self-auto"
           >
             Open in Google Maps
             <ExternalLink className="size-3.5" />
@@ -179,7 +179,7 @@ export function HackathonVenueSection({ venue, coordinators }: HackathonVenuePro
               href={venue.mapsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-primary mt-4 inline-flex min-h-10 items-center justify-center gap-2 rounded-md! text-sm"
+              className="btn-primary mt-4 inline-flex min-h-10 items-center justify-center gap-2 text-sm"
             >
               <Navigation className="size-4" />
               Get directions to MRDU

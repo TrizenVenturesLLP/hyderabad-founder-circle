@@ -9,7 +9,6 @@ import {
   MapPin,
   Music2,
   Store,
-  Ticket,
   Trophy,
   Users,
   Utensils,
@@ -54,7 +53,6 @@ export function HackathonHero({ details }: HackathonHeroProps) {
     motto,
     blurb,
     prizePool,
-    feeInfo,
     venue,
     partners,
   } = details;
@@ -63,7 +61,6 @@ export function HackathonHero({ details }: HackathonHeroProps) {
     { label: "Dates", value: venue.dateLabel, Icon: CalendarDays },
     { label: "Venue", value: venue.name, Icon: MapPin },
     { label: "Team size", value: venue.teamSize, Icon: Users },
-    { label: "Entry", value: feeInfo, Icon: Ticket },
   ];
   const perksReveal = useInView<HTMLDivElement>(scrollRevealOpts);
   const partnersReveal = useInView<HTMLDivElement>(scrollRevealOpts);
@@ -140,7 +137,7 @@ export function HackathonHero({ details }: HackathonHeroProps) {
               {blurb}
             </p>
 
-            <dl className="hero-reveal hero-reveal-delay-2 mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <dl className="hero-reveal hero-reveal-delay-2 mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 [&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-1">
               {facts.map(({ label, value, Icon }) => (
                 <div
                   key={label}
@@ -162,14 +159,14 @@ export function HackathonHero({ details }: HackathonHeroProps) {
             <div className="hero-reveal hero-reveal-delay-3 mt-5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
               <Link
                 to="/hackathon/register"
-                className="btn-primary group/cta inline-flex min-h-10 items-center justify-center gap-2 rounded-md! px-5 text-sm font-medium"
+                className="btn-primary group/cta inline-flex min-h-10 items-center justify-center gap-2 px-5 text-sm font-medium"
               >
                 Register for Hackathon
                 <ArrowRight className="size-4 transition-transform group-hover/cta:translate-x-0.5" />
               </Link>
               <a
                 href="#domains"
-                className="btn-secondary inline-flex min-h-10 items-center justify-center rounded-md! px-5 text-sm font-medium"
+                className="btn-secondary inline-flex min-h-10 items-center justify-center px-5 text-sm font-medium"
               >
                 Explore 4 domains
               </a>

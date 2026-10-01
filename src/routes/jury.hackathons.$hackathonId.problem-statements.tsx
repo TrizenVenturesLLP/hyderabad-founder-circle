@@ -25,6 +25,7 @@ import {
   getJuryProblemStatements,
   type JuryProblemStatement,
 } from "@/lib/jury-api";
+import { getStatementDomainIds } from "@/lib/hackathon";
 
 export const Route = createFileRoute("/jury/hackathons/$hackathonId/problem-statements")({
   component: JuryProblemStatementsPage,
@@ -36,6 +37,12 @@ const domainLabels: Record<string, string> = {
   "vibe-coding": "Vibe Coding",
   "agentic-ai": "Agentic AI",
 };
+
+function trackLabels(statement: JuryProblemStatement) {
+  return getStatementDomainIds(statement)
+    .map((id) => domainLabels[id] || id)
+    .join(", ");
+}
 
 const emptyForm = {
   domainId: "ui-ux",
@@ -91,7 +98,8 @@ function JuryProblemStatementsPage() {
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     return statements.filter((statement) => {
-      if (domainFilter !== "all" && statement.domainId !== domainFilter) return false;
+      if (domainFilter !== "all" && !getStatementDomainIds(statement).includes(domainFilter))
+        return false;
       if (statusFilter !== "all" && statement.status !== statusFilter) return false;
       if (!query) return true;
       return [
@@ -245,7 +253,7 @@ function JuryProblemStatementsPage() {
                 {statement.industry || "—"}
               </td>
               <td className="px-4 py-3 text-xs whitespace-nowrap text-(--color-text-secondary)">
-                {domainLabels[statement.domainId] || statement.domainId}
+                {trackLabels(statement)}
               </td>
               <td className="px-4 py-3 text-xs whitespace-nowrap text-(--color-text-secondary)">
                 {statement.difficulty}
@@ -272,7 +280,7 @@ function JuryProblemStatementsPage() {
             <>
               <DialogHeader>
                 <p className="font-mono text-xs font-semibold text-(--brand-accent)">
-                  {viewing.id} · {domainLabels[viewing.domainId] || viewing.domainId}
+                  {viewing.id} · {trackLabels(viewing)}
                 </p>
                 <DialogTitle className="text-xl">{viewing.title}</DialogTitle>
                 <DialogDescription>

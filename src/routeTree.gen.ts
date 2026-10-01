@@ -34,6 +34,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as JurySignupRouteImport } from './routes/jury.signup'
 import { Route as JuryLoginRouteImport } from './routes/jury.login'
 import { Route as JuryInvitationRouteImport } from './routes/jury.invitation'
+import { Route as HackathonSetPasswordRouteImport } from './routes/hackathon.set-password'
 import { Route as HackathonRegisterRouteImport } from './routes/hackathon.register'
 import { Route as HackathonLoginRouteImport } from './routes/hackathon.login'
 import { Route as EventsSlugRouteImport } from './routes/events.$slug'
@@ -181,6 +182,11 @@ const JuryInvitationRoute = JuryInvitationRouteImport.update({
   path: '/invitation',
   getParentRoute: () => JuryRoute,
 } as any)
+const HackathonSetPasswordRoute = HackathonSetPasswordRouteImport.update({
+  id: '/set-password',
+  path: '/set-password',
+  getParentRoute: () => HackathonRoute,
+} as any)
 const HackathonRegisterRoute = HackathonRegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -327,6 +333,7 @@ export interface FileRoutesByFullPath {
   '/events/$slug': typeof EventsSlugRoute
   '/hackathon/login': typeof HackathonLoginRoute
   '/hackathon/register': typeof HackathonRegisterRoute
+  '/hackathon/set-password': typeof HackathonSetPasswordRoute
   '/jury/invitation': typeof JuryInvitationRoute
   '/jury/login': typeof JuryLoginRoute
   '/jury/signup': typeof JurySignupRoute
@@ -371,6 +378,7 @@ export interface FileRoutesByTo {
   '/events/$slug': typeof EventsSlugRoute
   '/hackathon/login': typeof HackathonLoginRoute
   '/hackathon/register': typeof HackathonRegisterRoute
+  '/hackathon/set-password': typeof HackathonSetPasswordRoute
   '/jury/invitation': typeof JuryInvitationRoute
   '/jury/login': typeof JuryLoginRoute
   '/jury/signup': typeof JurySignupRoute
@@ -420,6 +428,7 @@ export interface FileRoutesById {
   '/events/$slug': typeof EventsSlugRoute
   '/hackathon/login': typeof HackathonLoginRoute
   '/hackathon/register': typeof HackathonRegisterRoute
+  '/hackathon/set-password': typeof HackathonSetPasswordRoute
   '/jury/invitation': typeof JuryInvitationRoute
   '/jury/login': typeof JuryLoginRoute
   '/jury/signup': typeof JurySignupRoute
@@ -470,6 +479,7 @@ export interface FileRouteTypes {
     | '/events/$slug'
     | '/hackathon/login'
     | '/hackathon/register'
+    | '/hackathon/set-password'
     | '/jury/invitation'
     | '/jury/login'
     | '/jury/signup'
@@ -514,6 +524,7 @@ export interface FileRouteTypes {
     | '/events/$slug'
     | '/hackathon/login'
     | '/hackathon/register'
+    | '/hackathon/set-password'
     | '/jury/invitation'
     | '/jury/login'
     | '/jury/signup'
@@ -562,6 +573,7 @@ export interface FileRouteTypes {
     | '/events/$slug'
     | '/hackathon/login'
     | '/hackathon/register'
+    | '/hackathon/set-password'
     | '/jury/invitation'
     | '/jury/login'
     | '/jury/signup'
@@ -778,6 +790,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/jury/invitation'
       preLoaderRoute: typeof JuryInvitationRouteImport
       parentRoute: typeof JuryRoute
+    }
+    '/hackathon/set-password': {
+      id: '/hackathon/set-password'
+      path: '/set-password'
+      fullPath: '/hackathon/set-password'
+      preLoaderRoute: typeof HackathonSetPasswordRouteImport
+      parentRoute: typeof HackathonRoute
     }
     '/hackathon/register': {
       id: '/hackathon/register'
@@ -1011,12 +1030,14 @@ const EventsRouteWithChildren =
 interface HackathonRouteChildren {
   HackathonLoginRoute: typeof HackathonLoginRoute
   HackathonRegisterRoute: typeof HackathonRegisterRoute
+  HackathonSetPasswordRoute: typeof HackathonSetPasswordRoute
   HackathonProblemsProblemIdRoute: typeof HackathonProblemsProblemIdRoute
 }
 
 const HackathonRouteChildren: HackathonRouteChildren = {
   HackathonLoginRoute: HackathonLoginRoute,
   HackathonRegisterRoute: HackathonRegisterRoute,
+  HackathonSetPasswordRoute: HackathonSetPasswordRoute,
   HackathonProblemsProblemIdRoute: HackathonProblemsProblemIdRoute,
 }
 

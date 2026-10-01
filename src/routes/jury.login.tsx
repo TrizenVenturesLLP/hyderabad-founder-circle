@@ -125,7 +125,7 @@ function JuryLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary mt-6 h-11 w-full justify-center gap-2 rounded-full! disabled:opacity-60"
+              className="btn-primary mt-6 h-11 w-full justify-center gap-2 disabled:opacity-60"
             >
               <LockKeyhole className="size-4" />
               {loading ? "Signing in…" : "Sign in to Jury workspace"}

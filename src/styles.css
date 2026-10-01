@@ -743,6 +743,22 @@
   }
 }
 
+/* Square corners on every button and form control site-wide */
+:is(
+    button,
+    input:not([type="radio"]),
+    select,
+    textarea,
+    [role="button"],
+    [role="checkbox"],
+    [role="combobox"],
+    .btn-primary,
+    .btn-secondary,
+    a[class*="inline-flex"][class*="rounded"]
+  ):not([role="radio"], [role="switch"]) {
+  border-radius: 0 !important;
+}
+
 /* Keep Razorpay checkout above the registration dialog overlay */
 .razorpay-container,
 .razorpay-checkout-frame {

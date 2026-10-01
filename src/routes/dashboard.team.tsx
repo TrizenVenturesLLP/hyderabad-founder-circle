@@ -7,15 +7,17 @@ import {
   addHackathonTeamMember,
   getHackathonUserDetails,
   resendHackathonTeamInvitation,
+  type HackathonRegisteredUser,
 } from "@/lib/hackathon-api";
+import type { HackathonStudentProfile } from "@/lib/hackathon";
 
 export const Route = createFileRoute("/dashboard/team")({
   component: TeamPage,
 });
 
 function TeamPage() {
-  const [backendUser, setBackendUser] = useState<any>(null);
-  const [localProfile, setLocalProfile] = useState<any>(null);
+  const [backendUser, setBackendUser] = useState<HackathonRegisteredUser | null>(null);
+  const [localProfile, setLocalProfile] = useState<HackathonStudentProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [newMember, setNewMember] = useState({ full_name: "", email: "", phone: "" });
   const [isAddingMember, setIsAddingMember] = useState(false);
@@ -105,240 +107,206 @@ function TeamPage() {
     }
   }
 
+  const inputClass =
+    "mt-1 h-9 w-full border border-(--color-border) bg-white px-3 text-[13px] font-normal text-foreground outline-none transition focus:border-(--brand-accent)";
+
   return (
     <>
-      {/* Back */}
-      <Link
-        to="/dashboard"
-        className="inline-flex items-center gap-2 text-sm font-semibold text-[#5b52e8] hover:underline"
-      >
-        <ArrowLeft className="size-4" />
-        Back to Dashboard
-      </Link>
+      <section className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-(--brand-accent) hover:underline"
+          >
+            <ArrowLeft className="size-3.5" />
+            Overview
+          </Link>
+          <h1 className="mt-2 font-display text-xl font-bold tracking-tight sm:text-2xl">
+            {teamName}
+          </h1>
+          <p className="mt-1 text-[13px] text-(--color-text-secondary)">
+            Team Lead: <span className="font-semibold text-foreground">{teamLead}</span> ·{" "}
+            {members.length || 1} member{(members.length || 1) !== 1 ? "s" : ""}
+          </p>
+        </div>
+        <span className="inline-flex items-center gap-1.5 border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11.5px] font-semibold text-emerald-700">
+          <ShieldCheck className="size-3.5" />
+          Registered team
+        </span>
+      </section>
 
-      {/* Team Overview */}
-      <section className="mt-4 rounded-2xl border border-[#dddafa] bg-white p-6 sm:p-8">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-[#f0efff] text-[#5b52e8]">
-              <Users className="size-8" />
-            </div>
-
+      {!loading && isCurrentUserTeamLead && (
+        <section className="mt-5 rounded-lg border border-(--color-border) bg-white p-4">
+          <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#5b52e8]">
-                Hackathon Team
-              </p>
-
-              <h2 className="mt-1 text-2xl font-bold text-[#151934]">{teamName}</h2>
-
-              <p className="mt-1 text-sm text-[#707792]">
-                {members.length || 1} team member
-                {(members.length || 1) !== 1 ? "s" : ""}
+              <h2 className="text-[14px] font-semibold">Add a team member</h2>
+              <p className="mt-0.5 text-[12px] text-(--color-text-muted)">
+                Up to four people per team, including the Team Lead. They get an email letting them
+                know they&apos;ve joined.
               </p>
             </div>
+            <span className="border border-(--color-border) bg-(--color-background-alt) px-2 py-0.5 text-[11px] font-semibold text-(--color-text-secondary)">
+              {Math.max(0, 4 - members.length)} spots left
+            </span>
           </div>
 
-          <div className="inline-flex w-fit items-center gap-2 rounded-full bg-[#eef9f2] px-3 py-2 text-xs font-semibold text-[#23844b]">
-            <ShieldCheck className="size-4" />
-            Registered Team
-          </div>
-        </div>
-      </section>
-
-      {/* Team Lead */}
-      <section className="mt-6">
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#7c82a1]">Team Lead</p>
-
-        <div className="mt-3 rounded-2xl border border-[#e1e3eb] bg-white p-5">
-          <div className="flex items-center gap-4">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#eeeeff] text-lg font-bold text-[#5b52e8]">
-              {teamLead.charAt(0).toUpperCase()}
-            </div>
-
-            <div className="flex-1">
-              <p className="font-semibold text-[#151934]">{teamLead}</p>
-
-              <p className="mt-1 text-xs text-[#7c82a1]">Team Lead</p>
-            </div>
-
-            <ShieldCheck className="size-5 text-[#5b52e8]" />
-          </div>
-        </div>
-      </section>
-
-      {/* Team Members */}
-      <section className="mt-6">
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#7c82a1]">
-              Team Members
+          {members.length < 4 ? (
+            <form
+              onSubmit={handleAddMember}
+              className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_auto]"
+            >
+              <label className="text-xs font-semibold">
+                Full name
+                <input
+                  required
+                  value={newMember.full_name}
+                  onChange={(event) =>
+                    setNewMember((current) => ({ ...current, full_name: event.target.value }))
+                  }
+                  className={inputClass}
+                  autoComplete="name"
+                />
+              </label>
+              <label className="text-xs font-semibold">
+                Email address
+                <input
+                  required
+                  type="email"
+                  value={newMember.email}
+                  onChange={(event) =>
+                    setNewMember((current) => ({ ...current, email: event.target.value }))
+                  }
+                  className={inputClass}
+                  autoComplete="email"
+                />
+              </label>
+              <label className="text-xs font-semibold">
+                Mobile number
+                <input
+                  required
+                  type="tel"
+                  value={newMember.phone}
+                  onChange={(event) =>
+                    setNewMember((current) => ({ ...current, phone: event.target.value }))
+                  }
+                  className={inputClass}
+                  autoComplete="tel"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={isAddingMember}
+                className="inline-flex h-9 items-center justify-center gap-1.5 self-end bg-(--brand-primary) px-4 text-[13px] font-semibold text-white transition hover:bg-(--brand-primary-hover) disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <UserPlus className="size-3.5" />
+                {isAddingMember ? "Adding..." : "Add member"}
+              </button>
+            </form>
+          ) : (
+            <p className="mt-3 text-[12.5px] text-(--color-text-secondary)">
+              Your team has reached its four-member limit.
             </p>
+          )}
 
-            <h2 className="mt-1 text-2xl font-bold text-[#151934]">Your Team</h2>
-          </div>
+          {memberFeedback && (
+            <p
+              role="status"
+              className={`mt-2.5 text-[12.5px] ${
+                memberFeedback.invitationSent === false
+                  ? "text-amber-700"
+                  : memberFeedback.invitationSent === undefined
+                    ? "text-red-600"
+                    : "text-emerald-700"
+              }`}
+            >
+              {memberFeedback.message}
+            </p>
+          )}
+        </section>
+      )}
 
-          <span className="rounded-full bg-[#f1f0ff] px-3 py-1.5 text-xs font-semibold text-[#5b52e8]">
-            {members.length} Members
+      <section className="mt-5 rounded-lg border border-(--color-border) bg-white">
+        <div className="flex items-center justify-between gap-2 border-b border-(--color-border) px-4 py-3">
+          <h2 className="text-[14px] font-semibold">Members</h2>
+          <span className="text-[11.5px] font-medium text-(--color-text-muted)">
+            {members.length} of 4
           </span>
         </div>
 
-        {!loading && isCurrentUserTeamLead && (
-          <div className="mt-4 rounded-xl border border-[#e1e3eb] bg-white p-5">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <h3 className="font-semibold text-[#151934]">Add a team member</h3>
-                <p className="mt-1 text-xs text-[#7c82a1]">
-                  Up to four people per team, including the team lead.
-                </p>
-              </div>
-              <span className="text-xs text-[#7c82a1]">
-                {Math.max(0, 4 - members.length)} spots left
-              </span>
-            </div>
-
-            {members.length < 4 ? (
-              <form onSubmit={handleAddMember} className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <label className="text-xs font-medium text-[#59617a]">
-                  Full name
-                  <input
-                    required
-                    value={newMember.full_name}
-                    onChange={(event) =>
-                      setNewMember((current) => ({ ...current, full_name: event.target.value }))
-                    }
-                    className="mt-1.5 h-10 w-full rounded-md border border-[#dfe2eb] px-3 text-sm text-[#151934] outline-none focus:border-[#5b52e8]"
-                    autoComplete="name"
-                  />
-                </label>
-                <label className="text-xs font-medium text-[#59617a]">
-                  Email address
-                  <input
-                    required
-                    type="email"
-                    value={newMember.email}
-                    onChange={(event) =>
-                      setNewMember((current) => ({ ...current, email: event.target.value }))
-                    }
-                    className="mt-1.5 h-10 w-full rounded-md border border-[#dfe2eb] px-3 text-sm text-[#151934] outline-none focus:border-[#5b52e8]"
-                    autoComplete="email"
-                  />
-                </label>
-                <label className="text-xs font-medium text-[#59617a]">
-                  Mobile number
-                  <input
-                    required
-                    type="tel"
-                    value={newMember.phone}
-                    onChange={(event) =>
-                      setNewMember((current) => ({ ...current, phone: event.target.value }))
-                    }
-                    className="mt-1.5 h-10 w-full rounded-md border border-[#dfe2eb] px-3 text-sm text-[#151934] outline-none focus:border-[#5b52e8]"
-                    autoComplete="tel"
-                  />
-                </label>
-                <button
-                  type="submit"
-                  disabled={isAddingMember}
-                  className="inline-flex h-10 items-center justify-center gap-2 self-end rounded-md bg-[#30286f] px-4 text-sm font-semibold text-white hover:bg-[#25205c] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <UserPlus className="size-4" />
-                  {isAddingMember ? "Adding..." : "Add member"}
-                </button>
-              </form>
-            ) : (
-              <p className="mt-4 text-sm text-[#707792]">Your team has reached its four-member limit.</p>
-            )}
-
-            {memberFeedback && (
-              <p
-                role="status"
-                className={`mt-3 text-sm ${
-                  memberFeedback.invitationSent === false
-                    ? "text-amber-700"
-                    : memberFeedback.invitationSent === undefined
-                      ? "text-red-600"
-                      : "text-emerald-700"
-                }`}
-              >
-                {memberFeedback.message}
-              </p>
-            )}
-          </div>
-        )}
-
         {loading ? (
-          <div className="mt-4 rounded-2xl border border-[#e1e3eb] bg-white p-8 text-center text-sm text-[#707792]">
+          <p className="p-6 text-center text-[13px] text-(--color-text-secondary)">
             Loading team details...
-          </div>
+          </p>
         ) : members.length > 0 ? (
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {members.map((member: any, index: number) => {
-              const memberName = member.full_name || member.name || `Team Member ${index + 1}`;
+          <ul className="divide-y divide-(--color-border)">
+            {members.map((member, index) => {
+              const memberName = member.full_name || `Team Member ${index + 1}`;
               const isTeamLead =
                 member.role === "lead" ||
                 member.email?.toLowerCase() === backendUser?.email?.toLowerCase();
 
               return (
-                <div
-                  key={member.id || member.email || index}
-                  className="rounded-2xl border border-[#e1e3eb] bg-white p-5 transition hover:border-[#c9c5f4] hover:shadow-sm"
+                <li
+                  key={member.email || index}
+                  className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3"
                 >
-                  <div className="flex items-start gap-4">
-                    <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#f1f0ff] font-bold text-[#5b52e8]">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-(--brand-accent-soft) text-[12px] font-semibold text-(--brand-accent)">
                       {memberName.charAt(0).toUpperCase()}
-                    </div>
-
+                    </span>
                     <div className="min-w-0">
-                      <p className="font-semibold text-[#151934]">{memberName}</p>
-
-                      <p className="mt-1 text-xs text-[#7c82a1]">
-                        {isTeamLead ? "Team Lead" : "Team Member"}
+                      <p className="flex items-center gap-1.5 truncate text-[13.5px] font-semibold">
+                        {memberName}
+                        {isTeamLead && (
+                          <span className="bg-(--brand-accent-soft) px-1.5 py-0.5 text-[10px] font-semibold text-(--brand-accent)">
+                            Lead
+                          </span>
+                        )}
                       </p>
-
-                      {member.email && (
-                        <>
-                          <div className="mt-3 flex items-center gap-2 text-xs text-[#707792]">
-                            <Mail className="size-3.5" />
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11.5px] text-(--color-text-muted)">
+                        {member.email && (
+                          <span className="inline-flex min-w-0 items-center gap-1">
+                            <Mail className="size-3 shrink-0" />
                             <span className="truncate">{member.email}</span>
-                          </div>
-                          {isCurrentUserTeamLead && !isTeamLead && (
-                            <button
-                              type="button"
-                              onClick={() => handleResendInvitation(member.email)}
-                              disabled={resendingEmail === member.email}
-                              className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-[#5b52e8] hover:underline disabled:opacity-60"
-                            >
-                              <Send className="size-3.5" />
-                              {resendingEmail === member.email ? "Sending..." : "Resend invite"}
-                            </button>
-                          )}
-                          {inviteFeedback[member.email] && (
-                            <p role="status" className="mt-2 text-xs text-[#707792]">
-                              {inviteFeedback[member.email]}
-                            </p>
-                          )}
-                        </>
-                      )}
-
-                      {(member.mobile || member.phone) && (
-                        <div className="mt-2 flex items-center gap-2 text-xs text-[#707792]">
-                          <Phone className="size-3.5" />
-                          <span>{member.mobile || member.phone}</span>
-                        </div>
-                      )}
+                          </span>
+                        )}
+                        {member.phone && (
+                          <span className="inline-flex items-center gap-1">
+                            <Phone className="size-3 shrink-0" />
+                            {member.phone}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+
+                  {member.email && isCurrentUserTeamLead && !isTeamLead && (
+                    <div className="text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleResendInvitation(member.email)}
+                        disabled={resendingEmail === member.email}
+                        className="inline-flex h-8 items-center gap-1.5 border border-(--color-border) px-2.5 text-[12px] font-semibold text-(--color-text-secondary) transition-colors hover:border-(--brand-accent) hover:text-(--brand-accent) disabled:opacity-60"
+                      >
+                        <Send className="size-3.5" />
+                        {resendingEmail === member.email ? "Sending..." : "Resend invite"}
+                      </button>
+                      {inviteFeedback[member.email] && (
+                        <p role="status" className="mt-1 text-[11px] text-(--color-text-muted)">
+                          {inviteFeedback[member.email]}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </li>
               );
             })}
-          </div>
+          </ul>
         ) : (
-          <div className="mt-4 rounded-2xl border border-dashed border-[#d9dce7] bg-white p-10 text-center">
-            <Users className="mx-auto size-9 text-[#a2a7bb]" />
-
-            <h3 className="mt-3 font-semibold text-[#151934]">No team members found</h3>
-
-            <p className="mt-1 text-sm text-[#707792]">
+          <div className="p-8 text-center">
+            <Users className="mx-auto size-7 text-(--color-text-muted)" />
+            <p className="mt-2 text-[13.5px] font-semibold">No team members found</p>
+            <p className="mt-0.5 text-[12.5px] text-(--color-text-secondary)">
               Team member details are not available yet.
             </p>
           </div>

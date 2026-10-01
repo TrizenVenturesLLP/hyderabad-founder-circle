@@ -49,7 +49,6 @@ export const POSTER_HACKATHON_DETAILS: HackathonDetails = {
   blurb:
     "A premier 24-hour national hackathon hosted by the Department of CSE-AIML at Malla Reddy (MR) Deemed to be University in collaboration with Trizen, JetBrains, Red Bull, and industry pioneers. Compete across 4 tracks for prizes, internship opportunities, and real-world impact.",
   prizePool: "₹2,00,000",
-  feeInfo: "₹469/- Per person",
   posterImage: "/image.png",
   venue: {
     name: "MRDU Campus",

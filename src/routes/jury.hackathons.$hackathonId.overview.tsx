@@ -8,7 +8,6 @@ import {
   ExternalLink,
   FileText,
   MapPin,
-  Ticket,
   Trophy,
   Users,
 } from "lucide-react";
@@ -186,7 +185,6 @@ function JuryHackathonOverviewPage() {
                     { label: "Dates", value: event.venue.dateLabel, Icon: CalendarDays },
                     { label: "Venue", value: event.venue.name, Icon: MapPin },
                     { label: "Team size", value: event.venue.teamSize, Icon: Users },
-                    { label: "Entry", value: event.feeInfo, Icon: Ticket },
                   ].map(({ label, value, Icon }) => (
                     <div
                       key={label}
