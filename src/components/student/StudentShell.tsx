@@ -30,6 +30,21 @@ const iconClass = (active: boolean) =>
     active ? "text-(--brand-accent)" : "text-(--color-text-muted) group-hover:text-foreground",
   );
 
+const bottomLinkClass = (active: boolean) =>
+  cn(
+    "relative flex h-15 flex-col items-center justify-center gap-1 text-[10.5px] font-semibold transition-colors",
+    active ? "text-(--brand-accent)" : "text-(--color-text-muted) hover:text-foreground",
+  );
+
+function BottomIndicator({ active }: { active: boolean }) {
+  return active ? (
+    <span
+      aria-hidden
+      className="absolute top-0 left-1/2 h-[3px] w-8 -translate-x-1/2 bg-(--brand-accent)"
+    />
+  ) : null;
+}
+
 function Brand() {
   return (
     <Link to="/dashboard" className="flex min-w-0 items-center gap-2.5" aria-label="Dashboard">
@@ -100,6 +115,13 @@ export function StudentShell({
           <Menu className="size-5" strokeWidth={1.75} />
         </button>
         <Brand />
+        <span
+          className="ml-auto grid size-8 shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,var(--brand-accent),var(--brand-primary))] text-[11px] font-semibold text-white"
+          title={teamName ? `${displayName} · ${teamName}` : displayName}
+          aria-hidden
+        >
+          {initials}
+        </span>
       </header>
 
       <div
@@ -223,9 +245,48 @@ export function StudentShell({
         </div>
       </aside>
 
-      <main id="main-content" className="min-w-0 p-4 sm:p-6 lg:ml-[240px] lg:p-8">
+      <main id="main-content" className="min-w-0 p-4 pb-24 sm:p-6 sm:pb-24 lg:ml-[240px] lg:p-8">
         <div className="mx-auto max-w-6xl">{children}</div>
       </main>
+
+      <nav
+        aria-label="Student sections"
+        className={cn(
+          "fixed inset-x-0 bottom-0 z-30 grid border-t border-(--color-border) bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden",
+          confirmedStatementId ? "grid-cols-3" : "grid-cols-2",
+        )}
+      >
+        <Link
+          to="/dashboard"
+          aria-current={pathname === "/dashboard" ? "page" : undefined}
+          className={bottomLinkClass(pathname === "/dashboard")}
+        >
+          <BottomIndicator active={pathname === "/dashboard"} />
+          <LayoutDashboard className="size-5" strokeWidth={1.75} />
+          Overview
+        </Link>
+        {confirmedStatementId ? (
+          <Link
+            to="/hackathon/problems/$problemId"
+            params={{ problemId: confirmedStatementId }}
+            aria-current={onProblemPage ? "page" : undefined}
+            className={bottomLinkClass(onProblemPage)}
+          >
+            <BottomIndicator active={onProblemPage} />
+            <FileText className="size-5" strokeWidth={1.75} />
+            Problem
+          </Link>
+        ) : null}
+        <Link
+          to="/dashboard/team"
+          aria-current={pathname === "/dashboard/team" ? "page" : undefined}
+          className={bottomLinkClass(pathname === "/dashboard/team")}
+        >
+          <BottomIndicator active={pathname === "/dashboard/team"} />
+          <Users className="size-5" strokeWidth={1.75} />
+          My Team
+        </Link>
+      </nav>
     </div>
   );
 }

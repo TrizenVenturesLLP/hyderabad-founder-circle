@@ -2,6 +2,8 @@ export type ProblemDifficulty = "Beginner" | "Intermediate" | "Advanced";
 
 /** Includes the Team Lead. */
 export const MAX_TEAM_MEMBERS = 6;
+/** Round 1 has a qualifying cutoff; this last round decides the final ranking. */
+export const FINAL_EVALUATION_ROUND = 2;
 
 export interface HackathonReleaseTimer {
   releaseAt: string | null;

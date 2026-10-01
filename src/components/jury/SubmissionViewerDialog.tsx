@@ -98,9 +98,9 @@ export function SubmissionViewerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[92dvh] max-w-6xl flex-col gap-0 overflow-hidden rounded-2xl p-0 [&>button:last-child]:hidden">
-        <div className="flex flex-wrap items-center gap-3 border-b border-(--color-border) px-4 py-3 sm:px-5">
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-(--brand-accent-soft) text-(--brand-accent)">
+      <DialogContent className="flex h-[92dvh] max-w-6xl flex-col gap-0 overflow-hidden rounded-2xl p-0 max-sm:h-dvh max-sm:rounded-none max-sm:border-0 [&>button:last-child]:hidden">
+        <div className="flex items-center gap-3 border-b border-(--color-border) px-3 py-2.5 sm:px-5 sm:py-3">
+          <span className="hidden size-9 shrink-0 place-items-center rounded-xl bg-(--brand-accent-soft) text-(--brand-accent) sm:grid">
             <Icon className="size-4.5" />
           </span>
           <div className="min-w-0 flex-1">
@@ -115,13 +115,19 @@ export function SubmissionViewerDialog({
                 href={preview.src}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex h-8 items-center gap-1.5 rounded-full border border-(--color-border) bg-white px-3.5 text-xs font-semibold transition-colors hover:bg-(--color-background-alt)"
+                aria-label="Open in new tab"
+                className="inline-flex size-9 items-center justify-center gap-1.5 rounded-full border border-(--color-border) bg-white text-xs font-semibold transition-colors hover:bg-(--color-background-alt) sm:h-8 sm:w-auto sm:px-3.5"
               >
                 <ExternalLink className="size-3.5" />
                 <span className="hidden sm:inline">Open in new tab</span>
               </a>
             ) : null}
-            <JuryButton disabled={downloading} onClick={() => void download()}>
+            <JuryButton
+              disabled={downloading}
+              onClick={() => void download()}
+              aria-label="Download"
+              className="max-sm:size-9 max-sm:px-0"
+            >
               <Download className="size-3.5" />
               <span className="hidden sm:inline">{downloading ? "Preparing…" : "Download"}</span>
             </JuryButton>

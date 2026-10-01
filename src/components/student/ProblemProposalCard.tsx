@@ -119,7 +119,7 @@ export function ProblemProposalCard({
           <button
             type="button"
             onClick={openForm}
-            className="inline-flex h-8 shrink-0 items-center gap-1.5 bg-(--brand-primary) px-3 text-[12.5px] font-semibold text-white transition hover:bg-(--brand-primary-hover)"
+            className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 bg-(--brand-primary) px-3 text-[12.5px] font-semibold text-white transition hover:bg-(--brand-primary-hover) max-sm:w-full sm:h-8"
           >
             <Send className="size-3.5" />
             {isRejected ? "Propose another idea" : "Propose your idea"}
@@ -156,7 +156,7 @@ export function ProblemProposalCard({
       ) : null}
 
       <Dialog open={open} onOpenChange={(next) => !submitting && setOpen(next)}>
-        <DialogContent className="max-w-lg rounded-none sm:rounded-none">
+        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto rounded-none sm:rounded-none max-sm:h-dvh max-sm:max-h-dvh max-sm:content-start max-sm:border-0 max-sm:p-4 max-sm:pb-[max(1rem,env(safe-area-inset-bottom))]">
           <DialogHeader>
             <DialogTitle>Propose your problem statement</DialogTitle>
             <DialogDescription>
@@ -229,19 +229,19 @@ export function ProblemProposalCard({
                 />
               </label>
             </div>
-            <div className="flex justify-end gap-2 pt-1">
+            <div className="grid grid-cols-2 gap-2 pt-1 sm:flex sm:justify-end">
               <button
                 type="button"
                 disabled={submitting}
                 onClick={() => setOpen(false)}
-                className="inline-flex h-9 items-center border border-(--color-border) bg-white px-3.5 text-[12.5px] font-semibold hover:bg-(--color-background-alt) disabled:opacity-60"
+                className="inline-flex h-10 items-center justify-center border sm:h-9 border-(--color-border) bg-white px-3.5 text-[12.5px] font-semibold hover:bg-(--color-background-alt) disabled:opacity-60"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex h-9 items-center gap-1.5 bg-(--brand-primary) px-3.5 text-[12.5px] font-semibold text-white transition hover:bg-(--brand-primary-hover) disabled:opacity-60"
+                className="inline-flex h-10 items-center justify-center gap-1.5 bg-(--brand-primary) px-3.5 text-[12.5px] sm:h-9 font-semibold text-white transition hover:bg-(--brand-primary-hover) disabled:opacity-60"
               >
                 <Send className="size-3.5" />
                 {submitting ? "Sending…" : "Send for approval"}

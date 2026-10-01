@@ -271,7 +271,7 @@ function AdminHackathonEvaluationsPage() {
         <div
           role="tablist"
           aria-label="Evaluation round"
-          className="inline-flex border border-border bg-white"
+          className="flex max-w-full overflow-x-auto border border-border bg-white [scrollbar-width:none] sm:inline-flex [&::-webkit-scrollbar]:hidden"
         >
           {Array.from({ length: maxRound }, (_, index) => index + 1).map((value) => (
             <button
@@ -283,7 +283,7 @@ function AdminHackathonEvaluationsPage() {
                 setOpenTeamKey(null);
                 setRound(value);
               }}
-              className={`h-8 border-r border-border px-4 text-xs font-semibold transition-colors last:border-r-0 ${
+              className={`h-9 flex-1 shrink-0 border-r border-border px-4 text-xs font-semibold whitespace-nowrap transition-colors last:border-r-0 sm:h-8 sm:flex-none ${
                 round === value
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -365,7 +365,7 @@ function AdminHackathonEvaluationsPage() {
           <div
             role="tablist"
             aria-label="Filter by progress"
-            className="flex overflow-x-auto border border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="flex w-full overflow-x-auto border border-border [scrollbar-width:none] sm:w-auto [&::-webkit-scrollbar]:hidden"
           >
             {filterOptions.map((option) => {
               const active = progressFilter === option.id;
@@ -401,7 +401,7 @@ function AdminHackathonEvaluationsPage() {
             ]}
             shape="pill"
             size="sm"
-            className="w-auto min-w-36"
+            className="w-full min-w-36 sm:w-auto"
           />
         </div>
       </AdminPanel>
@@ -436,7 +436,7 @@ function AdminHackathonEvaluationsPage() {
             return (
               <article
                 key={summary.teamKey}
-                className="flex aspect-square min-h-[300px] flex-col border border-border bg-white transition-shadow hover:shadow-md"
+                className="flex flex-col border border-border bg-white transition-shadow hover:shadow-md sm:aspect-square sm:min-h-[300px]"
               >
                 <div className="flex items-center justify-between gap-2 border-b border-border px-3.5 py-2">
                   <span
@@ -532,7 +532,7 @@ function AdminHackathonEvaluationsPage() {
       )}
 
       <Dialog open={openTeam !== null} onOpenChange={(open) => !open && setOpenTeamKey(null)}>
-        <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col gap-0 overflow-hidden p-0 sm:rounded-none">
+        <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col gap-0 overflow-hidden p-0 max-sm:h-dvh max-sm:max-h-dvh max-sm:border-0 sm:rounded-none">
           {openTeam ? (
             <>
               <DialogHeader className="border-b border-border px-5 py-4 pr-12 text-left">

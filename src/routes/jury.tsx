@@ -21,24 +21,28 @@ const sections = [
     segment: "overview",
     to: "/jury/hackathons/$hackathonId/overview" as const,
     label: "Overview",
+    shortLabel: "Overview",
     icon: Info,
   },
   {
     segment: "problem-statements",
     to: "/jury/hackathons/$hackathonId/problem-statements" as const,
     label: "Problem Statements",
+    shortLabel: "Statements",
     icon: FileText,
   },
   {
     segment: "teams",
     to: "/jury/hackathons/$hackathonId/teams" as const,
     label: "Teams / Submissions",
+    shortLabel: "Teams",
     icon: ClipboardPenLine,
   },
   {
     segment: "leaderboard",
     to: "/jury/hackathons/$hackathonId/leaderboard" as const,
     label: "Leaderboard",
+    shortLabel: "Leaderboard",
     icon: Trophy,
   },
 ];
@@ -130,6 +134,7 @@ function JuryWorkspaceLayout({ pathname }: { pathname: string }) {
   );
 
   const assignedHackathon = currentHackathon || hackathons[0] || null;
+  const navTargetId = currentHackathon?.slug || hackathons[0]?.slug || "";
   const pendingCount = assignedHackathon?.pendingEvaluations ?? 0;
   const initials =
     user?.name
@@ -307,11 +312,51 @@ function JuryWorkspaceLayout({ pathname }: { pathname: string }) {
             </button>
           </div>
         </aside>
-        <main id="main-content" className="min-w-0 flex-1 p-4 sm:p-6 lg:ml-[280px] lg:p-8">
+        <main
+          id="main-content"
+          className={`min-w-0 flex-1 p-4 sm:p-6 lg:ml-[280px] lg:p-8 ${navTargetId ? "pb-24 sm:pb-24 lg:pb-8" : ""}`}
+        >
           <div className="mx-auto max-w-screen-2xl">
             <Outlet />
           </div>
         </main>
+
+        {navTargetId ? (
+          <nav
+            aria-label="Jury sections"
+            className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-(--color-border) bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+          >
+            {sections.map(({ segment, to, shortLabel, icon: Icon }) => {
+              const active = inHackathon && activeSegment === segment;
+              const showPending = segment === "teams" && pendingCount > 0;
+              return (
+                <Link
+                  key={segment}
+                  to={to}
+                  params={{ hackathonId: navTargetId }}
+                  aria-current={active ? "page" : undefined}
+                  className={`relative flex h-15 flex-col items-center justify-center gap-1 text-[10.5px] font-semibold transition-colors ${active ? "text-(--brand-accent)" : "text-(--color-text-muted) hover:text-foreground"}`}
+                >
+                  {active ? (
+                    <span
+                      aria-hidden
+                      className="absolute top-0 left-1/2 h-[3px] w-8 -translate-x-1/2 rounded-b-full bg-(--brand-accent)"
+                    />
+                  ) : null}
+                  <span className="relative">
+                    <Icon className="size-5" strokeWidth={active ? 2 : 1.75} />
+                    {showPending ? (
+                      <span className="absolute -top-1.5 -right-2.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[9.5px] font-bold text-white tabular-nums">
+                        {pendingCount}
+                      </span>
+                    ) : null}
+                  </span>
+                  {shortLabel}
+                </Link>
+              );
+            })}
+          </nav>
+        ) : null}
       </div>
     </JuryWorkspaceContext.Provider>
   );

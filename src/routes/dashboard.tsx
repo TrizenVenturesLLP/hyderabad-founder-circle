@@ -38,6 +38,7 @@ import {
   type HackathonRoundResult,
 } from "@/lib/hackathon-api";
 import {
+  FINAL_EVALUATION_ROUND,
   getStatementDomainIds,
   type HackathonDetails,
   type HackathonStudentProfile,
@@ -412,11 +413,14 @@ function DashboardPage() {
                 {roundResult.status === "qualified" ? (
                   <>
                     <p className="text-sm font-semibold text-emerald-900">
-                      Qualified — going to Round {roundResult.nextRound}
+                      Qualified in Round {roundResult.round} — going to Round{" "}
+                      {roundResult.nextRound}
+                      {roundResult.nextRound === FINAL_EVALUATION_ROUND ? " (Final round)" : ""}
                     </p>
                     <p className="mt-0.5 text-[13px] text-emerald-800">
                       Congratulations! Your team cleared Round {roundResult.round} and will be
-                      evaluated again by the Jury in Round {roundResult.nextRound}.
+                      evaluated again by the Jury in Round {roundResult.nextRound}
+                      {roundResult.nextRound === FINAL_EVALUATION_ROUND ? ", the final round" : ""}.
                     </p>
                   </>
                 ) : (
@@ -478,7 +482,7 @@ function DashboardPage() {
                     <Link
                       to="/hackathon/problems/$problemId"
                       params={{ problemId: confirmedStatement.id }}
-                      className="inline-flex h-8 items-center gap-1.5 bg-(--brand-primary) px-3 text-[12.5px] font-semibold text-white transition hover:bg-(--brand-primary-hover)"
+                      className="inline-flex h-9 items-center justify-center gap-1.5 bg-(--brand-primary) px-3 text-[12.5px] font-semibold text-white transition hover:bg-(--brand-primary-hover) max-sm:flex-1 sm:h-8"
                     >
                       Go to submit
                       <ArrowRight className="size-3.5" />
@@ -636,8 +640,8 @@ function DashboardPage() {
 
                     {domainStatements.length > 0 ? (
                       <div className="mt-3 border border-(--color-border) bg-(--color-background-alt) p-2.5">
-                        <div className="flex flex-wrap gap-2">
-                          <label className="relative min-w-48 flex-1">
+                        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap [&>*:last-child:nth-child(even)]:col-span-2">
+                          <label className="relative col-span-2 sm:min-w-48 sm:flex-1">
                             <span className="sr-only">Search problem statements</span>
                             <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-(--color-text-muted)" />
                             <input
@@ -729,7 +733,7 @@ function DashboardPage() {
                             to="/hackathon/problems/$problemId"
                             params={{ problemId: statement.id }}
                             aria-label={`View ${statement.id}: ${statement.title}`}
-                            className="group flex items-center gap-3 px-3.5 py-3 transition-colors hover:bg-(--color-background-alt)"
+                            className="group flex items-center gap-2.5 px-3 py-3 transition-colors hover:bg-(--color-background-alt) sm:gap-3 sm:px-3.5"
                           >
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
@@ -756,10 +760,10 @@ function DashboardPage() {
                             </div>
                             <span
                               aria-hidden
-                              className="inline-flex h-8 shrink-0 items-center gap-1.5 border border-(--brand-accent)/40 bg-white px-3 text-[12px] font-semibold text-(--brand-accent) transition-colors group-hover:border-(--brand-accent) group-hover:bg-(--brand-accent) group-hover:text-white"
+                              className="inline-flex h-8 shrink-0 items-center gap-1.5 border border-(--brand-accent)/40 bg-white px-2.5 text-[12px] font-semibold text-(--brand-accent) transition-colors group-hover:border-(--brand-accent) group-hover:bg-(--brand-accent) group-hover:text-white min-[400px]:px-3"
                             >
                               <Eye className="size-3.5" />
-                              View
+                              <span className="hidden min-[400px]:inline">View</span>
                             </span>
                           </Link>
                         ))

@@ -14,14 +14,14 @@ export const Route = createFileRoute("/jury/hackathons/$hackathonId/teams/$teamI
 
 function DetailRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <tr className="align-top">
+    <tr className="block align-top sm:table-row">
       <th
         scope="row"
-        className="w-44 bg-(--color-background-alt) px-4 py-3 text-left text-[11px] font-semibold tracking-[0.06em] text-(--color-text-muted) uppercase"
+        className="block bg-(--color-background-alt) px-4 pt-3 pb-2 text-left text-[10.5px] font-semibold tracking-[0.06em] text-(--color-text-muted) uppercase sm:table-cell sm:w-44 sm:py-3 sm:text-[11px]"
       >
         {label}
       </th>
-      <td className="px-4 py-3 text-sm">{children}</td>
+      <td className="block min-w-0 px-4 py-3 text-sm break-words sm:table-cell">{children}</td>
     </tr>
   );
 }
@@ -91,27 +91,35 @@ function JuryTeamDetailPage() {
               description="Team submission details"
               actions={
                 <JuryButton
-                  variant={team.evaluationStatus === "submitted" ? "secondary" : "primary"}
+                  variant={
+                    team.awaitingSubmission || team.evaluationStatus === "submitted"
+                      ? "secondary"
+                      : "primary"
+                  }
                   size="md"
                   onClick={() => setEvaluationOpen(true)}
                 >
                   <ClipboardPenLine className="size-4" />
-                  {team.evaluationStatus === "submitted"
-                    ? "View / edit score"
-                    : team.evaluationStatus === "draft"
-                      ? "Continue evaluation"
-                      : "Evaluate team"}
+                  {team.awaitingSubmission
+                    ? "View scores"
+                    : team.evaluationStatus === "submitted"
+                      ? "View / edit score"
+                      : team.evaluationStatus === "draft"
+                        ? "Continue evaluation"
+                        : "Evaluate team"}
                 </JuryButton>
               }
             />
           </div>
 
           <div className="mt-5 overflow-hidden rounded-2xl border border-(--color-border) bg-white shadow-(--shadow-small)">
-            <table className="w-full">
-              <tbody className="divide-y divide-(--color-border)">
+            <table className="block w-full sm:table">
+              <tbody className="block divide-y divide-(--color-border) sm:table-row-group">
                 <DetailRow label="Evaluation">
                   <div className="flex flex-wrap items-center gap-2">
-                    {team.evaluationStatus === "submitted" ? (
+                    {team.awaitingSubmission ? (
+                      <JuryBadge tone="gray">Round {team.round} opens after submission</JuryBadge>
+                    ) : team.evaluationStatus === "submitted" ? (
                       <JuryBadge tone="green">Evaluated</JuryBadge>
                     ) : team.evaluationStatus === "draft" ? (
                       <JuryBadge tone="blue">Draft saved</JuryBadge>

@@ -340,7 +340,7 @@ function JuryProblemStatementsPage() {
                 <article
                   key={statement.id}
                   className={cn(
-                    "flex min-h-[280px] flex-col border bg-white transition-shadow hover:shadow-md",
+                    "flex flex-col border bg-white transition-shadow hover:shadow-md sm:min-h-[280px]",
                     statement.claimedByMe
                       ? "border-(--brand-accent)/50"
                       : statement.status === "pending_approval"
@@ -525,7 +525,7 @@ function JuryProblemStatementsPage() {
       </div>
 
       <Dialog open={Boolean(viewing)} onOpenChange={(open) => !open && setViewing(null)}>
-        <DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto sm:rounded-2xl">
+        <DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto overscroll-contain max-sm:h-dvh max-sm:max-h-dvh max-sm:border-0 max-sm:p-5 sm:rounded-2xl">
           {viewing ? (
             <>
               <DialogHeader>
@@ -594,7 +594,7 @@ function JuryProblemStatementsPage() {
       </Dialog>
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="flex max-h-[92dvh] max-w-2xl flex-col gap-0 overflow-hidden rounded-2xl p-0">
+        <DialogContent className="flex max-h-[92dvh] max-w-2xl flex-col gap-0 overflow-hidden rounded-2xl p-0 max-sm:h-dvh max-sm:max-h-dvh max-sm:rounded-none max-sm:border-0">
           <div className="border-b border-(--color-border) px-5 pt-5 pb-4 sm:px-7">
             <DialogHeader className="text-left">
               <div className="flex items-start gap-3">
@@ -758,11 +758,11 @@ function JuryProblemStatementsPage() {
               ) : null}
             </div>
 
-            <div className="flex flex-col-reverse gap-2 border-t border-(--color-border) bg-(--color-background-alt) px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-              <p className="text-xs text-(--color-text-muted)">
+            <div className="flex flex-col-reverse gap-2 border-t border-(--color-border) bg-(--color-background-alt) px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:px-7">
+              <p className="text-center text-xs text-(--color-text-muted) sm:text-left">
                 You can track its status on this page.
               </p>
-              <div className="flex justify-end gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
                 <JuryButton size="md" onClick={() => setFormOpen(false)}>
                   Cancel
                 </JuryButton>

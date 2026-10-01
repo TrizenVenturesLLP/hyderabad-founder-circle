@@ -58,19 +58,21 @@ function StatCard({
 }) {
   const body = (
     <>
-      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-(--brand-accent-soft) text-(--brand-accent)">
+      <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-(--brand-accent-soft) text-(--brand-accent) sm:size-10">
         {icon}
       </span>
       <span className="min-w-0">
-        <span className="block font-(family-name:--font-brand) text-2xl font-semibold tabular-nums">
+        <span className="block font-(family-name:--font-brand) text-xl font-semibold tabular-nums sm:text-2xl">
           {value}
         </span>
-        <span className="block truncate text-xs text-(--color-text-secondary)">{label}</span>
+        <span className="block text-[11.5px] leading-snug text-(--color-text-secondary) sm:truncate sm:text-xs">
+          {label}
+        </span>
       </span>
     </>
   );
   const className =
-    "flex items-center gap-3 rounded-2xl border border-(--color-border) bg-white p-4 shadow-(--shadow-small)";
+    "flex flex-col items-start gap-2 rounded-2xl border border-(--color-border) bg-white p-3.5 shadow-(--shadow-small) sm:flex-row sm:items-center sm:gap-3 sm:p-4";
   return to ? (
     <Link
       to={to}
@@ -89,11 +91,11 @@ function DetailRow({ label, children }: { label: string; children: ReactNode }) 
     <tr className="align-top">
       <th
         scope="row"
-        className="w-40 bg-(--color-background-alt) px-4 py-3 text-left text-[11px] font-semibold tracking-[0.06em] text-(--color-text-muted) uppercase"
+        className="w-28 bg-(--color-background-alt) px-3 py-3 text-left text-[10.5px] font-semibold tracking-[0.06em] text-(--color-text-muted) uppercase sm:w-40 sm:px-4 sm:text-[11px]"
       >
         {label}
       </th>
-      <td className="px-4 py-3 text-sm">{children}</td>
+      <td className="px-3 py-3 text-sm sm:px-4">{children}</td>
     </tr>
   );
 }
@@ -224,7 +226,7 @@ function JuryHackathonOverviewPage() {
             </div>
           ) : null}
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-5 grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
             <StatCard
               icon={<Users className="size-5" />}
               label="Your teams"
@@ -306,7 +308,42 @@ function JuryHackathonOverviewPage() {
           <p className="mt-1 text-sm text-(--color-text-secondary)">
             Every team is scored out of 100 using these criteria.
           </p>
+          <ol className="mt-4 divide-y divide-(--color-border) overflow-hidden rounded-2xl border border-(--color-border) bg-white shadow-(--shadow-small) sm:hidden">
+            {!rubric.length ? (
+              <li className="px-4 py-8 text-center text-sm text-(--color-text-secondary)">
+                The rubric has not been configured yet.
+              </li>
+            ) : (
+              <>
+                {rubric.map((criterion, index) => (
+                  <li key={criterion.id} className="flex items-start gap-3 px-4 py-3">
+                    <span className="mt-0.5 text-xs font-semibold text-(--color-text-muted) tabular-nums">
+                      {index + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{criterion.name}</p>
+                      {criterion.description ? (
+                        <p className="mt-0.5 text-xs leading-relaxed text-(--color-text-secondary)">
+                          {criterion.description}
+                        </p>
+                      ) : null}
+                    </div>
+                    <span className="shrink-0 text-sm font-semibold tabular-nums">
+                      {criterion.maxMarks}
+                    </span>
+                  </li>
+                ))}
+                <li className="flex items-center justify-between bg-(--color-background-alt) px-4 py-3">
+                  <span className="text-xs font-semibold tracking-[0.06em] text-(--color-text-muted) uppercase">
+                    Total
+                  </span>
+                  <span className="text-sm font-semibold tabular-nums">{rubricTotal}</span>
+                </li>
+              </>
+            )}
+          </ol>
           <JuryTable
+            className="hidden sm:block"
             minWidth={560}
             columns={[
               { label: "#", className: "w-12" },

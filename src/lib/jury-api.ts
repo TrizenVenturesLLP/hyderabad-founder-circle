@@ -80,6 +80,8 @@ export type JuryTeam = {
   };
   /** Latest evaluation round the team has been selected for. */
   round?: number;
+  /** The final round can't be scored until the team submits its project. */
+  awaitingSubmission?: boolean;
   evaluationStatus?: "pending" | "draft" | "submitted";
   totalScore?: number | null;
   roundScores?: {
@@ -314,6 +316,7 @@ export function getJuryEvaluation(hackathonId: string, teamId: string, round?: n
     rubric: JuryCriterion[];
     round?: number;
     latestRound?: number;
+    awaitingSubmission?: boolean;
   }>(
     `/api/jury/hackathons/${encodeURIComponent(hackathonId)}/teams/${encodeURIComponent(teamId)}/evaluation${round ? `?round=${round}` : ""}`,
   );

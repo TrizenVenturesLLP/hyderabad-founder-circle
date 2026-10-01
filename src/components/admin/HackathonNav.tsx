@@ -27,7 +27,7 @@ export function HackathonNav({
       ref={containerRef}
       role="tablist"
       aria-label="Hackathon sections"
-      className="relative flex gap-6 overflow-x-auto border-b border-(--color-border) [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="relative -mx-4 flex gap-5 overflow-x-auto border-b px-4 sm:mx-0 sm:gap-6 sm:px-0 border-(--color-border) [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       <Link
         to="/admin/hackathons"

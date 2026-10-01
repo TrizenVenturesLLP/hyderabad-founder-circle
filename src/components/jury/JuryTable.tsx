@@ -17,9 +17,9 @@ export function JuryToolbar({
   summary?: ReactNode;
 }) {
   return (
-    <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <label className="relative block w-full sm:w-80">
+    <div className="mt-5 flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap sm:items-center [&>*:last-child:nth-child(even)]:col-span-2 sm:[&>*:last-child:nth-child(even)]:col-span-1">
+        <label className="relative col-span-2 block w-full sm:w-80">
           <span className="sr-only">Search</span>
           <Search
             className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-(--color-text-muted)"
@@ -45,7 +45,9 @@ export function JuryToolbar({
         </label>
         {children}
       </div>
-      {summary ? <p className="text-xs text-(--color-text-muted)">{summary}</p> : null}
+      {summary ? (
+        <p className="text-xs leading-relaxed text-(--color-text-muted)">{summary}</p>
+      ) : null}
     </div>
   );
 }
@@ -68,7 +70,7 @@ export function JuryFilterSelect({
       onValueChange={onChange}
       options={options}
       shape="pill"
-      className="w-full sm:w-auto sm:min-w-44"
+      className="w-full min-w-0 sm:w-auto sm:min-w-44"
     />
   );
 }
@@ -78,15 +80,22 @@ export function JuryTable({
   children,
   minWidth = 720,
   compact = false,
+  className,
 }: {
   columns: { label: string; className?: string }[];
   children: ReactNode;
   minWidth?: number;
   /** Smaller text and padding so wide tables fit without horizontal scrolling. */
   compact?: boolean;
+  className?: string;
 }) {
   return (
-    <div className="mt-4 overflow-hidden rounded-2xl border border-(--color-border) bg-white shadow-(--shadow-small)">
+    <div
+      className={cn(
+        "mt-4 overflow-hidden rounded-2xl border border-(--color-border) bg-white shadow-(--shadow-small)",
+        className,
+      )}
+    >
       <div className="overflow-x-auto">
         <table
           className={cn("w-full text-left", compact ? "text-[13px]" : "text-sm")}

@@ -40,7 +40,7 @@ export function AdminPageHeader({
         ) : null}
       </div>
       {actions ? (
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center max-sm:[&>a]:justify-center max-sm:[&>button]:h-10 max-sm:[&>button]:justify-center">
           {actions}
         </div>
       ) : null}

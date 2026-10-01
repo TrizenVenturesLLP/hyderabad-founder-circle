@@ -91,8 +91,8 @@ export function ProjectSubmissionDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !isSubmitting && onOpenChange(next)}>
-      <DialogContent className="flex max-h-[90vh] max-w-xl flex-col gap-0 overflow-hidden p-0 sm:rounded-none">
-        <DialogHeader className="border-b border-(--color-border) px-5 py-4 pr-12 text-left">
+      <DialogContent className="flex max-h-[90vh] max-w-xl flex-col gap-0 overflow-hidden p-0 sm:rounded-none max-sm:h-dvh max-sm:max-h-dvh max-sm:rounded-none max-sm:border-0">
+        <DialogHeader className="border-b border-(--color-border) px-4 py-4 pr-12 text-left sm:px-5">
           <p className="text-[11px] font-semibold tracking-[0.08em] text-(--brand-accent) uppercase">
             Final submission · {statementId}
           </p>
@@ -103,7 +103,7 @@ export function ProjectSubmissionDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-          <div className="grid min-h-0 flex-1 gap-3.5 overflow-y-auto px-5 py-4 sm:grid-cols-2">
+          <div className="grid min-h-0 flex-1 content-start gap-3.5 overflow-y-auto overscroll-contain px-4 py-4 sm:grid-cols-2 sm:px-5">
             <label className="block text-xs font-semibold">
               GitHub repository URL
               <span className="relative mt-1 block">
@@ -171,9 +171,12 @@ export function ProjectSubmissionDialog({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-(--color-border) px-5 py-3">
+          <div className="grid grid-cols-2 gap-2 border-t border-(--color-border) px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:px-5 sm:pb-3">
             {error ? (
-              <p role="alert" className="mr-auto text-[12.5px] font-medium text-red-600">
+              <p
+                role="alert"
+                className="col-span-2 text-[12.5px] font-medium text-red-600 sm:mr-auto"
+              >
                 {error}
               </p>
             ) : null}
@@ -181,14 +184,14 @@ export function ProjectSubmissionDialog({
               type="button"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
-              className="h-9 border border-(--color-border) bg-white px-4 text-[13px] font-semibold text-(--color-text-secondary) transition-colors hover:bg-(--color-background-alt) disabled:opacity-60"
+              className="h-10 border border-(--color-border) bg-white px-4 sm:h-9 text-[13px] font-semibold text-(--color-text-secondary) transition-colors hover:bg-(--color-background-alt) disabled:opacity-60"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex h-9 items-center gap-1.5 bg-(--brand-primary) px-4 text-[13px] font-semibold text-white transition hover:bg-(--brand-primary-hover) disabled:cursor-wait disabled:opacity-60"
+              className="inline-flex h-10 items-center justify-center gap-1.5 bg-(--brand-primary) px-4 sm:h-9 text-[13px] font-semibold text-white transition hover:bg-(--brand-primary-hover) disabled:cursor-wait disabled:opacity-60"
             >
               <Upload className="size-3.5" />
               {isSubmitting ? "Submitting..." : "Submit project"}

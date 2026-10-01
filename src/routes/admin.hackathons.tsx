@@ -1067,7 +1067,7 @@ function AdminHackathonsPage() {
                   <Link
                     to="/admin/hackathons"
                     search={{ hackathon: hackathon.id }}
-                    className="ml-auto inline-flex h-8 items-center gap-1.5 bg-(--brand-primary) px-3 text-white transition-colors hover:bg-(--brand-primary-hover)"
+                    className="inline-flex h-9 items-center justify-center gap-1.5 bg-(--brand-primary) px-3 text-white transition-colors hover:bg-(--brand-primary-hover) max-sm:w-full sm:ml-auto sm:h-8"
                   >
                     Open hackathon
                     <ArrowRight className="size-3.5" />
@@ -1150,7 +1150,7 @@ function AdminHackathonsPage() {
               )}
             </div>
 
-            <div className="flex shrink-0 items-center justify-end gap-2 text-xs font-medium text-muted-foreground">
+            <div className="flex shrink-0 items-center gap-2 text-xs font-medium text-muted-foreground sm:justify-end">
               <span className="whitespace-nowrap">Sort by</span>
               <AppSelect
                 ariaLabel="Sort teams"
@@ -1169,7 +1169,7 @@ function AdminHackathonsPage() {
                 ]}
                 shape="pill"
                 size="sm"
-                className="w-auto min-w-44"
+                className="min-w-0 flex-1 sm:w-auto sm:min-w-44 sm:flex-none"
               />
             </div>
           </div>
@@ -1255,7 +1255,7 @@ function AdminHackathonsPage() {
                             {team.problem_statement_id ? "Problem Selected" : "Awaiting Selection"}
                           </span>
                         </div>
-                        <p className="mt-1 text-xs text-muted-foreground">
+                        <p className="mt-1 text-xs break-all text-muted-foreground sm:break-normal">
                           Lead:{" "}
                           <span className="font-medium text-foreground">{team.lead_name}</span>
                           {" · "}
@@ -1264,8 +1264,8 @@ function AdminHackathonsPage() {
                       </div>
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
-                      <span>
+                    <div className="flex shrink-0 items-center gap-3 pl-12 text-xs text-muted-foreground sm:pl-0">
+                      <span className="mr-auto sm:mr-0">
                         {team.members.length} member
                         {team.members.length === 1 ? "" : "s"}
                       </span>
@@ -1666,11 +1666,11 @@ function AdminHackathonsPage() {
           </>
         }
         actions={
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end lg:flex-nowrap">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end lg:flex-nowrap max-sm:[&>button]:justify-center">
             <button
               type="button"
               onClick={handleReset}
-              className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap px-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap border border-transparent px-2.5 max-sm:order-3 max-sm:border-border text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               title="Reset to starter seeds"
             >
               <RotateCcw className="size-3.5" />
@@ -1708,7 +1708,7 @@ function AdminHackathonsPage() {
             <button
               type="button"
               onClick={handleOpenCreate}
-              className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap border border-primary bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-(--brand-accent-hover)"
+              className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap border border-primary bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-(--brand-accent-hover) max-sm:order-4"
             >
               <Plus className="size-3.5" />
               Add statement
@@ -1719,7 +1719,7 @@ function AdminHackathonsPage() {
 
       {isQueueOpen ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 sm:p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="approval-queue-title"
@@ -1727,8 +1727,8 @@ function AdminHackathonsPage() {
             if (event.target === event.currentTarget) setIsQueueOpen(false);
           }}
         >
-          <div className="flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-border bg-white shadow-large">
-            <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+          <div className="flex h-dvh w-full max-w-4xl flex-col overflow-hidden border-border bg-white shadow-large sm:h-auto sm:max-h-[85vh] sm:rounded-2xl sm:border">
+            <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3
@@ -1762,83 +1762,139 @@ function AdminHackathonsPage() {
               </button>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-auto">
+            <div className="min-h-0 flex-1 overflow-auto overscroll-contain">
               {pendingApprovalCount ? (
-                <table className="w-full min-w-[760px] text-left text-sm">
-                  <thead className="sticky top-0 z-10 bg-(--color-background-alt) text-[11px] font-semibold tracking-[0.06em] text-muted-foreground uppercase">
-                    <tr>
-                      <th className="px-4 py-2.5">ID</th>
-                      <th className="px-4 py-2.5">Title</th>
-                      <th className="px-4 py-2.5">Track</th>
-                      <th className="px-4 py-2.5">Submitted by</th>
-                      <th className="px-4 py-2.5">Date</th>
-                      <th className="px-4 py-2.5 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
+                <>
+                  <ul className="divide-y divide-border md:hidden">
                     {pendingStatements.map((item) => (
-                      <tr key={item.id} className="align-middle hover:bg-muted/30">
-                        <td className="px-4 py-3 font-mono text-xs font-semibold text-primary">
-                          {item.id}
-                        </td>
-                        <td className="max-w-[280px] px-4 py-3">
-                          <p className="truncate font-medium text-foreground">{item.title}</p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {item.description}
-                          </p>
-                        </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">
-                          {trackNames(item)}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-foreground">
+                      <li key={item.id} className="px-4 py-3.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-mono text-xs font-semibold text-primary">
+                            {item.id}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ""}
+                          </span>
+                        </div>
+                        <p className="mt-1 font-medium text-foreground">{item.title}</p>
+                        <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                          {item.description}
+                        </p>
+                        <p className="mt-1.5 text-xs text-foreground">
                           {item.proposedByTeam
                             ? `Team · ${item.proposedByTeam.team_name}`
                             : item.createdBy?.name
                               ? `Jury · ${item.createdBy.name}`
                               : "—"}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">
-                          {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "—"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex justify-end gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => openReview(item, "view")}
-                              className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted"
-                            >
-                              <Eye className="size-3.5" />
-                              View
-                            </button>
-                            <button
-                              type="button"
-                              disabled={reviewingStatementId === item.id || teamSlotsFull(item)}
-                              title={
-                                teamSlotsFull(item)
-                                  ? `All ${teamProposalLimit} team idea slots are used`
-                                  : undefined
-                              }
-                              onClick={() => void handleReviewStatement(item, "approve")}
-                              className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
-                            >
-                              <Check className="size-3.5" />
-                              Approve
-                            </button>
-                            <button
-                              type="button"
-                              disabled={reviewingStatementId === item.id}
-                              onClick={() => openReview(item, "reject")}
-                              className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
-                            >
-                              <X className="size-3.5" />
-                              Reject
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
+                          <span className="text-muted-foreground"> · {trackNames(item)}</span>
+                        </p>
+                        <div className="mt-3 grid grid-cols-3 gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => openReview(item, "view")}
+                            className="inline-flex h-9 items-center justify-center gap-1 rounded-full border border-border bg-white text-xs font-semibold text-foreground hover:bg-muted"
+                          >
+                            <Eye className="size-3.5" />
+                            View
+                          </button>
+                          <button
+                            type="button"
+                            disabled={reviewingStatementId === item.id || teamSlotsFull(item)}
+                            onClick={() => void handleReviewStatement(item, "approve")}
+                            className="inline-flex h-9 items-center justify-center gap-1 rounded-full bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                          >
+                            <Check className="size-3.5" />
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            disabled={reviewingStatementId === item.id}
+                            onClick={() => openReview(item, "reject")}
+                            className="inline-flex h-9 items-center justify-center gap-1 rounded-full border border-red-200 bg-white text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                          >
+                            <X className="size-3.5" />
+                            Reject
+                          </button>
+                        </div>
+                      </li>
                     ))}
-                  </tbody>
-                </table>
+                  </ul>
+                  <table className="hidden w-full min-w-[760px] text-left text-sm md:table">
+                    <thead className="sticky top-0 z-10 bg-(--color-background-alt) text-[11px] font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+                      <tr>
+                        <th className="px-4 py-2.5">ID</th>
+                        <th className="px-4 py-2.5">Title</th>
+                        <th className="px-4 py-2.5">Track</th>
+                        <th className="px-4 py-2.5">Submitted by</th>
+                        <th className="px-4 py-2.5">Date</th>
+                        <th className="px-4 py-2.5 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {pendingStatements.map((item) => (
+                        <tr key={item.id} className="align-middle hover:bg-muted/30">
+                          <td className="px-4 py-3 font-mono text-xs font-semibold text-primary">
+                            {item.id}
+                          </td>
+                          <td className="max-w-[280px] px-4 py-3">
+                            <p className="truncate font-medium text-foreground">{item.title}</p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {item.description}
+                            </p>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground">
+                            {trackNames(item)}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-foreground">
+                            {item.proposedByTeam
+                              ? `Team · ${item.proposedByTeam.team_name}`
+                              : item.createdBy?.name
+                                ? `Jury · ${item.createdBy.name}`
+                                : "—"}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground">
+                            {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "—"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => openReview(item, "view")}
+                                className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted"
+                              >
+                                <Eye className="size-3.5" />
+                                View
+                              </button>
+                              <button
+                                type="button"
+                                disabled={reviewingStatementId === item.id || teamSlotsFull(item)}
+                                title={
+                                  teamSlotsFull(item)
+                                    ? `All ${teamProposalLimit} team idea slots are used`
+                                    : undefined
+                                }
+                                onClick={() => void handleReviewStatement(item, "approve")}
+                                className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                              >
+                                <Check className="size-3.5" />
+                                Approve
+                              </button>
+                              <button
+                                type="button"
+                                disabled={reviewingStatementId === item.id}
+                                onClick={() => openReview(item, "reject")}
+                                className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                              >
+                                <X className="size-3.5" />
+                                Reject
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
               ) : (
                 <div className="px-4 py-12 text-center">
                   <Check className="mx-auto size-8 text-emerald-600" />
@@ -1872,15 +1928,15 @@ function AdminHackathonsPage() {
 
           <form
             onSubmit={handleSaveReleaseTimer}
-            className="flex flex-col gap-2 sm:flex-row sm:items-end"
+            className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:items-end max-sm:[&>button]:h-10 [&>*:last-child:nth-child(even)]:col-span-2"
           >
-            <label className="text-xs font-medium text-foreground">
+            <label className="col-span-2 text-xs font-medium text-foreground">
               Release date and time
               <input
                 type="datetime-local"
                 value={releaseAtInput}
                 onChange={(e) => setReleaseAtInput(e.target.value)}
-                className="mt-1 block rounded-lg border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden"
+                className="mt-1 block w-full rounded-lg border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden sm:w-auto"
               />
             </label>
             <button
@@ -1919,7 +1975,7 @@ function AdminHackathonsPage() {
             </p>
           </div>
           <form onSubmit={handleSaveClaimLimit} className="flex items-end gap-2">
-            <label className="text-xs font-medium text-foreground">
+            <label className="flex-1 text-xs font-medium text-foreground sm:flex-none">
               Statements per Jury member
               <input
                 type="number"
@@ -1927,7 +1983,7 @@ function AdminHackathonsPage() {
                 max={500}
                 value={claimLimitInput}
                 onChange={(e) => setClaimLimitInput(e.target.value)}
-                className="mt-1 block w-28 rounded-lg border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden"
+                className="mt-1 block w-full rounded-lg sm:w-28 border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden"
               />
             </label>
             <button
@@ -1996,7 +2052,7 @@ function AdminHackathonsPage() {
         <span aria-hidden className={tabIndicatorClass} style={trackTabs.indicatorStyle} />
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
         {SELECTION_FILTERS.map((option) => {
           const active = selectionFilter === option.value;
           return (
@@ -2007,7 +2063,7 @@ function AdminHackathonsPage() {
               onClick={() => setSelectionFilter(active ? "all" : option.value)}
               title={option.hint}
               className={cn(
-                "flex items-center justify-between gap-3 border px-3.5 py-2.5 text-left transition",
+                "flex items-center justify-between gap-2 border px-3 py-2.5 text-left transition sm:gap-3 sm:px-3.5",
                 option.className,
                 active
                   ? "ring-2 ring-(--brand-accent) ring-offset-1"
@@ -2015,8 +2071,12 @@ function AdminHackathonsPage() {
               )}
             >
               <span className="min-w-0">
-                <span className="block truncate text-xs font-semibold">{option.label}</span>
-                <span className="block truncate text-[11px] opacity-75">{option.hint}</span>
+                <span className="block text-[11.5px] leading-snug font-semibold sm:truncate sm:text-xs">
+                  {option.label}
+                </span>
+                <span className="hidden truncate text-[11px] opacity-75 sm:block">
+                  {option.hint}
+                </span>
               </span>
               <span className="text-xl font-bold tabular-nums">
                 {selectionCounts[option.value]}
@@ -2041,8 +2101,8 @@ function AdminHackathonsPage() {
       ) : null}
 
       {/* Filter and Search Panel */}
-      <AdminPanel className="rounded-xl p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <AdminPanel className="rounded-xl p-3 sm:p-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -2050,7 +2110,7 @@ function AdminHackathonsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by ID, title, keyword, or category..."
-              className="w-full rounded-lg border border-border bg-white py-2 pl-9 pr-8 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
+              className="h-10 w-full rounded-lg border border-border bg-white py-2 pl-9 pr-8 text-xs sm:h-auto text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
             />
             {searchQuery && (
               <button
@@ -2063,7 +2123,7 @@ function AdminHackathonsPage() {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center gap-2 sm:w-auto">
             <AppSelect
               ariaLabel="Filter by difficulty"
               value={difficultyFilter}
@@ -2071,7 +2131,7 @@ function AdminHackathonsPage() {
               options={[{ value: "all", label: "All difficulties" }, ...DIFFICULTY_OPTIONS]}
               shape="pill"
               size="sm"
-              className="w-auto min-w-40"
+              className="w-full sm:w-auto sm:min-w-40"
             />
           </div>
         </div>
@@ -2108,7 +2168,7 @@ function AdminHackathonsPage() {
             {filteredStatements.map((item) => (
               <article
                 key={item.id}
-                className={`flex min-h-[280px] flex-col border bg-white transition-shadow hover:shadow-md ${
+                className={`flex flex-col border bg-white transition-shadow hover:shadow-md sm:min-h-[280px] ${
                   item.status === "pending_approval"
                     ? "border-amber-300"
                     : item.status === "rejected"
@@ -2348,12 +2408,12 @@ function AdminHackathonsPage() {
 
       {reviewTarget ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 sm:p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="review-statement-title"
         >
-          <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-border bg-white p-6 shadow-large">
+          <div className="h-dvh w-full max-w-xl overflow-y-auto overscroll-contain border-border bg-white p-4 shadow-large sm:h-auto sm:max-h-[90vh] sm:rounded-2xl sm:border sm:p-6">
             <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
               <div className="min-w-0">
                 <p className="font-mono text-xs font-semibold text-primary">
@@ -2536,8 +2596,8 @@ function AdminHackathonsPage() {
 
       {/* Create / Edit Modal Dialog */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border bg-white shadow-large">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 sm:p-4">
+          <div className="flex h-dvh w-full max-w-2xl flex-col overflow-hidden border-border bg-white shadow-large sm:h-auto sm:max-h-[92vh] sm:rounded-2xl sm:border">
             <div className="flex items-start justify-between gap-3 border-b border-border px-5 pt-5 pb-4 sm:px-7">
               <div className="flex items-start gap-3">
                 <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-(--brand-accent-soft) text-(--brand-accent)">
@@ -2724,8 +2784,8 @@ function AdminHackathonsPage() {
 
       {/* Bulk Add Modal Dialog */}
       {isBulkModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-white p-6 shadow-large">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 sm:p-4">
+          <div className="h-dvh w-full max-w-xl overflow-y-auto overscroll-contain border-border bg-white p-4 shadow-large sm:h-auto sm:max-h-[90vh] sm:rounded-2xl sm:border sm:p-6">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h3 className="font-display text-base font-bold text-foreground">
                 Bulk Add Problem Statements

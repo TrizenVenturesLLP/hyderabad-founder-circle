@@ -200,6 +200,51 @@ function AdminHackathonJuryPage() {
     }
   }
 
+  function invitationActions(item: (typeof invitations)[number]) {
+    const busy = workingId === item._id;
+    const activeMember =
+      item.status === "accepted" ? activeMemberByEmail.get(item.email.toLowerCase()) : undefined;
+    return (
+      <div className="flex justify-end gap-1.5">
+        {item.status === "pending" || item.status === "expired" ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void resend(item)}
+            title="Resend invitation"
+            aria-label={`Resend invitation to ${item.email}`}
+            className={iconButtonClass}
+          >
+            <Send className="size-3.5" />
+          </button>
+        ) : null}
+        {activeMember ? (
+          <button
+            type="button"
+            disabled={workingId === activeMember.id}
+            onClick={() => void revokeMember(activeMember)}
+            title="Remove from Jury"
+            aria-label={`Remove ${activeMember.name} from the Jury`}
+            className={dangerIconButtonClass}
+          >
+            <UserRoundX className="size-3.5" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void deleteInvitation(item)}
+            title="Delete invitation"
+            aria-label={`Delete invitation for ${item.email}`}
+            className={dangerIconButtonClass}
+          >
+            <Trash2 className="size-3.5" />
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className={`space-y-4 p-4 sm:p-5 md:p-6 ${hackathonSectionPageClass}`}>
       <HackathonNav hackathonId={hackathonId} active="jury" />
@@ -360,102 +405,91 @@ function AdminHackathonJuryPage() {
             No Jury invitations yet.
           </AdminPanel>
         ) : (
-          <AdminPanel className="overflow-x-auto rounded-xl">
-            <table className="w-full min-w-[720px] text-left text-[13px]">
-              <thead className="border-b border-border bg-muted/40 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                <tr>
-                  <th className="px-3 py-2">Invitee</th>
-                  <th className="px-3 py-2">Status</th>
-                  <th className="px-3 py-2">Sent</th>
-                  <th className="px-3 py-2">Expires</th>
-                  <th className="px-3 py-2">Delivery</th>
-                  <th className="px-3 py-2 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {invitations.map((item) => {
-                  const busy = workingId === item._id;
-                  const activeMember =
-                    item.status === "accepted"
-                      ? activeMemberByEmail.get(item.email.toLowerCase())
-                      : undefined;
-                  return (
-                    <tr key={item._id} className="transition-colors hover:bg-muted/30">
-                      <td className="max-w-[240px] px-3 py-2">
-                        <span className="block truncate font-medium text-foreground">
-                          {item.inviteeName || item.email}
-                        </span>
-                        {item.inviteeName ? (
-                          <span className="block truncate text-[11.5px] text-muted-foreground">
-                            {item.email}
-                          </span>
-                        ) : null}
-                      </td>
-                      <td className="px-3 py-2">
-                        <span
-                          className={`inline-block px-1.5 py-0.5 text-[11px] font-semibold capitalize ${invitationStatusTone[item.status]}`}
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">
-                        {formatDateTime(item.lastSentAt)}
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">
-                        {item.status === "pending" || item.status === "expired"
-                          ? formatDateTime(item.expiresAt)
-                          : "—"}
-                      </td>
-                      <td
-                        className={`px-3 py-2 text-xs font-semibold capitalize ${deliveryTone[item.deliveryStatus]}`}
+          <>
+            <AdminPanel className="divide-y divide-border overflow-hidden rounded-xl md:hidden">
+              {invitations.map((item) => (
+                <div key={item._id} className="flex items-start gap-3 p-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-semibold text-foreground">
+                      {item.inviteeName || item.email}
+                    </p>
+                    {item.inviteeName ? (
+                      <p className="truncate text-[11.5px] text-muted-foreground">{item.email}</p>
+                    ) : null}
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px]">
+                      <span
+                        className={`inline-block px-1.5 py-0.5 text-[11px] font-semibold capitalize ${invitationStatusTone[item.status]}`}
+                      >
+                        {item.status}
+                      </span>
+                      <span
+                        className={`font-semibold capitalize ${deliveryTone[item.deliveryStatus]}`}
                       >
                         {item.deliveryStatus}
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="flex justify-end gap-1.5">
-                          {item.status === "pending" || item.status === "expired" ? (
-                            <button
-                              type="button"
-                              disabled={busy}
-                              onClick={() => void resend(item)}
-                              title="Resend invitation"
-                              aria-label={`Resend invitation to ${item.email}`}
-                              className={iconButtonClass}
-                            >
-                              <Send className="size-3.5" />
-                            </button>
+                      </span>
+                      <span className="text-muted-foreground">
+                        Sent {formatDateTime(item.lastSentAt)}
+                      </span>
+                    </div>
+                  </div>
+                  {invitationActions(item)}
+                </div>
+              ))}
+            </AdminPanel>
+            <AdminPanel className="hidden overflow-x-auto rounded-xl md:block">
+              <table className="w-full min-w-[720px] text-left text-[13px]">
+                <thead className="border-b border-border bg-muted/40 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                  <tr>
+                    <th className="px-3 py-2">Invitee</th>
+                    <th className="px-3 py-2">Status</th>
+                    <th className="px-3 py-2">Sent</th>
+                    <th className="px-3 py-2">Expires</th>
+                    <th className="px-3 py-2">Delivery</th>
+                    <th className="px-3 py-2 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {invitations.map((item) => {
+                    return (
+                      <tr key={item._id} className="transition-colors hover:bg-muted/30">
+                        <td className="max-w-[240px] px-3 py-2">
+                          <span className="block truncate font-medium text-foreground">
+                            {item.inviteeName || item.email}
+                          </span>
+                          {item.inviteeName ? (
+                            <span className="block truncate text-[11.5px] text-muted-foreground">
+                              {item.email}
+                            </span>
                           ) : null}
-                          {activeMember ? (
-                            <button
-                              type="button"
-                              disabled={workingId === activeMember.id}
-                              onClick={() => void revokeMember(activeMember)}
-                              title="Remove from Jury"
-                              aria-label={`Remove ${activeMember.name} from the Jury`}
-                              className={dangerIconButtonClass}
-                            >
-                              <UserRoundX className="size-3.5" />
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              disabled={busy}
-                              onClick={() => void deleteInvitation(item)}
-                              title="Delete invitation"
-                              aria-label={`Delete invitation for ${item.email}`}
-                              className={dangerIconButtonClass}
-                            >
-                              <Trash2 className="size-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </AdminPanel>
+                        </td>
+                        <td className="px-3 py-2">
+                          <span
+                            className={`inline-block px-1.5 py-0.5 text-[11px] font-semibold capitalize ${invitationStatusTone[item.status]}`}
+                          >
+                            {item.status}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">
+                          {formatDateTime(item.lastSentAt)}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">
+                          {item.status === "pending" || item.status === "expired"
+                            ? formatDateTime(item.expiresAt)
+                            : "—"}
+                        </td>
+                        <td
+                          className={`px-3 py-2 text-xs font-semibold capitalize ${deliveryTone[item.deliveryStatus]}`}
+                        >
+                          {item.deliveryStatus}
+                        </td>
+                        <td className="px-3 py-2">{invitationActions(item)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </AdminPanel>
+          </>
         )}
       </section>
     </div>

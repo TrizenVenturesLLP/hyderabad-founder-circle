@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, ExternalLink, Eye, Pencil, Save, Send, Users, X } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock3,
+  ExternalLink,
+  Eye,
+  Pencil,
+  Save,
+  Send,
+  Users,
+  X,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -54,6 +64,7 @@ export function JuryEvaluationDialog({
   const [evaluation, setEvaluation] = useState<JuryEvaluation | null>(null);
   const [round, setRound] = useState(1);
   const [latestRound, setLatestRound] = useState(1);
+  const [awaitingSubmission, setAwaitingSubmission] = useState(false);
   const [switchingRound, setSwitchingRound] = useState(false);
   const [scores, setScores] = useState<Record<string, string>>({});
   const [comments, setComments] = useState("");
@@ -78,6 +89,7 @@ export function JuryEvaluationDialog({
         setRubric(evaluationData.rubric);
         setRound(evaluationData.round ?? 1);
         setLatestRound(evaluationData.latestRound ?? teamData.team.round ?? 1);
+        setAwaitingSubmission(Boolean(evaluationData.awaitingSubmission));
         setEvaluation(evaluationData.evaluation);
         setComments(evaluationData.evaluation?.comments || "");
         setScores(scoresFrom(evaluationData.evaluation));
@@ -99,7 +111,7 @@ export function JuryEvaluationDialog({
   );
   const scoredCount = rubric.filter((criterion) => (scores[criterion.id] ?? "") !== "").length;
   const submitted = evaluation?.status === "submitted";
-  const readOnly = submitted && !editing;
+  const readOnly = awaitingSubmission || (submitted && !editing);
 
   function scorePayload() {
     return Object.fromEntries(
@@ -117,6 +129,7 @@ export function JuryEvaluationDialog({
     try {
       const data = await getJuryEvaluation(hackathonId, teamId, next);
       setRound(next);
+      setAwaitingSubmission(Boolean(data.awaitingSubmission));
       setRubric(data.rubric);
       setEvaluation(data.evaluation);
       setComments(data.evaluation?.comments || "");
@@ -187,7 +200,9 @@ export function JuryEvaluationDialog({
     }
   }
 
-  const statusBadge = editing ? (
+  const statusBadge = awaitingSubmission ? (
+    <JuryBadge tone="gray">Waiting for submission</JuryBadge>
+  ) : editing ? (
     <JuryBadge tone="blue">Editing</JuryBadge>
   ) : submitted ? (
     <JuryBadge tone="green">Submitted</JuryBadge>
@@ -199,8 +214,8 @@ export function JuryEvaluationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[94dvh] max-w-4xl flex-col gap-0 overflow-hidden rounded-2xl p-0 [&>button:last-child]:hidden">
-        <div className="border-b border-(--color-border) px-5 pt-5 pb-4 sm:px-7">
+      <DialogContent className="flex max-h-[94dvh] max-w-4xl flex-col gap-0 overflow-hidden rounded-2xl p-0 max-sm:h-dvh max-sm:max-h-dvh max-sm:rounded-none max-sm:border-0 [&>button:last-child]:hidden">
+        <div className="border-b border-(--color-border) px-4 pt-4 pb-3.5 sm:px-7 sm:pt-5 sm:pb-4">
           <div className="flex items-start justify-between gap-3">
             <DialogHeader className="min-w-0 space-y-1 text-left">
               <div className="flex flex-wrap items-center gap-2">
@@ -213,11 +228,13 @@ export function JuryEvaluationDialog({
                 {team?.teamName || "Score team"}
               </DialogTitle>
               <DialogDescription>
-                {readOnly
-                  ? `Your submitted ${latestRound > 1 ? `Round ${round} ` : ""}score. Use Edit score to change it.`
-                  : latestRound > 1 && round === latestRound
-                    ? `This team was selected for Round ${round}. Score it again for this round.`
-                    : "Review the submission, then pick a mark for each criterion."}
+                {awaitingSubmission
+                  ? `Round ${round} scoring opens once the team submits its project.`
+                  : readOnly
+                    ? `Your submitted ${latestRound > 1 ? `Round ${round} ` : ""}score. Use Edit score to change it.`
+                    : latestRound > 1 && round === latestRound
+                      ? `This team was selected for Round ${round}. Score it again for this round.`
+                      : "Review the submission, then pick a mark for each criterion."}
               </DialogDescription>
             </DialogHeader>
             <button
@@ -272,7 +289,7 @@ export function JuryEvaluationDialog({
           ) : null}
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-(--color-background-alt)/50 px-5 py-5 sm:px-7">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-(--color-background-alt)/50 px-4 py-4 sm:px-7 sm:py-5">
           {loading ? (
             <div className="flex flex-col items-center gap-3 py-12 text-sm text-(--color-text-secondary)">
               <span className="size-8 animate-spin rounded-full border-2 border-(--brand-accent-soft) border-t-(--brand-accent)" />
@@ -293,7 +310,7 @@ export function JuryEvaluationDialog({
                 <div
                   role="tablist"
                   aria-label="Evaluation round"
-                  className="mb-4 inline-flex rounded-xl border border-(--color-border) bg-white p-1"
+                  className="mb-4 flex max-w-full overflow-x-auto rounded-xl border border-(--color-border) bg-white p-1 [scrollbar-width:none] sm:inline-flex [&::-webkit-scrollbar]:hidden"
                 >
                   {Array.from({ length: latestRound }, (_, index) => index + 1).map((value) => (
                     <button
@@ -303,7 +320,7 @@ export function JuryEvaluationDialog({
                       aria-selected={round === value}
                       disabled={switchingRound || saving !== null}
                       onClick={() => void selectRound(value)}
-                      className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-colors disabled:cursor-wait ${
+                      className={`flex-1 shrink-0 rounded-lg px-3.5 py-2 text-xs font-semibold whitespace-nowrap transition-colors disabled:cursor-wait sm:flex-none sm:py-1.5 ${
                         round === value
                           ? "bg-(--brand-accent) text-white"
                           : "text-(--color-text-secondary) hover:bg-(--color-background-alt)"
@@ -320,6 +337,16 @@ export function JuryEvaluationDialog({
                   ))}
                 </div>
               ) : null}
+              {awaitingSubmission ? (
+                <p
+                  role="status"
+                  className="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+                >
+                  <Clock3 className="mt-0.5 size-4 shrink-0" />
+                  This team hasn&apos;t submitted its project yet. You can score Round {round} once
+                  the Team Lead submits it.
+                </p>
+              ) : null}
               <div className="mb-3 flex items-center justify-between text-xs text-(--color-text-muted)">
                 <span className="font-semibold tracking-[0.06em] uppercase">Scoring criteria</span>
                 <span className="tabular-nums">
@@ -335,7 +362,7 @@ export function JuryEvaluationDialog({
                       key={criterion.id}
                       className={`rounded-xl border bg-white px-4 py-3.5 transition-colors ${value === "" && !readOnly ? "border-(--color-border)" : "border-(--brand-accent)/25"}`}
                     >
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                      <div className="flex flex-wrap items-start gap-3 sm:flex-nowrap sm:items-center">
                         <span
                           className={`grid size-7 shrink-0 place-items-center rounded-lg text-xs font-bold tabular-nums ${value === "" ? "bg-(--color-background-alt) text-(--color-text-muted)" : "bg-(--brand-accent) text-white"}`}
                         >
@@ -349,7 +376,7 @@ export function JuryEvaluationDialog({
                             </p>
                           ) : null}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex w-full items-center gap-2 pl-10 sm:w-auto sm:pl-0">
                           <AppSelect
                             ariaLabel={`${criterion.name} score`}
                             value={value}
@@ -359,7 +386,7 @@ export function JuryEvaluationDialog({
                             options={scoreOptions(criterion.maxMarks)}
                             placeholder="Score"
                             disabled={readOnly}
-                            className="w-24 tabular-nums"
+                            className="flex-1 tabular-nums sm:w-24 sm:flex-none"
                             contentClassName="max-h-64"
                           />
                           <span className="w-9 shrink-0 text-sm text-(--color-text-muted) tabular-nums">
@@ -411,8 +438,8 @@ export function JuryEvaluationDialog({
         </div>
 
         {team && !loading ? (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-(--color-border) bg-white px-5 py-4 sm:px-7">
-            <div className="min-w-[180px] flex-1 sm:max-w-xs">
+          <div className="flex flex-col gap-3 border-t border-(--color-border) bg-white px-4 py-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-7 sm:py-4">
+            <div className="w-full sm:max-w-xs sm:min-w-[180px] sm:flex-1">
               <div className="flex items-baseline justify-between gap-3">
                 <p className="text-sm font-semibold">
                   Total{" "}
@@ -434,8 +461,13 @@ export function JuryEvaluationDialog({
                 />
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {readOnly ? (
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap [&>*:only-child]:col-span-2">
+              {awaitingSubmission ? (
+                <JuryButton size="md" disabled>
+                  <Clock3 className="size-4" />
+                  Waiting for submission
+                </JuryButton>
+              ) : readOnly ? (
                 <JuryButton variant="primary" size="md" onClick={startEditing}>
                   <Pencil className="size-4" />
                   Edit score

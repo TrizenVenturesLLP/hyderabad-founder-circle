@@ -109,7 +109,7 @@ export const Route = createFileRoute("/hackathon/problems/$problemId")({
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="border-t border-(--color-border) px-5 py-5 sm:px-6">
+    <section className="border-t border-(--color-border) px-4 py-4 sm:px-6 sm:py-5">
       <h3 className="text-[11px] font-semibold tracking-[0.08em] text-(--color-text-muted) uppercase">
         {title}
       </h3>
@@ -224,7 +224,7 @@ function ProblemStatementDetailsPage() {
 
       <div className="mt-4 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <article className="border border-(--color-border) bg-white">
-          <header className="px-5 pt-5 pb-4 sm:px-6">
+          <header className="px-4 pt-4 pb-4 sm:px-6 sm:pt-5">
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="bg-(--brand-accent-soft) px-2 py-0.5 font-mono text-[11px] font-bold text-(--brand-accent)">
                 {statement.id}
@@ -371,7 +371,7 @@ function ProblemStatementDetailsPage() {
                 <button
                   type="button"
                   onClick={() => setIsSubmitOpen(true)}
-                  className="inline-flex h-9 w-full items-center justify-center gap-1.5 bg-(--brand-primary) px-4 text-[13px] font-semibold text-white transition hover:bg-(--brand-primary-hover)"
+                  className="inline-flex h-10 w-full items-center sm:h-9 justify-center gap-1.5 bg-(--brand-primary) px-4 text-[13px] font-semibold text-white transition hover:bg-(--brand-primary-hover)"
                 >
                   <Upload className="size-4" />
                   Submit project
@@ -387,7 +387,7 @@ function ProblemStatementDetailsPage() {
                   type="button"
                   onClick={() => void handleConfirmStatement()}
                   disabled={isConfirming}
-                  className="inline-flex h-9 w-full items-center justify-center gap-1.5 bg-(--brand-accent) px-4 text-[13px] font-semibold text-white transition-opacity hover:opacity-95 disabled:cursor-wait disabled:opacity-60"
+                  className="inline-flex h-10 w-full items-center sm:h-9 justify-center gap-1.5 bg-(--brand-accent) px-4 text-[13px] font-semibold text-white transition-opacity hover:opacity-95 disabled:cursor-wait disabled:opacity-60"
                 >
                   <Check className="size-4" />
                   {isConfirming ? "Confirming..." : "Confirm this statement"}
@@ -396,7 +396,7 @@ function ProblemStatementDetailsPage() {
               <button
                 type="button"
                 onClick={handleCopyReference}
-                className="inline-flex h-9 w-full items-center justify-center gap-1.5 border border-(--color-border) bg-white px-4 text-[13px] font-semibold text-(--color-text-secondary) transition-colors hover:bg-(--color-background-alt) hover:text-foreground"
+                className="inline-flex h-10 w-full items-center sm:h-9 justify-center gap-1.5 border border-(--color-border) bg-white px-4 text-[13px] font-semibold text-(--color-text-secondary) transition-colors hover:bg-(--color-background-alt) hover:text-foreground"
               >
                 {copied ? <Check className="size-4" /> : <ClipboardCopy className="size-4" />}
                 {copied ? "Copied" : "Copy reference"}

@@ -22,6 +22,7 @@ import {
   type AdminHackathonLeaderboardEntry,
 } from "@/lib/admin-api";
 import { cn } from "@/lib/utils";
+import { FINAL_EVALUATION_ROUND } from "@/lib/hackathon";
 
 export const Route = createFileRoute("/admin/hackathons/$hackathonId/leaderboard")({
   component: AdminHackathonLeaderboardPage,
@@ -188,6 +189,7 @@ function AdminHackathonLeaderboardPage() {
   const evaluatedTeams = data.items.filter((entry) => entry.submittedEvaluations > 0).length;
   const maxRound = data.maxRound ?? 1;
   const nextRound = round + 1;
+  const isFinalRound = round >= FINAL_EVALUATION_ROUND;
   const rounds = Array.from({ length: maxRound }, (_, index) => index + 1);
   const otherRounds = rounds.filter((value) => value !== round);
   const result = data.result ?? null;
@@ -269,11 +271,11 @@ function AdminHackathonLeaderboardPage() {
         title="Leaderboard"
         description={`Each team is scored by the Jury member who claimed its problem statement. Teams are ranked by their Round ${round} score once it is submitted; drafts are not counted.`}
         actions={
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex">
             <button
               type="button"
               onClick={() => void load()}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-white px-3.5 text-xs font-semibold transition-colors hover:bg-muted"
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-border bg-white px-3.5 text-xs font-semibold transition-colors hover:bg-muted"
             >
               <RotateCcw className="size-3.5" />
               Refresh
@@ -282,7 +284,7 @@ function AdminHackathonLeaderboardPage() {
               type="button"
               disabled={!data.items.length}
               onClick={() => downloadCsv(hackathonId, round, maxRound, data.items)}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-(--brand-primary) px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-(--brand-primary) px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               <Download className="size-3.5" />
               Export CSV
@@ -295,7 +297,7 @@ function AdminHackathonLeaderboardPage() {
         <div
           role="tablist"
           aria-label="Leaderboard round"
-          className="inline-flex rounded-md border border-border bg-white p-1"
+          className="flex max-w-full overflow-x-auto rounded-md border border-border bg-white p-1 [scrollbar-width:none] sm:inline-flex [&::-webkit-scrollbar]:hidden"
         >
           {rounds.map((value) => (
             <button
@@ -305,149 +307,164 @@ function AdminHackathonLeaderboardPage() {
               aria-selected={round === value}
               onClick={() => setRound(value)}
               className={cn(
-                "rounded px-4 py-1.5 text-xs font-semibold transition-colors",
+                "flex-1 shrink-0 rounded px-4 py-2 text-xs font-semibold whitespace-nowrap transition-colors sm:flex-none sm:py-1.5",
                 round === value
                   ? "bg-(--brand-primary) text-white"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
               Round {value}
+              {value === FINAL_EVALUATION_ROUND ? " · Final" : ""}
             </button>
           ))}
         </div>
       ) : null}
 
-      <AdminPanel className="p-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold">Round {round} results</p>
-            {result && !editingCutoff ? (
-              <p className="mt-1 text-xs text-muted-foreground">
-                Cutoff <strong className="text-foreground">{result.cutoff}</strong> ·{" "}
-                <span className="font-semibold text-emerald-700">
-                  {result.qualifiedCount} qualified for Round {nextRound}
-                </span>{" "}
-                ·{" "}
-                <span className="font-semibold text-red-700">
-                  {result.disqualifiedCount} disqualified
-                </span>{" "}
-                ·{" "}
-                {published ? (
-                  <span className="font-semibold text-foreground">Published to teams</span>
-                ) : (
-                  "Not yet visible to teams"
-                )}
-              </p>
-            ) : scoringComplete ? (
-              <p className="mt-1 text-xs text-muted-foreground">
-                All teams are scored. Teams whose average is at or above the cutoff qualify for
-                Round {nextRound}; the rest are disqualified.
-              </p>
-            ) : (
-              <p className="mt-1 text-xs text-amber-700">
-                Waiting for scores — {fullyScoredTeams} of {data.items.length} teams have been
-                scored by their Jury member
-                {unassignedTeams
-                  ? ` · ${unassignedTeams} team${unassignedTeams === 1 ? " is" : "s are"} on an unclaimed statement or haven't picked one`
-                  : ""}
-                . The cutoff unlocks once every team is scored; until then no team is shown as
-                qualified or disqualified.
-              </p>
-            )}
-          </div>
+      {isFinalRound ? (
+        <AdminPanel className="p-4">
+          <p className="text-sm font-semibold">Round {round} · Final round</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            There is no cutoff in the final round. Teams are ranked by their Round {round} score
+            {data.items.length
+              ? ` · ${fullyScoredTeams} of ${data.items.length} teams scored so far`
+              : ""}
+            .
+          </p>
+        </AdminPanel>
+      ) : (
+        <AdminPanel className="p-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Round {round} results</p>
+              {result && !editingCutoff ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Cutoff <strong className="text-foreground">{result.cutoff}</strong> ·{" "}
+                  <span className="font-semibold text-emerald-700">
+                    {result.qualifiedCount} qualified for Round {nextRound}
+                  </span>{" "}
+                  ·{" "}
+                  <span className="font-semibold text-red-700">
+                    {result.disqualifiedCount} disqualified
+                  </span>{" "}
+                  ·{" "}
+                  {published ? (
+                    <span className="font-semibold text-foreground">Published to teams</span>
+                  ) : (
+                    "Not yet visible to teams"
+                  )}
+                </p>
+              ) : scoringComplete ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  All teams are scored. Teams whose average is at or above the cutoff qualify for
+                  Round {nextRound}; the rest are disqualified.
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-amber-700">
+                  Waiting for scores — {fullyScoredTeams} of {data.items.length} teams have been
+                  scored by their Jury member
+                  {unassignedTeams
+                    ? ` · ${unassignedTeams} team${unassignedTeams === 1 ? " is" : "s are"} on an unclaimed statement or haven't picked one`
+                    : ""}
+                  . The cutoff unlocks once every team is scored; until then no team is shown as
+                  qualified or disqualified.
+                </p>
+              )}
+            </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {!result || editingCutoff ? (
-              <>
-                <label className="flex items-center gap-2 text-xs font-medium">
-                  Cutoff
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step="0.5"
-                    value={cutoffInput}
-                    disabled={!scoringComplete}
-                    onChange={(event) => setCutoffInput(event.target.value)}
-                    placeholder="e.g. 60"
-                    className="h-9 w-24 rounded-md border border-border bg-white px-2.5 text-sm tabular-nums outline-none focus:border-(--brand-accent) disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-60"
-                  />
-                </label>
-                {cutoffValid && scoringComplete ? (
-                  <span className="text-xs text-muted-foreground tabular-nums">
-                    {previewQualified} qualify · {data.items.length - previewQualified} disqualified
-                  </span>
-                ) : null}
-                {editingCutoff ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {!result || editingCutoff ? (
+                <>
+                  <label className="flex items-center gap-2 text-xs font-medium">
+                    Cutoff
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step="0.5"
+                      value={cutoffInput}
+                      disabled={!scoringComplete}
+                      onChange={(event) => setCutoffInput(event.target.value)}
+                      placeholder="e.g. 60"
+                      className="h-9 w-24 rounded-md border border-border bg-white px-2.5 text-sm tabular-nums outline-none focus:border-(--brand-accent) disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-60"
+                    />
+                  </label>
+                  {cutoffValid && scoringComplete ? (
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {previewQualified} qualify · {data.items.length - previewQualified}{" "}
+                      disqualified
+                    </span>
+                  ) : null}
+                  {editingCutoff ? (
+                    <button
+                      type="button"
+                      disabled={working}
+                      onClick={() => {
+                        setEditingCutoff(false);
+                        setCutoffInput(result ? String(result.cutoff) : "");
+                      }}
+                      className="inline-flex h-9 items-center rounded-md border border-border bg-white px-3.5 text-xs font-semibold hover:bg-muted"
+                    >
+                      Cancel
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    disabled={!cutoffValid || !scoringComplete || working}
+                    onClick={applyCutoff}
+                    title={
+                      scoringComplete
+                        ? undefined
+                        : "Unlocks once every Jury member has scored every team"
+                    }
+                    className="inline-flex h-9 items-center gap-1.5 rounded-md bg-(--brand-accent) px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {working ? "Applying…" : "Apply cutoff"}
+                  </button>
+                </>
+              ) : result ? (
+                <>
+                  {!published ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={working}
+                        onClick={() => setEditingCutoff(true)}
+                        className="inline-flex h-9 items-center rounded-md border border-border bg-white px-3.5 text-xs font-semibold hover:bg-muted disabled:opacity-50"
+                      >
+                        Change cutoff
+                      </button>
+                      <button
+                        type="button"
+                        disabled={working}
+                        onClick={clearCutoff}
+                        className="inline-flex h-9 items-center rounded-md border border-border bg-white px-3.5 text-xs font-semibold hover:bg-muted disabled:opacity-50"
+                      >
+                        Clear
+                      </button>
+                    </>
+                  ) : null}
                   <button
                     type="button"
                     disabled={working}
-                    onClick={() => {
-                      setEditingCutoff(false);
-                      setCutoffInput(result ? String(result.cutoff) : "");
-                    }}
-                    className="inline-flex h-9 items-center rounded-md border border-border bg-white px-3.5 text-xs font-semibold hover:bg-muted"
+                    onClick={togglePublish}
+                    className={cn(
+                      "inline-flex h-9 items-center gap-1.5 rounded-md px-3.5 text-xs font-semibold transition-opacity disabled:opacity-50",
+                      published
+                        ? "border border-border bg-white hover:bg-muted"
+                        : "bg-(--brand-accent) text-white hover:opacity-90",
+                    )}
                   >
-                    Cancel
+                    {published ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                    {published ? "Unpublish" : "Publish results"}
                   </button>
-                ) : null}
-                <button
-                  type="button"
-                  disabled={!cutoffValid || !scoringComplete || working}
-                  onClick={applyCutoff}
-                  title={
-                    scoringComplete
-                      ? undefined
-                      : "Unlocks once every Jury member has scored every team"
-                  }
-                  className="inline-flex h-9 items-center gap-1.5 rounded-md bg-(--brand-accent) px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {working ? "Applying…" : "Apply cutoff"}
-                </button>
-              </>
-            ) : result ? (
-              <>
-                {!published ? (
-                  <>
-                    <button
-                      type="button"
-                      disabled={working}
-                      onClick={() => setEditingCutoff(true)}
-                      className="inline-flex h-9 items-center rounded-md border border-border bg-white px-3.5 text-xs font-semibold hover:bg-muted disabled:opacity-50"
-                    >
-                      Change cutoff
-                    </button>
-                    <button
-                      type="button"
-                      disabled={working}
-                      onClick={clearCutoff}
-                      className="inline-flex h-9 items-center rounded-md border border-border bg-white px-3.5 text-xs font-semibold hover:bg-muted disabled:opacity-50"
-                    >
-                      Clear
-                    </button>
-                  </>
-                ) : null}
-                <button
-                  type="button"
-                  disabled={working}
-                  onClick={togglePublish}
-                  className={cn(
-                    "inline-flex h-9 items-center gap-1.5 rounded-md px-3.5 text-xs font-semibold transition-opacity disabled:opacity-50",
-                    published
-                      ? "border border-border bg-white hover:bg-muted"
-                      : "bg-(--brand-accent) text-white hover:opacity-90",
-                  )}
-                >
-                  {published ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-                  {published ? "Unpublish" : "Publish results"}
-                </button>
-              </>
-            ) : null}
+                </>
+              ) : null}
+            </div>
           </div>
-        </div>
-      </AdminPanel>
+        </AdminPanel>
+      )}
 
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
         {[
           {
             label: round === 1 ? "Active teams" : `Teams in Round ${round}`,
@@ -457,9 +474,9 @@ function AdminHackathonLeaderboardPage() {
           { label: "Teams ranked", value: data.rankedCount },
           { label: "Assigned Jury", value: data.totalJuryMembers },
         ].map((stat) => (
-          <AdminPanel key={stat.label} className="p-4">
-            <p className="text-xs text-muted-foreground">{stat.label}</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums">{stat.value}</p>
+          <AdminPanel key={stat.label} className="p-3.5 sm:p-4">
+            <p className="text-[11.5px] text-muted-foreground sm:text-xs">{stat.label}</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums sm:text-2xl">{stat.value}</p>
           </AdminPanel>
         ))}
       </div>
@@ -517,7 +534,87 @@ function AdminHackathonLeaderboardPage() {
             {filtered.length} of {data.items.length} teams
           </span>
         </div>
-        <div className="overflow-x-auto">
+        <ul className="divide-y divide-border md:hidden">
+          {loading ? (
+            <li className="px-4 py-10 text-center text-sm text-muted-foreground">
+              Loading leaderboard…
+            </li>
+          ) : !filtered.length ? (
+            <li className="px-4 py-10 text-center text-sm text-muted-foreground">
+              {data.items.length ? "No teams match your search." : "No active teams yet."}
+            </li>
+          ) : (
+            filtered.map((entry) => (
+              <li key={entry.teamId} className="flex items-start gap-3 px-4 py-3.5">
+                <span className="grid w-8 shrink-0 place-items-center">
+                  <RankBadge rank={entry.rank} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">{entry.teamName}</p>
+                      {entry.leadName ? (
+                        <p className="truncate text-xs text-muted-foreground">
+                          Lead: {entry.leadName}
+                        </p>
+                      ) : null}
+                    </div>
+                    <p className="shrink-0 text-right font-semibold tabular-nums">
+                      {entry.averageScore === null ? (
+                        <span className="text-xs font-normal text-muted-foreground">
+                          Not scored
+                        </span>
+                      ) : (
+                        <>
+                          {entry.averageScore.toFixed(1)}
+                          <span className="text-xs font-normal text-muted-foreground"> / 100</span>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                  {entry.problemStatementId ? (
+                    <p className="mt-1.5 truncate text-xs">
+                      <span className="font-mono font-semibold text-(--brand-accent)">
+                        {entry.problemStatementId}
+                      </span>
+                      {entry.problemStatementTitle ? ` · ${entry.problemStatementTitle}` : ""}
+                    </p>
+                  ) : (
+                    <p className="mt-1.5 text-xs text-muted-foreground">No statement selected</p>
+                  )}
+                  <p className="mt-0.5 text-xs">
+                    {entry.juryName ? (
+                      <span className="text-muted-foreground">
+                        Jury: <span className="font-medium text-foreground">{entry.juryName}</span>{" "}
+                        · {entry.submittedEvaluations ? "Scored" : "Not scored yet"}
+                      </span>
+                    ) : (
+                      <span className="text-amber-700">
+                        {entry.problemStatementId ? "Statement unclaimed" : "No statement"}
+                      </span>
+                    )}
+                  </p>
+                  {otherRounds.length ? (
+                    <p className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
+                      {otherRounds.map((value) => {
+                        const average = roundAverage(entry, value);
+                        return (
+                          <span key={value} className="mr-3">
+                            Round {value}: {average === null ? "—" : average.toFixed(1)}
+                          </span>
+                        );
+                      })}
+                    </p>
+                  ) : null}
+                  <div className="mt-2">
+                    <QualificationBadge entry={entry} round={round} />
+                  </div>
+                </div>
+              </li>
+            ))
+          )}
+        </ul>
+        <div className="hidden overflow-x-auto md:block">
           <table
             className="w-full text-left text-sm"
             style={{ minWidth: 960 + otherRounds.length * 100 }}

@@ -108,7 +108,7 @@ function TeamPage() {
   }
 
   const inputClass =
-    "mt-1 h-9 w-full border border-(--color-border) bg-white px-3 text-[13px] font-normal text-foreground outline-none transition focus:border-(--brand-accent)";
+    "mt-1 h-10 w-full border sm:h-9 border-(--color-border) bg-white px-3 text-[13px] font-normal text-foreground outline-none transition focus:border-(--brand-accent)";
 
   return (
     <>
@@ -187,7 +187,7 @@ function TeamPage() {
               <button
                 type="submit"
                 disabled={isAddingMember}
-                className="inline-flex h-9 items-center justify-center gap-1.5 self-end bg-(--brand-primary) px-4 text-[13px] font-semibold text-white transition hover:bg-(--brand-primary-hover) disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-10 items-center justify-center gap-1.5 self-end bg-(--brand-primary) px-4 sm:col-span-2 sm:h-9 xl:col-span-1 text-[13px] font-semibold text-white transition hover:bg-(--brand-primary-hover) disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <UserPlus className="size-3.5" />
                 {isAddingMember ? "Adding..." : "Add member"}
@@ -246,8 +246,8 @@ function TeamPage() {
                       {memberName.charAt(0).toUpperCase()}
                     </span>
                     <div className="min-w-0">
-                      <p className="flex items-center gap-1.5 truncate text-[13.5px] font-semibold">
-                        {memberName}
+                      <p className="flex min-w-0 items-center gap-1.5 text-[13.5px] font-semibold">
+                        <span className="truncate">{memberName}</span>
                         {isTeamLead && (
                           <span className="bg-(--brand-accent-soft) px-1.5 py-0.5 text-[10px] font-semibold text-(--brand-accent)">
                             Lead
@@ -272,12 +272,12 @@ function TeamPage() {
                   </div>
 
                   {member.email && isCurrentUserTeamLead && !isTeamLead && (
-                    <div className="text-right">
+                    <div className="w-full pl-11 sm:w-auto sm:pl-0 sm:text-right">
                       <button
                         type="button"
                         onClick={() => handleResendInvitation(member.email)}
                         disabled={resendingEmail === member.email}
-                        className="inline-flex h-8 items-center gap-1.5 border border-(--color-border) px-2.5 text-[12px] font-semibold text-(--color-text-secondary) transition-colors hover:border-(--brand-accent) hover:text-(--brand-accent) disabled:opacity-60"
+                        className="inline-flex h-9 items-center gap-1.5 sm:h-8 border border-(--color-border) px-2.5 text-[12px] font-semibold text-(--color-text-secondary) transition-colors hover:border-(--brand-accent) hover:text-(--brand-accent) disabled:opacity-60"
                       >
                         <Send className="size-3.5" />
                         {resendingEmail === member.email ? "Sending..." : "Resend invite"}

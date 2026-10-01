@@ -17,7 +17,11 @@ export const Route = createFileRoute("/jury/hackathons/$hackathonId/teams")({
   component: JuryTeamsPage,
 });
 
-function EvaluationBadge({ status }: { status: JuryTeam["evaluationStatus"] }) {
+function EvaluationBadge({ team }: { team: JuryTeam }) {
+  const status = team.evaluationStatus;
+  if (team.awaitingSubmission) {
+    return <JuryBadge tone="gray">Round {team.round} opens after submission</JuryBadge>;
+  }
   if (status === "submitted") return <JuryBadge tone="green">Evaluated</JuryBadge>;
   if (status === "draft") return <JuryBadge tone="blue">Draft saved</JuryBadge>;
   return <JuryBadge tone="amber">Not evaluated</JuryBadge>;
@@ -119,7 +123,115 @@ function JuryTeamsPage() {
         ) : null}
       </JuryToolbar>
 
+      <ul className="mt-4 space-y-3 md:hidden">
+        {loading ? (
+          <li className="rounded-2xl border border-(--color-border) bg-white px-4 py-10 text-center text-sm text-(--color-text-secondary)">
+            Loading teams…
+          </li>
+        ) : !filtered.length ? (
+          <li className="rounded-2xl border border-(--color-border) bg-white px-4 py-10 text-center text-sm text-(--color-text-secondary)">
+            {teams.length
+              ? "No teams match your search."
+              : "No teams yet. You only see teams that pick a problem statement you claimed — claim statements on the Problem Statements page."}
+          </li>
+        ) : (
+          filtered.map((team) => (
+            <li
+              key={team.id}
+              className="rounded-2xl border border-(--color-border) bg-white p-4 shadow-(--shadow-small)"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold">{team.teamName}</p>
+                  <p className="mt-0.5 font-mono text-xs text-(--brand-accent)">
+                    {team.problemStatementId || (
+                      <span className="font-sans text-(--color-text-muted)">
+                        No problem selected
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <p className="shrink-0 text-right font-semibold tabular-nums">
+                  {team.totalScore === null || team.totalScore === undefined ? (
+                    <span className="text-sm font-normal text-(--color-text-muted)">—</span>
+                  ) : (
+                    <>
+                      {team.totalScore}
+                      <span className="text-xs font-normal text-(--color-text-muted)"> / 100</span>
+                    </>
+                  )}
+                </p>
+              </div>
+
+              {team.members.length ? (
+                <p className="mt-2 line-clamp-2 text-xs text-(--color-text-secondary)">
+                  {team.members.join(", ")}
+                </p>
+              ) : null}
+
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                <EvaluationBadge team={team} />
+                {team.submission.submittedAt ? (
+                  <JuryBadge tone="green">Submission received</JuryBadge>
+                ) : (
+                  <JuryBadge tone="gray">Awaiting submission</JuryBadge>
+                )}
+                <JuryBadge tone={(team.round ?? 1) > 1 ? "blue" : "gray"}>
+                  Round {team.round ?? 1}
+                </JuryBadge>
+                {team.outcome ? (
+                  team.outcome.status === "qualified" ? (
+                    <JuryBadge tone="green">Going to Round {team.outcome.nextRound}</JuryBadge>
+                  ) : (
+                    <JuryBadge tone="red">Disqualified in Round {team.outcome.round}</JuryBadge>
+                  )
+                ) : null}
+              </div>
+
+              {(team.roundScores?.length ?? 0) > 1 ? (
+                <p className="mt-2 text-[11px] text-(--color-text-muted) tabular-nums">
+                  {team.roundScores!.slice(0, -1).map((score) => (
+                    <span key={score.round} className="mr-3">
+                      R{score.round}: {score.totalScore ?? "—"}
+                    </span>
+                  ))}
+                </p>
+              ) : null}
+
+              <div className="mt-3 grid grid-cols-2 gap-2 border-t border-(--color-border) pt-3">
+                <Link
+                  to="/jury/hackathons/$hackathonId/teams/$teamId"
+                  params={{ hackathonId, teamId: team.id }}
+                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-(--color-border) bg-white text-sm font-semibold transition-colors hover:bg-(--color-background-alt)"
+                >
+                  <Eye className="size-4" /> View
+                </Link>
+                <JuryButton
+                  size="md"
+                  variant={
+                    team.awaitingSubmission || team.evaluationStatus === "submitted"
+                      ? "secondary"
+                      : "primary"
+                  }
+                  onClick={() => setScoringTeamId(team.id)}
+                >
+                  <ClipboardPenLine className="size-4" />
+                  {team.awaitingSubmission
+                    ? "View scores"
+                    : team.evaluationStatus === "submitted"
+                      ? "View / edit"
+                      : team.evaluationStatus === "draft"
+                        ? "Continue"
+                        : "Evaluate"}
+                </JuryButton>
+              </div>
+            </li>
+          ))
+        )}
+      </ul>
+
       <JuryTable
+        className="hidden md:block"
         minWidth={980}
         columns={[
           { label: "Team" },
@@ -192,7 +304,7 @@ function JuryTeamsPage() {
                 ) : null}
               </td>
               <td className="px-4 py-3">
-                <EvaluationBadge status={team.evaluationStatus} />
+                <EvaluationBadge team={team} />
               </td>
               <td className="px-4 py-3">
                 <div className="flex justify-end gap-1.5">
@@ -204,16 +316,22 @@ function JuryTeamsPage() {
                     <Eye className="size-3.5" /> View
                   </Link>
                   <JuryButton
-                    variant={team.evaluationStatus === "submitted" ? "secondary" : "primary"}
+                    variant={
+                      team.awaitingSubmission || team.evaluationStatus === "submitted"
+                        ? "secondary"
+                        : "primary"
+                    }
                     onClick={() => setScoringTeamId(team.id)}
                     className="min-w-[96px]"
                   >
                     <ClipboardPenLine className="size-3.5" />
-                    {team.evaluationStatus === "submitted"
-                      ? "View / edit"
-                      : team.evaluationStatus === "draft"
-                        ? "Continue"
-                        : "Evaluate"}
+                    {team.awaitingSubmission
+                      ? "View scores"
+                      : team.evaluationStatus === "submitted"
+                        ? "View / edit"
+                        : team.evaluationStatus === "draft"
+                          ? "Continue"
+                          : "Evaluate"}
                   </JuryButton>
                 </div>
               </td>
