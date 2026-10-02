@@ -58,6 +58,7 @@ export interface HackathonVenue {
   time: string;
   dateLabel: string;
   dateISO: string;
+  endDateISO?: string;
   format: "Offline" | "Online" | "Hybrid";
   teamSize: string;
 }

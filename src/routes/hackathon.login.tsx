@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/hackathon/login")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
   component: HackathonLoginRedirect,
 });
 

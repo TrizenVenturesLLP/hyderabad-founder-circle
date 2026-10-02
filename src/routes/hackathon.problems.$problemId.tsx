@@ -88,6 +88,7 @@ export const Route = createFileRoute("/hackathon/problems/$problemId")({
 
   head: ({ loaderData }) => ({
     meta: [
+      { name: "robots", content: "noindex,nofollow" },
       {
         title: loaderData
           ? `${loaderData.statement.id}: ${loaderData.statement.title} — AI HACK X MRDU`

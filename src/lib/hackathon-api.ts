@@ -110,7 +110,7 @@ export function loginHackathonStudent(payload: { email: string; password: string
 
 export type HackathonRoundResult = {
   round: number;
-  status: "qualified" | "disqualified";
+  status: "pending" | "qualified" | "disqualified";
   nextRound: number | null;
 };
 

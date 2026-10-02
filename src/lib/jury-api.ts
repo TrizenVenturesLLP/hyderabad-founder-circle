@@ -94,7 +94,7 @@ export type JuryTeam = {
 };
 export type JuryRoundOutcome = {
   round: number;
-  status: "qualified" | "disqualified";
+  status: "pending" | "qualified" | "disqualified";
   nextRound: number | null;
 };
 export type JuryEvaluation = {
@@ -145,6 +145,14 @@ export async function loginJury(email: string, password: string) {
   );
   setJuryToken(result.token);
   return result;
+}
+
+export function requestJuryPasswordLink(email: string) {
+  return post<{ message: string }>("/api/jury/auth/password/request-link", { email }, false);
+}
+
+export function resetJuryPassword(payload: { token: string; password: string }) {
+  return post<{ message: string }>("/api/jury/auth/password/reset", payload, false);
 }
 
 export function acceptJuryInvitation(token: string) {

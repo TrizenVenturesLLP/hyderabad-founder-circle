@@ -182,6 +182,8 @@ function JuryTeamsPage() {
                 {team.outcome ? (
                   team.outcome.status === "qualified" ? (
                     <JuryBadge tone="green">Going to Round {team.outcome.nextRound}</JuryBadge>
+                  ) : team.outcome.status === "pending" ? (
+                    <JuryBadge tone="gray">Pending admin evaluation</JuryBadge>
                   ) : (
                     <JuryBadge tone="red">Disqualified in Round {team.outcome.round}</JuryBadge>
                   )
@@ -281,6 +283,8 @@ function JuryTeamsPage() {
                   <div className="mt-1">
                     {team.outcome.status === "qualified" ? (
                       <JuryBadge tone="green">Going to Round {team.outcome.nextRound}</JuryBadge>
+                    ) : team.outcome.status === "pending" ? (
+                      <JuryBadge tone="gray">Pending admin evaluation</JuryBadge>
                     ) : (
                       <JuryBadge tone="red">Disqualified in Round {team.outcome.round}</JuryBadge>
                     )}

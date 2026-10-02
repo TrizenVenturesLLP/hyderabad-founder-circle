@@ -50,6 +50,7 @@ import { ProblemProposalCard } from "@/components/student/ProblemProposalCard";
 import { AppSelect } from "@/components/AppSelect";
 
 export const Route = createFileRoute("/dashboard")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
   beforeLoad: () => {
     if (typeof window === "undefined") {
       return;
@@ -393,18 +394,24 @@ function DashboardPage() {
               className={`mt-5 flex items-start gap-3 rounded-lg border p-4 sm:p-5 ${
                 roundResult.status === "qualified"
                   ? "border-emerald-200 bg-emerald-50"
-                  : "border-red-200 bg-red-50"
+                  : roundResult.status === "pending"
+                    ? "border-amber-200 bg-amber-50"
+                    : "border-red-200 bg-red-50"
               }`}
             >
               <span
                 className={`grid size-9 shrink-0 place-items-center rounded-md ${
                   roundResult.status === "qualified"
                     ? "bg-emerald-100 text-emerald-700"
-                    : "bg-red-100 text-red-700"
+                    : roundResult.status === "pending"
+                      ? "bg-amber-100 text-amber-700"
+                      : "bg-red-100 text-red-700"
                 }`}
               >
                 {roundResult.status === "qualified" ? (
                   <Trophy className="size-4" />
+                ) : roundResult.status === "pending" ? (
+                  <Clock3 className="size-4" />
                 ) : (
                   <X className="size-4" />
                 )}
@@ -421,6 +428,15 @@ function DashboardPage() {
                       Congratulations! Your team cleared Round {roundResult.round} and will be
                       evaluated again by the Jury in Round {roundResult.nextRound}
                       {roundResult.nextRound === FINAL_EVALUATION_ROUND ? ", the final round" : ""}.
+                    </p>
+                  </>
+                ) : roundResult.status === "pending" ? (
+                  <>
+                    <p className="text-sm font-semibold text-amber-900">
+                      Pending evaluation for Round {roundResult.round}
+                    </p>
+                    <p className="mt-0.5 text-[13px] text-amber-800">
+                      Your team's result will be available after the admin evaluates it.
                     </p>
                   </>
                 ) : (

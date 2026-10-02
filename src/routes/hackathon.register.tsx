@@ -36,6 +36,7 @@ import {
 } from "@/lib/hackathon-storage";
 
 export const Route = createFileRoute("/hackathon/register")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
   component: HackathonRegistrationPage,
 });
 

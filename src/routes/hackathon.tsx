@@ -5,29 +5,70 @@ import { HackathonHero } from "@/components/hackathon/HackathonHero";
 import { HackathonDomains } from "@/components/hackathon/HackathonDomains";
 import { HackathonVenueSection } from "@/components/hackathon/HackathonVenue";
 import type { HackathonDetails } from "@/lib/hackathon";
+import { POSTER_HACKATHON_DETAILS } from "@/lib/hackathon-data";
+
+const siteUrl = "https://community.trizenventures.com";
+const hackathonUrl = `${siteUrl}/hackathon`;
+const hackathonTitle = "AI Hackathon in Hyderabad 2026 | AI HACK X MRDU";
+const hackathonDescription =
+  "Join AI HACK X MRDU 2026, a 24-hour national AI hackathon in Hyderabad on October 3–4. Build across four tracks for a ₹2,00,000 prize pool.";
+const hackathonImage = `${siteUrl}${POSTER_HACKATHON_DETAILS.posterImage}`;
 
 export const Route = createFileRoute("/hackathon")({
   component: HackathonPublicPage,
   head: () => ({
     meta: [
-      { title: "AI HACK X MRDU 2026 — Malla Reddy (MR) Deemed to be University" },
+      { title: hackathonTitle },
+      { name: "description", content: hackathonDescription },
+      { name: "robots", content: "index,follow" },
+      { property: "og:site_name", content: "Trizen Community" },
+      { property: "og:title", content: hackathonTitle },
+      { property: "og:description", content: hackathonDescription },
+      { property: "og:type", content: "event" },
+      { property: "og:url", content: hackathonUrl },
+      { property: "og:image", content: hackathonImage },
+      { property: "og:image:alt", content: "AI HACK X MRDU 2026 hackathon poster" },
+      { property: "og:locale", content: "en_IN" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: hackathonTitle },
+      { name: "twitter:description", content: hackathonDescription },
+      { name: "twitter:image", content: hackathonImage },
+    ],
+    links: [{ rel: "canonical", href: hackathonUrl }],
+    scripts: [
       {
-        name: "description",
-        content:
-          "AI HACK X MRDU: 24HRS National Hackathon by Department of CSE-AIML at Malla Reddy University. 4 Tracks: UI/UX Design, Web Dev, Vibe Coding, and Agentic AI with ₹2,00,000 Prize Pool.",
-      },
-      {
-        property: "og:title",
-        content: "AI HACK X MRDU 2026 — 24HRS Hackathon",
-      },
-      {
-        property: "og:description",
-        content:
-          "Innovate Beyond Tomorrow. 4 specialized tracks, live problem statements, ₹2,00,000 prize pool, and internships.",
-      },
-      {
-        property: "og:type",
-        content: "website",
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Event",
+          name: POSTER_HACKATHON_DETAILS.title,
+          description: POSTER_HACKATHON_DETAILS.blurb,
+          url: hackathonUrl,
+          image: [hackathonImage],
+          startDate: POSTER_HACKATHON_DETAILS.venue.dateISO,
+          ...(POSTER_HACKATHON_DETAILS.venue.endDateISO
+            ? { endDate: POSTER_HACKATHON_DETAILS.venue.endDateISO }
+            : {}),
+          eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+          eventStatus: "https://schema.org/EventScheduled",
+          location: {
+            "@type": "Place",
+            name: POSTER_HACKATHON_DETAILS.venue.name,
+            address: {
+              "@type": "PostalAddress",
+              streetAddress: POSTER_HACKATHON_DETAILS.venue.address,
+              addressLocality: POSTER_HACKATHON_DETAILS.venue.city,
+              addressRegion: "Telangana",
+              postalCode: "500100",
+              addressCountry: "IN",
+            },
+          },
+          organizer: {
+            "@type": "Organization",
+            name: POSTER_HACKATHON_DETAILS.university,
+            url: siteUrl,
+          },
+        }),
       },
     ],
   }),

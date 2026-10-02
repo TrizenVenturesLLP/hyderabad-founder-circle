@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, KeyRound, LockKeyhole, Mail } from "lucide-react";
 import { JuryBrandLink } from "@/components/jury/JuryBrandLink";
-import { acceptJuryInvitation, loginJury } from "@/lib/jury-api";
+import { acceptJuryInvitation, loginJury, requestJuryPasswordLink } from "@/lib/jury-api";
 
 export const Route = createFileRoute("/jury/login")({
   component: JuryLoginPage,
@@ -19,12 +19,26 @@ function readInvitationToken() {
   return new URLSearchParams(window.location.hash.slice(1)).get("token") || "";
 }
 
+function readResetToken() {
+  return new URLSearchParams(window.location.hash.slice(1)).get("resetToken") || "";
+}
+
 function JuryLoginPage() {
   const navigate = useNavigate();
   const [token] = useState(readInvitationToken);
+  const [resetToken] = useState(readResetToken);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showResetPasswordForm, setShowResetPasswordForm] = useState(Boolean(resetToken));
+  const [showResetLinkForm, setShowResetLinkForm] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetStatus, setResetStatus] = useState<{ tone: "success" | "error"; text: string } | null>(
+    null,
+  );
+  const [resetLoading, setResetLoading] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -40,6 +54,70 @@ function JuryLoginPage() {
       setError(cause instanceof Error ? cause.message : "Sign in failed.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function submitNewPassword(event: FormEvent) {
+    event.preventDefault();
+    setError("");
+    setResetStatus(null);
+
+    if (!resetToken) {
+      setResetStatus({ tone: "error", text: "This reset link is missing its token." });
+      return;
+    }
+    if (newPassword.length < 8) {
+      setResetStatus({ tone: "error", text: "Password must be at least 8 characters long." });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setResetStatus({ tone: "error", text: "Passwords do not match." });
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      const response = await import("@/lib/jury-api").then(({ resetJuryPassword }) =>
+        resetJuryPassword({ token: resetToken, password: newPassword }),
+      );
+      setResetStatus({ tone: "success", text: response.message });
+      setShowResetPasswordForm(false);
+      setPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (cause) {
+      setResetStatus({
+        tone: "error",
+        text: cause instanceof Error ? cause.message : "Could not reset your password.",
+      });
+    } finally {
+      setResetLoading(false);
+    }
+  }
+
+  async function sendResetLink(event: FormEvent) {
+    event.preventDefault();
+    const targetEmail = resetEmail.trim().toLowerCase();
+    setResetStatus(null);
+    setError("");
+
+    if (!/^\S+@\S+\.\S+$/.test(targetEmail)) {
+      setResetStatus({ tone: "error", text: "Please enter a valid email address." });
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      const response = await requestJuryPasswordLink(targetEmail);
+      setResetStatus({ tone: "success", text: response.message });
+      setResetEmail(targetEmail);
+    } catch (cause) {
+      setResetStatus({
+        tone: "error",
+        text: cause instanceof Error ? cause.message : "Could not send the reset link.",
+      });
+    } finally {
+      setResetLoading(false);
     }
   }
 
@@ -121,66 +199,202 @@ function JuryLoginPage() {
             </p>
           ) : null}
 
-          <form onSubmit={submit} className="mt-5 space-y-3.5">
-            <label className="block text-xs font-semibold text-foreground">
-              Email address
-              <span className="relative mt-1 block">
-                <Mail className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  required
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="Enter your invited email"
-                  autoComplete="username"
-                  autoFocus
-                  className="h-9 w-full border border-border bg-background pr-3 pl-8 text-[13px] font-normal outline-none transition focus:border-primary"
-                />
-              </span>
-            </label>
+          {showResetPasswordForm ? (
+            <form onSubmit={submitNewPassword} className="mt-5 space-y-3.5">
+              <label className="block text-xs font-semibold text-foreground">
+                New password
+                <span className="relative mt-1 block">
+                  <LockKeyhole className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    required
+                    type={showPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    placeholder="Choose a new password"
+                    autoComplete="new-password"
+                    autoFocus
+                    className="h-9 w-full border border-border bg-background pr-9 pl-8 text-[13px] font-normal outline-none transition focus:border-primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-pressed={showPassword}
+                    className="absolute top-1/2 right-1 inline-flex size-7 -translate-y-1/2 items-center justify-center text-muted-foreground transition hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                  </button>
+                </span>
+              </label>
 
-            <label className="block text-xs font-semibold text-foreground">
-              Password
-              <span className="relative mt-1 block">
-                <LockKeyhole className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  required
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                  className="h-9 w-full border border-border bg-background pr-9 pl-8 text-[13px] font-normal outline-none transition focus:border-primary"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((visible) => !visible)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  aria-pressed={showPassword}
-                  className="absolute top-1/2 right-1 inline-flex size-7 -translate-y-1/2 items-center justify-center text-muted-foreground transition hover:text-foreground"
+              <label className="block text-xs font-semibold text-foreground">
+                Confirm password
+                <span className="relative mt-1 block">
+                  <LockKeyhole className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    required
+                    type={showPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    placeholder="Confirm your new password"
+                    autoComplete="new-password"
+                    className="h-9 w-full border border-border bg-background pr-3 pl-8 text-[13px] font-normal outline-none transition focus:border-primary"
+                  />
+                </span>
+              </label>
+
+              {resetStatus?.tone ? (
+                <p
+                  className={
+                    resetStatus.tone === "success"
+                      ? "border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-[13px] text-emerald-700"
+                      : "border border-destructive/20 bg-destructive/5 px-3 py-2 text-[13px] text-destructive"
+                  }
                 >
-                  {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-                </button>
-              </span>
-            </label>
+                  {resetStatus.text}
+                </p>
+              ) : null}
 
-            {error ? (
-              <p
-                role="alert"
-                className="border border-destructive/20 bg-destructive/5 px-3 py-2 text-[13px] text-destructive"
+              <button
+                type="submit"
+                disabled={resetLoading}
+                className="h-10 w-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-95 disabled:cursor-wait disabled:opacity-70"
               >
-                {error}
-              </p>
-            ) : null}
+                {resetLoading ? "Updating password..." : "Update password"}
+              </button>
+            </form>
+          ) : showResetLinkForm ? (
+            <form onSubmit={sendResetLink} className="mt-5 space-y-3.5">
+              <label className="block text-xs font-semibold text-foreground">
+                Email address
+                <span className="relative mt-1 block">
+                  <Mail className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    required
+                    type="email"
+                    value={resetEmail}
+                    onChange={(event) => setResetEmail(event.target.value)}
+                    placeholder="Enter your registered email"
+                    autoComplete="email"
+                    autoFocus
+                    className="h-9 w-full border border-border bg-background pr-3 pl-8 text-[13px] font-normal outline-none transition focus:border-primary"
+                  />
+                </span>
+              </label>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="h-10 w-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-95 disabled:cursor-wait disabled:opacity-70"
-            >
-              {loading ? "Signing in..." : "Sign in"}
-            </button>
-          </form>
+              {resetStatus?.tone === "error" ? (
+                <p className="border border-destructive/20 bg-destructive/5 px-3 py-2 text-[13px] text-destructive">
+                  {resetStatus.text}
+                </p>
+              ) : null}
+
+              {resetStatus?.tone === "success" ? (
+                <p className="border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-[13px] text-emerald-700">
+                  {resetStatus.text}
+                </p>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={resetLoading}
+                className="h-10 w-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-95 disabled:cursor-wait disabled:opacity-70"
+              >
+                {resetLoading ? "Sending link..." : "Send link"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowResetLinkForm(false);
+                  setResetStatus(null);
+                }}
+                className="inline-flex w-full items-center justify-center gap-1.5 text-[13px] font-medium text-primary hover:underline"
+              >
+                <ArrowLeft className="size-3.5" />
+                Back to sign in
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={submit} className="mt-5 space-y-3.5">
+              <label className="block text-xs font-semibold text-foreground">
+                Email address
+                <span className="relative mt-1 block">
+                  <Mail className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    required
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="Enter your invited email"
+                    autoComplete="username"
+                    autoFocus
+                    className="h-9 w-full border border-border bg-background pr-3 pl-8 text-[13px] font-normal outline-none transition focus:border-primary"
+                  />
+                </span>
+              </label>
+
+              <label className="block text-xs font-semibold text-foreground">
+                Password
+                <span className="relative mt-1 block">
+                  <LockKeyhole className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    required
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                    className="h-9 w-full border border-border bg-background pr-9 pl-8 text-[13px] font-normal outline-none transition focus:border-primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-pressed={showPassword}
+                    className="absolute top-1/2 right-1 inline-flex size-7 -translate-y-1/2 items-center justify-center text-muted-foreground transition hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                  </button>
+                </span>
+              </label>
+
+              {error ? (
+                <p
+                  role="alert"
+                  className="border border-destructive/20 bg-destructive/5 px-3 py-2 text-[13px] text-destructive"
+                >
+                  {error}
+                </p>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="h-10 w-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-95 disabled:cursor-wait disabled:opacity-70"
+              >
+                {loading ? "Signing in..." : "Sign in"}
+              </button>
+            </form>
+          )}
+
+          {!showResetLinkForm && !showResetPasswordForm ? (
+            <p className="mt-5 text-center text-[12.5px] text-muted-foreground">
+              <span>Forgot or didn&apos;t set your password?</span>{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setResetEmail(email || "");
+                  setResetStatus(null);
+                  setError("");
+                  setShowResetLinkForm(true);
+                }}
+                className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+              >
+                <KeyRound className="size-3" />
+                Send me a link
+              </button>
+            </p>
+          ) : null}
 
           <p className="mt-5 border-t border-border pt-4 text-[12px] leading-5 text-muted-foreground">
             {token

@@ -8,6 +8,7 @@ import {
 } from "@/lib/hackathon-api";
 
 export const Route = createFileRoute("/hackathon/set-password")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
   component: HackathonSetPasswordPage,
 });
 

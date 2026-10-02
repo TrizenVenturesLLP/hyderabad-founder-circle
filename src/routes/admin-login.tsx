@@ -13,7 +13,10 @@ export const Route = createFileRoute("/admin-login")({
   },
   component: AdminLoginPage,
   head: () => ({
-    meta: [{ title: "Admin Login — Trizen Community" }],
+    meta: [
+      { title: "Admin Login — Trizen Community" },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
   }),
 });
 

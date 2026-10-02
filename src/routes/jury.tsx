@@ -66,6 +66,7 @@ export const Route = createFileRoute("/jury")({
       throw redirect({ to: "/jury/login" });
     }
   },
+  head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
   component: JuryLayout,
 });
 

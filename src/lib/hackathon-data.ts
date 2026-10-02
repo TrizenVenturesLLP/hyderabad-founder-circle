@@ -64,6 +64,7 @@ export const POSTER_HACKATHON_DETAILS: HackathonDetails = {
     time: "24 Hours Continuous Track",
     dateLabel: "OCT 3RD & 4TH 2026",
     dateISO: "2026-10-03",
+    endDateISO: "2026-10-04",
     format: "Offline",
     teamSize: "2–6 Members",
   },

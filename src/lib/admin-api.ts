@@ -377,7 +377,7 @@ export type AdminHackathonLeaderboardEntry = {
   /** True when the team was selected for the round after the one shown. */
   advanced?: boolean;
   /** Set once the round's cutoff has been applied. */
-  qualification?: "qualified" | "disqualified" | null;
+  qualification?: "pending" | "qualified" | "disqualified" | null;
   roundScores?: { round: number; submittedEvaluations: number; averageScore: number | null }[];
   rank: number | null;
 };
@@ -415,6 +415,26 @@ export function applyAdminHackathonRoundCutoff(hackathonId: string, round: numbe
     `${adminHackathonPath(hackathonId)}/rounds/${round}/cutoff`,
     { method: "POST", body: JSON.stringify({ cutoff }) },
   );
+}
+
+export function evaluateAdminHackathonRound(hackathonId: string, round: number) {
+  return adminFetch<{
+    evaluated: number;
+    qualifiedCount: number;
+    disqualifiedCount: number;
+    result: AdminHackathonRoundResult;
+  }>(`${adminHackathonPath(hackathonId)}/rounds/${round}/evaluate`, {
+    method: "POST",
+  });
+}
+
+export function evaluateAdminHackathonTeam(hackathonId: string, round: number, teamId: string) {
+  return adminFetch<{
+    qualification: "qualified" | "disqualified";
+    result: AdminHackathonRoundResult;
+  }>(`${adminHackathonPath(hackathonId)}/rounds/${round}/teams/${teamId}/evaluate`, {
+    method: "POST",
+  });
 }
 
 export function clearAdminHackathonRoundCutoff(hackathonId: string, round: number) {

@@ -54,6 +54,7 @@ export const Route = createFileRoute("/admin")({
       throw redirect({ to: "/admin-login" });
     }
   },
+  head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
   component: AdminLayout,
 });
 

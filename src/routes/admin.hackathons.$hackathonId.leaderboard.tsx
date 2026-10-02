@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   CheckCircle2,
+  Clock3,
   Download,
   Eye,
   EyeOff,
@@ -16,6 +17,7 @@ import { HackathonNav, hackathonSectionPageClass } from "@/components/admin/Hack
 import {
   applyAdminHackathonRoundCutoff,
   clearAdminHackathonRoundCutoff,
+  evaluateAdminHackathonRound,
   fetchAdminHackathonLeaderboard,
   publishAdminHackathonRoundResults,
   type AdminHackathonLeaderboard,
@@ -55,6 +57,7 @@ function roundAverage(entry: AdminHackathonLeaderboardEntry, round: number) {
 function resultLabel(entry: AdminHackathonLeaderboardEntry, round: number) {
   if (entry.qualification === "qualified") return `Qualified for Round ${round + 1}`;
   if (entry.qualification === "disqualified") return "Disqualified";
+  if (entry.qualification === "pending") return "Pending";
   return "";
 }
 
@@ -141,6 +144,14 @@ function QualificationBadge({
       </span>
     );
   }
+  if (entry.qualification === "pending") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold whitespace-nowrap text-amber-800">
+        <Clock3 className="size-3" />
+        Pending
+      </span>
+    );
+  }
   return <span className="text-xs text-muted-foreground">—</span>;
 }
 
@@ -198,6 +209,7 @@ function AdminHackathonLeaderboardPage() {
     (entry) => entry.totalJuryMembers > 0 && entry.submittedEvaluations > 0,
   ).length;
   const unassignedTeams = data.items.filter((entry) => entry.totalJuryMembers === 0).length;
+  const pendingTeamCount = data.items.filter((entry) => entry.qualification === "pending").length;
 
   const cutoffValue = Number(cutoffInput);
   const cutoffValid = cutoffInput.trim() !== "" && cutoffValue >= 0 && cutoffValue <= 100;
@@ -205,6 +217,9 @@ function AdminHackathonLeaderboardPage() {
   const previewQualified = cutoffValid
     ? data.items.filter((entry) => (entry.averageScore ?? -1) >= cutoffValue).length
     : 0;
+  const scoredTeamCount = data.items.filter((entry) => entry.averageScore !== null).length;
+  const belowCutoffCount = scoredTeamCount - previewQualified;
+  const unscoredTeamCount = data.items.length - scoredTeamCount;
 
   async function runAction(action: () => Promise<unknown>, message: string) {
     setWorking(true);
@@ -220,18 +235,32 @@ function AdminHackathonLeaderboardPage() {
   }
 
   function applyCutoff() {
-    if (!cutoffValid || !scoringComplete) return;
-    const disqualifiedCount = data.items.length - previewQualified;
+    if (!cutoffValid) return;
     if (
       !window.confirm(
-        `Apply a cutoff of ${cutoffValue}? ${previewQualified} team(s) qualify for Round ${nextRound} and ${disqualifiedCount} team(s) are disqualified. Teams won't see this until you publish results.`,
+        `Set a cutoff of ${cutoffValue}? ${previewQualified} currently meet it, ${belowCutoffCount} are below it, and ${unscoredTeamCount} are awaiting a Jury score. Teams remain pending until individually evaluated.`,
       )
     )
       return;
     void runAction(
       () => applyAdminHackathonRoundCutoff(hackathonId, round, cutoffValue),
-      `Cutoff applied: ${previewQualified} qualified for Round ${nextRound}.`,
+      `Cutoff set. Use the Evaluate button to finalize Round ${round} results.`,
     );
+  }
+
+  async function evaluateRound() {
+    setWorking(true);
+    try {
+      const response = await evaluateAdminHackathonRound(hackathonId, round);
+      toast.success(
+        `Round ${round} is finalized: ${response.qualifiedCount} qualified, ${response.disqualifiedCount} disqualified.`,
+      );
+      await load();
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Could not evaluate this round.");
+    } finally {
+      setWorking(false);
+    }
   }
 
   function clearCutoff() {
@@ -347,6 +376,8 @@ function AdminHackathonLeaderboardPage() {
                     {result.disqualifiedCount} disqualified
                   </span>{" "}
                   ·{" "}
+                  <span className="font-semibold text-amber-800">{pendingTeamCount} pending</span>
+                  {" "}·{" "}
                   {published ? (
                     <span className="font-semibold text-foreground">Published to teams</span>
                   ) : (
@@ -355,18 +386,18 @@ function AdminHackathonLeaderboardPage() {
                 </p>
               ) : scoringComplete ? (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  All teams are scored. Teams whose average is at or above the cutoff qualify for
-                  Round {nextRound}; the rest are disqualified.
+                  Teams remain pending until you evaluate them. A team can be evaluated after its
+                  Jury score is submitted.
                 </p>
               ) : (
                 <p className="mt-1 text-xs text-amber-700">
-                  Waiting for scores — {fullyScoredTeams} of {data.items.length} teams have been
-                  scored by their Jury member
+                  {fullyScoredTeams} of {data.items.length} teams have been scored by their Jury
+                  member
                   {unassignedTeams
                     ? ` · ${unassignedTeams} team${unassignedTeams === 1 ? " is" : "s are"} on an unclaimed statement or haven't picked one`
                     : ""}
-                  . The cutoff unlocks once every team is scored; until then no team is shown as
-                  qualified or disqualified.
+                  . Teams with a statement remain pending until they are scored and individually
+                  evaluated.
                 </p>
               )}
             </div>
@@ -382,16 +413,15 @@ function AdminHackathonLeaderboardPage() {
                       max={100}
                       step="0.5"
                       value={cutoffInput}
-                      disabled={!scoringComplete}
                       onChange={(event) => setCutoffInput(event.target.value)}
                       placeholder="e.g. 60"
                       className="h-9 w-24 rounded-md border border-border bg-white px-2.5 text-sm tabular-nums outline-none focus:border-(--brand-accent) disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-60"
                     />
                   </label>
-                  {cutoffValid && scoringComplete ? (
+                  {cutoffValid ? (
                     <span className="text-xs text-muted-foreground tabular-nums">
-                      {previewQualified} qualify · {data.items.length - previewQualified}{" "}
-                      disqualified
+                      {previewQualified} meet cutoff · {belowCutoffCount} below · {unscoredTeamCount}{" "}
+                      awaiting score
                     </span>
                   ) : null}
                   {editingCutoff ? (
@@ -409,16 +439,11 @@ function AdminHackathonLeaderboardPage() {
                   ) : null}
                   <button
                     type="button"
-                    disabled={!cutoffValid || !scoringComplete || working}
+                    disabled={!cutoffValid || working}
                     onClick={applyCutoff}
-                    title={
-                      scoringComplete
-                        ? undefined
-                        : "Unlocks once every Jury member has scored every team"
-                    }
                     className="inline-flex h-9 items-center gap-1.5 rounded-md bg-(--brand-accent) px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {working ? "Applying…" : "Apply cutoff"}
+                    {working ? "Saving…" : "Set cutoff"}
                   </button>
                 </>
               ) : result ? (
@@ -440,6 +465,14 @@ function AdminHackathonLeaderboardPage() {
                         className="inline-flex h-9 items-center rounded-md border border-border bg-white px-3.5 text-xs font-semibold hover:bg-muted disabled:opacity-50"
                       >
                         Clear
+                      </button>
+                      <button
+                        type="button"
+                        disabled={working || !data.items.some((entry) => entry.averageScore !== null)}
+                        onClick={() => void evaluateRound()}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-md bg-(--brand-accent) px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {working ? "Evaluating…" : "Evaluate"}
                       </button>
                     </>
                   ) : null}
@@ -719,7 +752,9 @@ function AdminHackathonLeaderboardPage() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <QualificationBadge entry={entry} round={round} />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <QualificationBadge entry={entry} round={round} />
+                      </div>
                     </td>
                   </tr>
                 ))
