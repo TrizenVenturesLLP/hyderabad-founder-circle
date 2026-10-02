@@ -15,6 +15,7 @@ import {
   BarChart3,
   Users,
   X,
+  FileText,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { adminMe } from "@/lib/admin-api";
@@ -64,6 +65,11 @@ function AdminLayout() {
       return [
         ...base,
         {
+          to: "/admin/problem-statements",
+          label: "Problem Statements",
+          icon: FileText,
+        },
+        {
           to: "/admin/applications",
           label: "Applications",
           icon: ClipboardList,
@@ -77,6 +83,7 @@ function AdminLayout() {
     }
     return base;
   }, [isPlatform]);
+
 
   function logout() {
     clearAdminToken();

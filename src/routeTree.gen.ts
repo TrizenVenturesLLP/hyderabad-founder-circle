@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StoriesRouteImport } from './routes/stories'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as ProblemStatementsRouteImport } from './routes/problem-statements'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as OrgLoginRouteImport } from './routes/org-login'
 import { Route as HostRouteImport } from './routes/host'
@@ -24,12 +25,15 @@ import { Route as AdminLoginRouteImport } from './routes/admin-login'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProblemStatementsIndexRouteImport } from './routes/problem-statements.index'
 import { Route as EventsIndexRouteImport } from './routes/events.index'
 import { Route as CommunitiesIndexRouteImport } from './routes/communities.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as ProblemStatementsSlugRouteImport } from './routes/problem-statements.$slug'
 import { Route as EventsSlugRouteImport } from './routes/events.$slug'
 import { Route as CommunitiesSlugRouteImport } from './routes/communities.$slug'
 import { Route as AdminRegistrationsRouteImport } from './routes/admin.registrations'
+import { Route as AdminProblemStatementsRouteImport } from './routes/admin.problem-statements'
 import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminContactsRouteImport } from './routes/admin.contacts'
 import { Route as AdminApplicationsRouteImport } from './routes/admin.applications'
@@ -48,6 +52,11 @@ const StoriesRoute = StoriesRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProblemStatementsRoute = ProblemStatementsRouteImport.update({
+  id: '/problem-statements',
+  path: '/problem-statements',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -110,6 +119,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProblemStatementsIndexRoute = ProblemStatementsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProblemStatementsRoute,
+} as any)
 const EventsIndexRoute = EventsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -125,6 +139,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const ProblemStatementsSlugRoute = ProblemStatementsSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ProblemStatementsRoute,
+} as any)
 const EventsSlugRoute = EventsSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -138,6 +157,11 @@ const CommunitiesSlugRoute = CommunitiesSlugRouteImport.update({
 const AdminRegistrationsRoute = AdminRegistrationsRouteImport.update({
   id: '/registrations',
   path: '/registrations',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProblemStatementsRoute = AdminProblemStatementsRouteImport.update({
+  id: '/problem-statements',
+  path: '/problem-statements',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminEventsRoute = AdminEventsRouteImport.update({
@@ -174,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/host': typeof HostRoute
   '/org-login': typeof OrgLoginRoute
   '/privacy': typeof PrivacyRoute
+  '/problem-statements': typeof ProblemStatementsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stories': typeof StoriesRoute
   '/terms': typeof TermsRoute
@@ -181,12 +206,15 @@ export interface FileRoutesByFullPath {
   '/admin/applications': typeof AdminApplicationsRoute
   '/admin/contacts': typeof AdminContactsRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/problem-statements': typeof AdminProblemStatementsRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/communities/$slug': typeof CommunitiesSlugRoute
   '/events/$slug': typeof EventsSlugRoute
+  '/problem-statements/$slug': typeof ProblemStatementsSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/communities/': typeof CommunitiesIndexRoute
   '/events/': typeof EventsIndexRoute
+  '/problem-statements/': typeof ProblemStatementsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -205,12 +233,15 @@ export interface FileRoutesByTo {
   '/admin/applications': typeof AdminApplicationsRoute
   '/admin/contacts': typeof AdminContactsRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/problem-statements': typeof AdminProblemStatementsRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/communities/$slug': typeof CommunitiesSlugRoute
   '/events/$slug': typeof EventsSlugRoute
+  '/problem-statements/$slug': typeof ProblemStatementsSlugRoute
   '/admin': typeof AdminIndexRoute
   '/communities': typeof CommunitiesIndexRoute
   '/events': typeof EventsIndexRoute
+  '/problem-statements': typeof ProblemStatementsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -226,6 +257,7 @@ export interface FileRoutesById {
   '/host': typeof HostRoute
   '/org-login': typeof OrgLoginRoute
   '/privacy': typeof PrivacyRoute
+  '/problem-statements': typeof ProblemStatementsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stories': typeof StoriesRoute
   '/terms': typeof TermsRoute
@@ -233,12 +265,15 @@ export interface FileRoutesById {
   '/admin/applications': typeof AdminApplicationsRoute
   '/admin/contacts': typeof AdminContactsRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/problem-statements': typeof AdminProblemStatementsRoute
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/communities/$slug': typeof CommunitiesSlugRoute
   '/events/$slug': typeof EventsSlugRoute
+  '/problem-statements/$slug': typeof ProblemStatementsSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/communities/': typeof CommunitiesIndexRoute
   '/events/': typeof EventsIndexRoute
+  '/problem-statements/': typeof ProblemStatementsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -255,6 +290,7 @@ export interface FileRouteTypes {
     | '/host'
     | '/org-login'
     | '/privacy'
+    | '/problem-statements'
     | '/sitemap.xml'
     | '/stories'
     | '/terms'
@@ -262,12 +298,15 @@ export interface FileRouteTypes {
     | '/admin/applications'
     | '/admin/contacts'
     | '/admin/events'
+    | '/admin/problem-statements'
     | '/admin/registrations'
     | '/communities/$slug'
     | '/events/$slug'
+    | '/problem-statements/$slug'
     | '/admin/'
     | '/communities/'
     | '/events/'
+    | '/problem-statements/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -286,12 +325,15 @@ export interface FileRouteTypes {
     | '/admin/applications'
     | '/admin/contacts'
     | '/admin/events'
+    | '/admin/problem-statements'
     | '/admin/registrations'
     | '/communities/$slug'
     | '/events/$slug'
+    | '/problem-statements/$slug'
     | '/admin'
     | '/communities'
     | '/events'
+    | '/problem-statements'
   id:
     | '__root__'
     | '/'
@@ -306,6 +348,7 @@ export interface FileRouteTypes {
     | '/host'
     | '/org-login'
     | '/privacy'
+    | '/problem-statements'
     | '/sitemap.xml'
     | '/stories'
     | '/terms'
@@ -313,12 +356,15 @@ export interface FileRouteTypes {
     | '/admin/applications'
     | '/admin/contacts'
     | '/admin/events'
+    | '/admin/problem-statements'
     | '/admin/registrations'
     | '/communities/$slug'
     | '/events/$slug'
+    | '/problem-statements/$slug'
     | '/admin/'
     | '/communities/'
     | '/events/'
+    | '/problem-statements/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -334,6 +380,7 @@ export interface RootRouteChildren {
   HostRoute: typeof HostRoute
   OrgLoginRoute: typeof OrgLoginRoute
   PrivacyRoute: typeof PrivacyRoute
+  ProblemStatementsRoute: typeof ProblemStatementsRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   StoriesRoute: typeof StoriesRoute
   TermsRoute: typeof TermsRoute
@@ -360,6 +407,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/problem-statements': {
+      id: '/problem-statements'
+      path: '/problem-statements'
+      fullPath: '/problem-statements'
+      preLoaderRoute: typeof ProblemStatementsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -446,6 +500,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/problem-statements/': {
+      id: '/problem-statements/'
+      path: '/'
+      fullPath: '/problem-statements/'
+      preLoaderRoute: typeof ProblemStatementsIndexRouteImport
+      parentRoute: typeof ProblemStatementsRoute
+    }
     '/events/': {
       id: '/events/'
       path: '/'
@@ -467,6 +528,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/problem-statements/$slug': {
+      id: '/problem-statements/$slug'
+      path: '/$slug'
+      fullPath: '/problem-statements/$slug'
+      preLoaderRoute: typeof ProblemStatementsSlugRouteImport
+      parentRoute: typeof ProblemStatementsRoute
+    }
     '/events/$slug': {
       id: '/events/$slug'
       path: '/$slug'
@@ -486,6 +554,13 @@ declare module '@tanstack/react-router' {
       path: '/registrations'
       fullPath: '/admin/registrations'
       preLoaderRoute: typeof AdminRegistrationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/problem-statements': {
+      id: '/admin/problem-statements'
+      path: '/problem-statements'
+      fullPath: '/admin/problem-statements'
+      preLoaderRoute: typeof AdminProblemStatementsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/events': {
@@ -524,6 +599,7 @@ interface AdminRouteChildren {
   AdminApplicationsRoute: typeof AdminApplicationsRoute
   AdminContactsRoute: typeof AdminContactsRoute
   AdminEventsRoute: typeof AdminEventsRoute
+  AdminProblemStatementsRoute: typeof AdminProblemStatementsRoute
   AdminRegistrationsRoute: typeof AdminRegistrationsRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -533,6 +609,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminApplicationsRoute: AdminApplicationsRoute,
   AdminContactsRoute: AdminContactsRoute,
   AdminEventsRoute: AdminEventsRoute,
+  AdminProblemStatementsRoute: AdminProblemStatementsRoute,
   AdminRegistrationsRoute: AdminRegistrationsRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
@@ -566,6 +643,19 @@ const EventsRouteChildren: EventsRouteChildren = {
 const EventsRouteWithChildren =
   EventsRoute._addFileChildren(EventsRouteChildren)
 
+interface ProblemStatementsRouteChildren {
+  ProblemStatementsSlugRoute: typeof ProblemStatementsSlugRoute
+  ProblemStatementsIndexRoute: typeof ProblemStatementsIndexRoute
+}
+
+const ProblemStatementsRouteChildren: ProblemStatementsRouteChildren = {
+  ProblemStatementsSlugRoute: ProblemStatementsSlugRoute,
+  ProblemStatementsIndexRoute: ProblemStatementsIndexRoute,
+}
+
+const ProblemStatementsRouteWithChildren =
+  ProblemStatementsRoute._addFileChildren(ProblemStatementsRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
@@ -579,6 +669,7 @@ const rootRouteChildren: RootRouteChildren = {
   HostRoute: HostRoute,
   OrgLoginRoute: OrgLoginRoute,
   PrivacyRoute: PrivacyRoute,
+  ProblemStatementsRoute: ProblemStatementsRouteWithChildren,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   StoriesRoute: StoriesRoute,
   TermsRoute: TermsRoute,

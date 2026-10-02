@@ -444,3 +444,48 @@ export async function fetchAdminAnalytics(days = 7, eventSlug?: string) {
     `/api/admin/analytics/summary?${params.toString()}`,
   );
 }
+
+export type { ProblemStatement } from "./api";
+
+export async function fetchAdminProblemStatements() {
+  return adminFetch<{
+    ok: boolean;
+    count: number;
+    problemStatements: import("./api").ProblemStatement[];
+  }>("/api/admin/problem-statements");
+}
+
+export async function createAdminProblemStatement(
+  payload: Partial<import("./api").ProblemStatement>,
+) {
+  return adminFetch<{
+    ok: boolean;
+    problemStatement: import("./api").ProblemStatement;
+  }>("/api/admin/problem-statements", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAdminProblemStatement(
+  id: string,
+  payload: Partial<import("./api").ProblemStatement>,
+) {
+  return adminFetch<{
+    ok: boolean;
+    problemStatement: import("./api").ProblemStatement;
+  }>(`/api/admin/problem-statements/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAdminProblemStatement(id: string) {
+  return adminFetch<{ ok: boolean; message?: string }>(
+    `/api/admin/problem-statements/${id}`,
+    {
+      method: "DELETE",
+    },
+  );
+}
+

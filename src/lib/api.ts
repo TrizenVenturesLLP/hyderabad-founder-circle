@@ -239,3 +239,53 @@ export async function submitContact(payload: ContactPayload) {
 
   return data;
 }
+
+export type ProblemStatement = {
+  _id: string;
+  slug: string;
+  title: string;
+  organization?: string;
+  department?: string;
+  targetDomain?: string;
+  difficulty?: string;
+  industry?: string;
+  scope?: string;
+  platformTech?: string;
+  description: string;
+  keyDeliverables?: string[];
+  published?: boolean;
+  sortOrder?: number;
+  eventId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export async function fetchProblemStatements() {
+  const res = await fetch(`${API_BASE}/api/problem-statements`);
+  const data = (await res.json().catch(() => ({}))) as {
+    ok?: boolean;
+    count?: number;
+    problemStatements?: ProblemStatement[];
+    error?: string;
+  };
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to load problem statements.");
+  }
+  return data.problemStatements || [];
+}
+
+export async function fetchProblemStatementBySlug(slug: string) {
+  const res = await fetch(
+    `${API_BASE}/api/problem-statements/${encodeURIComponent(slug)}`,
+  );
+  const data = (await res.json().catch(() => ({}))) as {
+    ok?: boolean;
+    problemStatement?: ProblemStatement;
+    error?: string;
+  };
+  if (!res.ok || !data.problemStatement) {
+    throw new Error(data.error || "Problem statement not found.");
+  }
+  return data.problemStatement;
+}
+
