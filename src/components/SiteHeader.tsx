@@ -11,14 +11,11 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 
-const nav: Array<{ to: string; label: string; hash?: string }> = [
-  { to: "/events", label: "Events" },
-  { to: "/problem-statements", label: "Problem Statements" },
-  { to: "/about", label: "About" },
-  { to: "/contact", label: "Contact" },
-];
-
-
+const nav = [
+  { to: "/events", label: "Events", hash: undefined as string | undefined },
+  { to: "/about", label: "About", hash: undefined },
+  { to: "/contact", label: "Contact", hash: undefined },
+] as const;
 
 function BrandMark({ compact = false }: { compact?: boolean }) {
   return (
