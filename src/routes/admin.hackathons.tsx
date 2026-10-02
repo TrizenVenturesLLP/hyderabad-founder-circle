@@ -73,6 +73,7 @@ import { tabIndicatorClass, useTabIndicator } from "@/components/admin/useTabInd
 import { AppSelect } from "@/components/AppSelect";
 import { ProblemStatementFacts } from "@/components/hackathon/ProblemStatementFacts";
 import { FormField, FormSection, SegmentedControl, formFieldClass } from "@/components/FormLayout";
+import { links } from "@/lib/links";
 
 const DIFFICULTIES: readonly ProblemDifficulty[] = ["Beginner", "Intermediate", "Advanced"];
 const DIFFICULTY_OPTIONS = DIFFICULTIES.map((value) => ({ value, label: value }));
@@ -100,6 +101,8 @@ interface FormState {
   title: string;
   category: string;
   difficulty: ProblemDifficulty;
+  organization: string;
+  contactInfo: string;
   industry: string;
   scope: string;
   platform: string;
@@ -121,6 +124,8 @@ const emptyForm: FormState = {
   title: "",
   category: "",
   difficulty: "Intermediate",
+  organization: "",
+  contactInfo: links.phone,
   industry: "",
   scope: "",
   platform: "",
@@ -735,6 +740,8 @@ function AdminHackathonsPage() {
       title: item.title,
       category: item.category || "",
       difficulty: item.difficulty,
+      organization: item.organization || "",
+      contactInfo: item.contactInfo || links.phone,
       industry: item.industry || "",
       scope: item.scope || "",
       platform: item.platform || "",
@@ -757,6 +764,11 @@ function AdminHackathonsPage() {
       return;
     }
 
+    if (!formData.contactInfo.trim()) {
+      toast.error("Contact info is required");
+      return;
+    }
+
     if (formData.domainIds.length === 0) {
       toast.error("Select at least one domain track");
       return;
@@ -775,6 +787,8 @@ function AdminHackathonsPage() {
         title: formData.title.trim(),
         category: formData.category.trim() || "General",
         difficulty: formData.difficulty,
+        organization: formData.organization.trim(),
+        contactInfo: formData.contactInfo.trim(),
         industry: formData.industry.trim(),
         scope: formData.scope.trim(),
         platform: formData.platform.trim(),
@@ -2416,15 +2430,13 @@ function AdminHackathonsPage() {
           <div className="h-dvh w-full max-w-xl overflow-y-auto overscroll-contain border-border bg-white p-4 shadow-large sm:h-auto sm:max-h-[90vh] sm:rounded-2xl sm:border sm:p-6">
             <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
               <div className="min-w-0">
-                <p className="font-mono text-xs font-semibold text-primary">
-                  {reviewTarget.statement.id} · {trackNames(reviewTarget.statement)}
-                </p>
                 <h3
                   id="review-statement-title"
                   className="mt-1 font-display text-base font-bold text-foreground"
                 >
-                  {reviewTarget.mode === "reject" ? "Reject: " : ""}
-                  {reviewTarget.statement.title}
+                  {reviewTarget.mode === "reject"
+                    ? "Reject Problem Statement"
+                    : "Problem Statement Details"}
                 </h3>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {reviewTarget.statement.difficulty} ·{" "}
@@ -2448,7 +2460,12 @@ function AdminHackathonsPage() {
 
             <ProblemStatementFacts
               className="mt-4"
+              statementId={reviewTarget.statement.id}
+              title={reviewTarget.statement.title}
+              domain={trackNames(reviewTarget.statement)}
               industry={reviewTarget.statement.industry}
+              organization={reviewTarget.statement.organization}
+              contactInfo={reviewTarget.statement.contactInfo}
               scope={reviewTarget.statement.scope}
               platform={reviewTarget.statement.platform}
               description={reviewTarget.statement.description}
@@ -2653,6 +2670,32 @@ function AdminHackathonsPage() {
                       className={formFieldClass}
                     />
                   </FormField>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <FormField label="Organization" htmlFor="admin-ps-organization" optional>
+                      <input
+                        id="admin-ps-organization"
+                        type="text"
+                        maxLength={200}
+                        value={formData.organization}
+                        onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
+                        placeholder="Organization name"
+                        className={formFieldClass}
+                      />
+                    </FormField>
+                    <FormField label="Contact Info" htmlFor="admin-ps-contact-info">
+                      <input
+                        id="admin-ps-contact-info"
+                        type="tel"
+                        inputMode="tel"
+                        required
+                        maxLength={200}
+                        value={formData.contactInfo}
+                        onChange={(e) => setFormData({ ...formData, contactInfo: e.target.value })}
+                        placeholder="Phone number or contact details"
+                        className={formFieldClass}
+                      />
+                    </FormField>
+                  </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <FormField label="Industry" htmlFor="admin-ps-industry">
                       <input

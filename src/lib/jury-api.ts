@@ -188,6 +188,8 @@ export type JuryProblemStatement = {
   title: string;
   category: string;
   difficulty: string;
+  organization?: string;
+  contactInfo?: string;
   industry?: string;
   scope?: string;
   platform?: string;
@@ -268,6 +270,8 @@ export function getJuryTeam(hackathonId: string, teamId: string) {
       title: string;
       category: string;
       difficulty: string;
+      organization?: string;
+      contactInfo?: string;
       industry?: string;
       scope?: string;
       platform?: string;

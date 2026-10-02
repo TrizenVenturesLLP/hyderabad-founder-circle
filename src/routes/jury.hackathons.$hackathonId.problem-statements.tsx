@@ -529,10 +529,7 @@ function JuryProblemStatementsPage() {
           {viewing ? (
             <>
               <DialogHeader>
-                <p className="font-mono text-xs font-semibold text-(--brand-accent)">
-                  {viewing.id} · {trackLabels(viewing)}
-                </p>
-                <DialogTitle className="text-xl">{viewing.title}</DialogTitle>
+                <DialogTitle className="text-xl">Problem Statement Details</DialogTitle>
                 <DialogDescription>
                   {viewing.difficulty} · Added by{" "}
                   {viewing.teamProposal
@@ -573,6 +570,11 @@ function JuryProblemStatementsPage() {
                 </p>
               ) : null}
               <ProblemStatementFacts
+                statementId={viewing.id}
+                title={viewing.title}
+                domain={trackLabels(viewing)}
+                organization={viewing.organization}
+                contactInfo={viewing.contactInfo}
                 industry={viewing.industry}
                 scope={viewing.scope}
                 platform={viewing.platform}

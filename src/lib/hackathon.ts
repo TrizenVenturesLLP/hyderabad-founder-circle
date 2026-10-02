@@ -22,6 +22,8 @@ export interface ProblemStatement {
   title: string;
   category?: string;
   difficulty: ProblemDifficulty;
+  organization?: string;
+  contactInfo?: string;
   industry?: string;
   scope?: string;
   platform?: string;

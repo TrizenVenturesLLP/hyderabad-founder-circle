@@ -517,6 +517,8 @@ export async function saveHackathonProblemStatement(statement: {
   title: string;
   category: string;
   difficulty: string;
+  organization?: string;
+  contactInfo: string;
   industry?: string;
   scope?: string;
   platform?: string;
@@ -545,6 +547,8 @@ export async function bulkAddHackathonProblemStatements(
     title: string;
     description: string;
     difficulty: string;
+    organization?: string;
+    contactInfo?: string;
     industry?: string;
     scope?: string;
     platform?: string;

@@ -142,6 +142,8 @@ function JuryTeamDetailPage() {
                       <ProblemStatementFacts
                         className="mt-2"
                         industry={statement.industry}
+                        organization={statement.organization}
+                        contactInfo={statement.contactInfo}
                         scope={statement.scope}
                         platform={statement.platform}
                         description={statement.description}
