@@ -112,11 +112,16 @@ export function ProblemProposalCard({
           <p className="text-[13px] font-semibold">Have your own idea?</p>
           <p className="mt-0.5 text-[12px] leading-5 text-(--color-text-secondary)">
             Propose your own problem statement. If the admin approves it, it becomes your
-            team&apos;s problem statement. Only {slots.limit} team ideas can be approved ·{" "}
-            <span className="font-semibold text-foreground">
-              {slotsLeft} of {slots.limit} slots left
-            </span>
-            .
+            team&apos;s problem statement.
+            {slots.limit !== null ? (
+              <>
+                {" "}Only {slots.limit} team ideas can be approved ·{" "}
+                <span className="font-semibold text-foreground">
+                  {slotsLeft} of {slots.limit} slots left
+                </span>
+                .
+              </>
+            ) : null}
           </p>
         </div>
         {canPropose ? (
@@ -152,7 +157,7 @@ export function ProblemProposalCard({
         </p>
       ) : null}
 
-      {isLead && !isPending && slotsLeft === 0 ? (
+      {isLead && !isPending && slots.limit !== null && slotsLeft === 0 ? (
         <p className="mt-3 text-[12px] text-(--color-text-secondary)">
           All {slots.limit} slots for team ideas are taken. Please choose one of the listed
           statements.
