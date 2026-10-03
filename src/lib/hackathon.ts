@@ -5,7 +5,7 @@ export const MAX_TEAM_MEMBERS = 6;
 /** Round 1 has a qualifying cutoff; this last round decides the final ranking. */
 export const FINAL_EVALUATION_ROUND = 2;
 /** Project submission deadline ISO string. */
-export const SUBMISSION_DEADLINE_ISO = "2026-10-04T00:00:00+05:30";
+export const SUBMISSION_DEADLINE_ISO = "2026-10-04T00:40:00+05:30";
 
 export interface HackathonReleaseTimer {
   releaseAt: string | null;
