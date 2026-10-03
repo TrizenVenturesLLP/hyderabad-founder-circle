@@ -123,7 +123,7 @@ export type HackathonProblemProposal = {
   createdAt: string;
 };
 
-export type HackathonProposalSlots = { limit: number; approved: number };
+export type HackathonProposalSlots = { limit: number | null; approved: number };
 
 type HackathonProposalState = {
   problemProposal?: HackathonProblemProposal | null;
@@ -177,6 +177,18 @@ export function resendHackathonTeamInvitation(payload: {
     message: string;
     invitationSent: boolean;
   }>("/api/hackathon/team/members/invite", payload);
+}
+
+export function updateHackathonTeamMember(payload: {
+  email: string;
+  phone: string;
+  target_email: string;
+  member: HackathonTeamMemberPayload;
+}) {
+  return hackathonFetch<{
+    message: string;
+    user?: HackathonRegisteredUser;
+  }>("/api/hackathon/team/members/update", payload);
 }
 
 export function confirmHackathonProblem(payload: {

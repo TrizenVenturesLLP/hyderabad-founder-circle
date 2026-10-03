@@ -331,7 +331,7 @@ function AdminHackathonsPage() {
   const [claimLimit, setClaimLimit] = useState(20);
   const [claimLimitInput, setClaimLimitInput] = useState("20");
   const [savingClaimLimit, setSavingClaimLimit] = useState(false);
-  const [teamProposalLimit, setTeamProposalLimit] = useState(5);
+  const [teamProposalLimit, setTeamProposalLimit] = useState<number | null>(null);
   const [releasingStatementId, setReleasingStatementId] = useState<string | null>(null);
 
   // Single Add / Edit Modal
@@ -370,7 +370,7 @@ function AdminHackathonsPage() {
         setStatements(data.statements || []);
         setClaimLimit(data.claimLimit ?? 20);
         setClaimLimitInput(String(data.claimLimit ?? 20));
-        setTeamProposalLimit(data.teamProposalLimit ?? 5);
+        setTeamProposalLimit(data.teamProposalLimit ?? null);
       } catch (error) {
         console.error("Failed to load problem statements:", error);
         toast.error("Failed to load problem statements");
@@ -684,19 +684,30 @@ function AdminHackathonsPage() {
   const approvedTeamProposals = statements.filter(
     (s) => s.proposedByTeam && s.status === "active",
   ).length;
-  const teamSlotsFull = (item: AdminProblemStatement) =>
-    Boolean(item.proposedByTeam) && approvedTeamProposals >= teamProposalLimit;
+  const teamSlotsFull = (_item: AdminProblemStatement) => false;
   const liveStatementCount = statements.filter((s) => !s.status || s.status === "active").length;
   const rejectedStatementCount = statements.filter((s) => s.status === "rejected").length;
 
   const filteredStatements = useMemo(() => {
     return domainStatements.filter((item) => {
+      const q = searchQuery.trim().toLowerCase();
       const matchesSearch =
-        searchQuery.trim() === "" ||
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item.category && item.category.toLowerCase().includes(searchQuery.toLowerCase()));
+        !q ||
+        item.title.toLowerCase().includes(q) ||
+        item.description.toLowerCase().includes(q) ||
+        item.id.toLowerCase().includes(q) ||
+        (item.category && item.category.toLowerCase().includes(q)) ||
+        (item.difficulty && item.difficulty.toLowerCase().includes(q)) ||
+        (item.organization && item.organization.toLowerCase().includes(q)) ||
+        (item.industry && item.industry.toLowerCase().includes(q)) ||
+        (item.scope && item.scope.toLowerCase().includes(q)) ||
+        (item.platform && item.platform.toLowerCase().includes(q)) ||
+        (item.deliverables && item.deliverables.some((d) => d.toLowerCase().includes(q))) ||
+        (item.proposedByTeam &&
+          ("own problem".includes(q) ||
+            "custom".includes(q) ||
+            "team".includes(q) ||
+            item.proposedByTeam.team_name.toLowerCase().includes(q)));
 
       const matchesDifficulty =
         difficultyFilter === "all" ||
@@ -1761,7 +1772,9 @@ function AdminHackathonsPage() {
                   Problem Statements added by Jury members go live only after you approve them. Team
                   ideas become that team&apos;s statement when approved ·{" "}
                   <span className="font-semibold text-foreground">
-                    {approvedTeamProposals} of {teamProposalLimit} team ideas approved
+                    {teamProposalLimit !== null
+                      ? `${approvedTeamProposals} of ${teamProposalLimit} team ideas approved`
+                      : `${approvedTeamProposals} team ideas approved`}
                   </span>
                   .
                 </p>
@@ -2202,6 +2215,11 @@ function AdminHackathonsPage() {
                     ) : item.status === "rejected" ? (
                       <span className="bg-red-100 px-2 py-0.5 text-[10.5px] font-semibold text-red-800">
                         Rejected
+                      </span>
+                    ) : null}
+                    {item.proposedByTeam ? (
+                      <span className="bg-purple-100 border border-purple-200 px-2 py-0.5 text-[10.5px] font-semibold text-purple-800 rounded">
+                        Own Problem
                       </span>
                     ) : null}
                     <span className="bg-muted px-2 py-0.5 text-[10.5px] font-semibold text-muted-foreground">

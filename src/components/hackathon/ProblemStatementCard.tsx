@@ -47,6 +47,11 @@ export function ProblemStatementCard({ statement, domainName }: ProblemStatement
             >
               {statement.difficulty}
             </span>
+            {(statement.teamProposal || statement.proposedByTeam) && (
+              <span className="inline-flex items-center rounded-md border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-xs font-semibold text-purple-700">
+                Own Problem
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5">

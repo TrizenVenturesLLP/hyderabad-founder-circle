@@ -157,12 +157,13 @@ function ProblemStatementDetailsPage() {
       toast.error("You must be logged in to confirm a problem statement.");
       return;
     }
-    if (!isLead || teamStatementId) return;
-    if (
-      !window.confirm(
-        `Confirm ${statement.id} for your team?\n\nA team can confirm only one problem statement, and it can't be changed afterwards.`,
-      )
-    ) {
+    if (!isLead) return;
+
+    const confirmMsg = teamStatementId
+      ? `Switch your team's problem statement from ${teamStatementId} to ${statement.id}?`
+      : `Confirm ${statement.id} for your team?`;
+
+    if (!window.confirm(confirmMsg)) {
       return;
     }
 
@@ -175,7 +176,7 @@ function ProblemStatementDetailsPage() {
       });
       saveSelectedProblemStatementId(statement.id);
       setTeamStatementId(String(statement.id).toUpperCase());
-      toast.success(`${statement.id} confirmed as your problem statement`);
+      toast.success(`${statement.id} is now confirmed as your problem statement`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to confirm statement");
     } finally {
@@ -233,6 +234,11 @@ function ProblemStatementDetailsPage() {
               <span className="bg-(--color-background-alt) px-2 py-0.5 text-[11px] font-semibold text-(--color-text-secondary)">
                 {statement.difficulty}
               </span>
+              {(statement.teamProposal || statement.proposedByTeam) && (
+                <span className="bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 text-[11px] font-semibold text-purple-700">
+                  Own Problem
+                </span>
+              )}
               {statement.category ? (
                 <span className="inline-flex items-center gap-1 bg-(--color-background-alt) px-2 py-0.5 text-[11px] font-medium text-(--color-text-secondary)">
                   <Layers className="size-3" />
@@ -326,16 +332,16 @@ function ProblemStatementDetailsPage() {
                   {confirmed
                     ? "Confirmed for your team"
                     : lockedToOther
-                      ? `Your team chose ${teamStatementId}`
+                      ? "Different problem selected"
                       : "Not confirmed yet"}
                 </p>
-                <p className="mt-0.5 text-[11.5px] leading-5 opacity-90">
+                <p className="mt-0.5 text-[11.5px] leading-5 opacity-90 break-all">
                   {confirmed
-                    ? `Confirmed by ${isLead ? "you" : leadName}. It can't be changed.`
+                    ? `Confirmed by ${isLead ? "you" : leadName}. You can switch to another statement anytime.`
                     : lockedToOther
-                      ? "A team can confirm only one problem statement."
+                      ? `Currently selected: ${teamStatementId}. ${isLead ? "Click below to replace your selection with this statement." : `Only ${leadName} can switch statements.`}`
                       : isLead
-                        ? "You can confirm only one statement, and it can't be changed afterwards."
+                        ? "You can confirm this problem statement for your team."
                         : `Only ${leadName} can confirm a statement.`}
                 </p>
               </div>
@@ -378,20 +384,24 @@ function ProblemStatementDetailsPage() {
                   Submit project
                 </button>
               ) : null}
-              {isLead && !confirmed && !lockedToOther && statement.available === false ? (
+              {isLead && !confirmed && statement.available === false ? (
                 <p className="border border-amber-200 bg-amber-50 px-3 py-2 text-[12.5px] text-amber-800">
                   This statement was proposed by another team and is reserved for them. Please
                   choose another one.
                 </p>
-              ) : isLead && !confirmed && !lockedToOther ? (
+              ) : isLead && !confirmed ? (
                 <button
                   type="button"
                   onClick={() => void handleConfirmStatement()}
                   disabled={isConfirming}
-                  className="inline-flex h-10 w-full items-center sm:h-9 justify-center gap-1.5 bg-(--brand-accent) px-4 text-[13px] font-semibold text-white transition-opacity hover:opacity-95 disabled:cursor-wait disabled:opacity-60"
+                  className="inline-flex min-h-10 py-2.5 w-full items-center justify-center gap-1.5 bg-(--brand-accent) px-4 text-[13px] font-semibold text-white transition-opacity hover:opacity-95 disabled:cursor-wait disabled:opacity-60"
                 >
-                  <Check className="size-4" />
-                  {isConfirming ? "Confirming..." : "Confirm this statement"}
+                  <Check className="size-4 shrink-0" />
+                  {isConfirming
+                    ? "Updating..."
+                    : lockedToOther
+                      ? "Replace current selection with this Statement"
+                      : "Confirm this statement"}
                 </button>
               ) : null}
               <button

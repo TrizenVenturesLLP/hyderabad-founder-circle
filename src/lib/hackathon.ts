@@ -33,6 +33,7 @@ export interface ProblemStatement {
   available?: boolean;
   /** Proposed by a team; reserved for that team only. */
   teamProposal?: boolean;
+  proposedByTeam?: { team_name: string; lead_name?: string } | null;
 }
 
 export function getStatementDomainIds(statement: Pick<ProblemStatement, "domainId" | "domainIds">) {

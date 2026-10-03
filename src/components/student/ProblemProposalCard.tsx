@@ -52,7 +52,11 @@ export function ProblemProposalCard({
     platform: "",
   });
 
-  const slotsLeft = slots ? Math.max(0, slots.limit - slots.approved) : 0;
+  const slotsLeft = slots
+    ? slots.limit === null
+      ? Infinity
+      : Math.max(0, slots.limit - slots.approved)
+    : Infinity;
   const isPending = proposal?.status === "pending_approval";
   const isRejected = proposal?.status === "rejected";
   const canPropose = isLead && !isPending && slotsLeft > 0 && Boolean(credentials);

@@ -533,8 +533,10 @@ function DashboardPage() {
                       They appear here when the countdown reaches zero.
                     </p>
                   </div>
-                ) : confirmedStatementId ? (
-                  <div className="border border-(--brand-accent)/40 bg-(--brand-accent-soft) p-4">
+                ) : null}
+
+                {confirmedStatementId ? (
+                  <div className="mb-5 border border-(--brand-accent)/40 bg-(--brand-accent-soft) p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.08em] text-(--brand-accent) uppercase">
                         <CheckCircle2 className="size-3.5" /> Your team&apos;s problem statement
@@ -545,7 +547,7 @@ function DashboardPage() {
                         </span>
                       ) : null}
                     </div>
-                    <p className="mt-2 font-mono text-[11.5px] font-bold text-(--brand-accent)">
+                    <p className="mt-2 font-mono text-[11.5px] font-bold text-(--brand-accent) break-all">
                       {confirmedStatementId}
                     </p>
                     {confirmedStatement ? (
@@ -561,26 +563,47 @@ function DashboardPage() {
                         <p className="mt-1.5 line-clamp-3 text-[12.5px] leading-5 text-(--color-text-secondary)">
                           {confirmedStatement.description}
                         </p>
-                        <Link
-                          to="/hackathon/problems/$problemId"
-                          params={{ problemId: confirmedStatement.id }}
-                          className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-(--brand-accent) hover:underline"
-                        >
-                          View full details <ArrowRight className="size-3.5" />
-                        </Link>
+                        <div className="mt-3.5 flex flex-wrap items-center gap-3">
+                          <Link
+                            to="/hackathon/problems/$problemId"
+                            params={{ problemId: confirmedStatement.id }}
+                            className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-(--brand-accent) hover:underline"
+                          >
+                            View full details <ArrowRight className="size-3.5" />
+                          </Link>
+                          {isLead ? (
+                            <a
+                              href="#problem-statements-list"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                document
+                                  .getElementById("problem-statements-list")
+                                  ?.scrollIntoView({ behavior: "smooth" });
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded bg-(--brand-accent) px-3 py-1.5 text-[12px] font-semibold text-white transition hover:opacity-90"
+                            >
+                              Replace / Change Problem Statement
+                            </a>
+                          ) : null}
+                        </div>
                       </>
                     ) : null}
-                    <p className="mt-3 flex items-center gap-1.5 border-t border-(--brand-accent)/20 pt-3 text-[11.5px] text-(--color-text-secondary)">
-                      <LockKeyhole className="size-3.5 shrink-0" />
-                      Confirmed by {isLead ? "you" : leadName}. A team can confirm only one problem
-                      statement, so this can&apos;t be changed.
-                    </p>
+                    <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 border-t border-(--brand-accent)/20 pt-3 text-[11.5px] text-(--color-text-secondary)">
+                      <span>Confirmed by {isLead ? "you" : leadName}.</span>
+                      {isLead ? (
+                        <span className="font-semibold text-(--brand-accent)">
+                          Select any problem statement below to replace your current choice.
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
-                ) : !backendUser ? (
+                ) : null}
+
+                {!backendUser ? (
                   <p className="py-10 text-center text-[12.5px] text-(--color-text-secondary)">
                     Loading your team…
                   </p>
-                ) : !isLead ? (
+                ) : !isLead && !confirmedStatementId ? (
                   <div className="flex min-h-48 flex-col items-center justify-center text-center">
                     <span className="grid size-11 place-items-center rounded-full bg-(--brand-accent-soft) text-(--brand-accent)">
                       <Clock3 className="size-5" />
@@ -599,7 +622,7 @@ function DashboardPage() {
                   </div>
                 ) : (
                   <>
-                    <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div id="problem-statements-list" className="scroll-mt-6 flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="text-[11px] font-semibold tracking-[0.08em] text-(--brand-accent) uppercase">
                           Problem statements
@@ -612,10 +635,9 @@ function DashboardPage() {
                         {availableStatementCount} available
                       </span>
                     </div>
-                    <p className="mt-2 flex items-start gap-1.5 border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] leading-5 text-amber-800">
-                      <LockKeyhole className="mt-0.5 size-3.5 shrink-0" />
-                      Your team can confirm only one problem statement, and it can&apos;t be changed
-                      afterwards. Review it carefully before confirming.
+                    <p className="mt-2 flex items-start gap-1.5 border border-blue-200 bg-blue-50 px-3 py-2 text-[12px] leading-5 text-blue-800">
+                      <CheckCircle2 className="mt-0.5 size-3.5 shrink-0" />
+                      Your team works on 1 problem statement at a time. You can select or switch your problem statement anytime before submission.
                     </p>
                     {proposalCard}
 

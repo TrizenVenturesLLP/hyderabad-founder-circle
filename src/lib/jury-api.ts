@@ -214,6 +214,7 @@ export type JuryProblemStatement = {
   claimedByName?: string;
   /** Proposed by a team; only that team works on it. */
   teamProposal?: boolean;
+  proposedByTeam?: { team_name: string; lead_name?: string } | null;
   /** Teams that confirmed this statement. */
   teamCount?: number;
   /** Team names; empty for statements claimed by another Jury member. */
