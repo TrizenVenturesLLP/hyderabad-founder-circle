@@ -424,18 +424,37 @@ export function JuryEvaluationDialog({
                 })}
               </ol>
 
-              <label className="mt-5 block text-sm font-medium">
-                Comments <span className="font-normal text-(--color-text-muted)">(optional)</span>
-                <textarea
-                  rows={3}
-                  maxLength={3000}
-                  disabled={readOnly}
-                  value={comments}
-                  onChange={(event) => setComments(event.target.value)}
-                  placeholder="Strengths, gaps and feedback for the team"
-                  className="mt-1.5 block w-full rounded-xl border border-(--color-border) bg-white px-3.5 py-2.5 text-sm font-normal outline-none transition-[border-color,box-shadow] focus:border-(--brand-accent) focus:ring-4 focus:ring-(--brand-accent)/12 disabled:bg-(--color-background-alt)"
-                />
-              </label>
+              <div className="mt-5 block text-sm font-medium">
+                <p className="text-sm font-medium text-foreground">
+                  Decision / Comment
+                </p>
+                <div className="mt-2 flex items-center gap-3">
+                  <button
+                    type="button"
+                    disabled={readOnly}
+                    onClick={() => setComments("Approved")}
+                    className={`inline-flex items-center gap-1.5 rounded-xl border px-4 py-2 text-xs font-bold transition-colors ${
+                      comments === "Approved" || comments.toLowerCase().includes("approve")
+                        ? "border-emerald-600 bg-emerald-600 text-white shadow-xs"
+                        : "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                    } disabled:opacity-60`}
+                  >
+                    <CheckCircle2 className="size-4" /> Approve
+                  </button>
+                  <button
+                    type="button"
+                    disabled={readOnly}
+                    onClick={() => setComments("Rejected")}
+                    className={`inline-flex items-center gap-1.5 rounded-xl border px-4 py-2 text-xs font-bold transition-colors ${
+                      comments === "Rejected" || comments.toLowerCase().includes("reject")
+                        ? "border-red-600 bg-red-600 text-white shadow-xs"
+                        : "border-red-300 bg-red-50 text-red-700 hover:bg-red-100"
+                    } disabled:opacity-60`}
+                  >
+                    <X className="size-4" /> Reject
+                  </button>
+                </div>
+              </div>
               {error ? (
                 <p
                   role="alert"

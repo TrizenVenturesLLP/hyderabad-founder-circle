@@ -705,9 +705,20 @@ function AdminHackathonEvaluationsPage() {
                         </div>
                       ) : null}
                       {item.comments ? (
-                        <p className="mt-2.5 bg-muted/40 px-3 py-2 text-[12.5px] leading-5 text-foreground">
-                          {item.comments}
-                        </p>
+                        <div className="mt-2.5 flex items-center gap-2">
+                          <span className="text-[11px] font-semibold text-muted-foreground">Decision:</span>
+                          <span
+                            className={`px-2.5 py-0.5 text-xs font-bold ${
+                              item.comments.toLowerCase().includes("approve")
+                                ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                : item.comments.toLowerCase().includes("reject")
+                                  ? "bg-red-100 text-red-800 border border-red-300"
+                                  : "bg-slate-100 text-slate-800 border border-slate-300"
+                            }`}
+                          >
+                            {item.comments}
+                          </span>
+                        </div>
                       ) : null}
                       <div className="mt-2.5 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
                         <span>
