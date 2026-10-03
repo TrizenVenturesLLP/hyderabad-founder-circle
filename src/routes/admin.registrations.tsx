@@ -28,6 +28,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { AdminPageHeader } from "@/components/admin/AdminPageChrome";
+import { AppSelect } from "@/components/AppSelect";
 
 export const Route = createFileRoute("/admin/registrations")({
   component: AdminRegistrationsPage,
@@ -310,7 +311,7 @@ function AdminRegistrationsPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 space-y-3 border-b border-[var(--color-border)] bg-white px-4 pb-3 pt-4 sm:px-5 sm:pb-4 sm:pt-5 md:px-6 md:pt-5">
+      <div className="shrink-0 space-y-4 px-4 pb-1 pt-4 sm:px-5 sm:pt-5 md:px-8 md:pt-6">
         <AdminPageHeader
           title="Registrations"
           description={
@@ -339,37 +340,36 @@ function AdminRegistrationsPage() {
           }
         />
 
-        <div className="flex flex-col gap-2.5 border border-[var(--color-border)] bg-[var(--color-background-alt)] p-2.5 sm:flex-row sm:items-center sm:gap-2">
-          <select
+        <div className="flex flex-col gap-2.5 rounded-2xl border border-[var(--color-border)] bg-white p-2.5 shadow-(--shadow-small) sm:flex-row sm:items-center sm:gap-2">
+          <AppSelect
             value={eventSlug}
-            onChange={(e) => setEventSlug(e.target.value)}
-            aria-label="Filter by event"
-            className="h-12 w-full shrink-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-background-alt)] px-3 text-sm outline-none focus:border-[var(--brand-accent)] sm:h-11 sm:w-[min(100%,360px)]"
-          >
-            <option value="all">All events</option>
-            {events.map((e) => (
-              <option key={e.slug} value={e.slug}>
-                {e.title} ({e.count})
-              </option>
-            ))}
-          </select>
+            onValueChange={setEventSlug}
+            ariaLabel="Filter by event"
+            options={[
+              { value: "all", label: "All events" },
+              ...events.map((e) => ({
+                value: e.slug,
+                label: `${e.title} (${e.count})`,
+              })),
+            ]}
+            className="h-12 shrink-0 sm:h-11 sm:w-[min(100%,360px)]"
+          />
 
-          <select
+          <AppSelect
             value={reviewFilter}
-            onChange={(e) => {
-              setReviewFilter(
-                e.target.value as "all" | "pending_review" | "paid",
-              );
+            onValueChange={(value) => {
+              setReviewFilter(value as "all" | "pending_review" | "paid");
               setPage(1);
               setSelected(new Set());
             }}
-            aria-label="Filter by approval status"
-            className="h-12 w-full shrink-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-background-alt)] px-3 text-sm outline-none focus:border-[var(--brand-accent)] sm:h-11 sm:w-44"
-          >
-            <option value="all">All applications</option>
-            <option value="pending_review">Pending review</option>
-            <option value="paid">Approved</option>
-          </select>
+            ariaLabel="Filter by approval status"
+            options={[
+              { value: "all", label: "All applications" },
+              { value: "pending_review", label: "Pending review" },
+              { value: "paid", label: "Approved" },
+            ]}
+            className="h-12 shrink-0 sm:h-11 sm:w-44"
+          />
 
           <div className="flex h-12 min-w-0 flex-1 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-background-alt)] focus-within:border-[var(--brand-accent)] sm:h-11">
             <div className="flex items-center pl-3 text-[var(--color-text-muted)]">

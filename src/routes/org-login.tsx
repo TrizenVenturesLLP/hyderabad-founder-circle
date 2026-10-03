@@ -13,7 +13,10 @@ export const Route = createFileRoute("/org-login")({
   },
   component: OrgLoginPage,
   head: () => ({
-    meta: [{ title: "Organization Login — Trizen Community" }],
+    meta: [
+      { title: "Organization Login — Trizen Community" },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
   }),
 });
 

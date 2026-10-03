@@ -11,6 +11,7 @@ import {
 import { RsvpButton } from "@/components/rsvp/RsvpButton";
 import {
   DATE_TBC_LABEL,
+  isHackathonEvent,
   isMeetupCompleted,
   isMeetupDateConfirmed,
   isRsvpOpen,
@@ -44,27 +45,52 @@ function statusMeta(meetup: Meetup) {
   };
 }
 
-export function EventCard({ meetup, className }: { meetup: Meetup; className?: string }) {
+export function EventCard({
+  meetup,
+  className,
+  size = "default",
+}: {
+  meetup: Meetup;
+  className?: string;
+  size?: "default" | "compact";
+}) {
+  const compact = size === "compact";
+  const buttonSize = compact ? "min-h-9! text-[12.5px]!" : "min-h-10! text-[13px]!";
   const confirmed = isMeetupDateConfirmed(meetup);
   const day = confirmed ? new Date(meetup.dateISO + "T12:00:00") : null;
-  const dayNum = day?.getDate();
-  const monthShort = day?.toLocaleDateString("en-IN", { month: "short" }).toUpperCase();
+  const endDay =
+    confirmed && meetup.endDateISO && meetup.endDateISO !== meetup.dateISO
+      ? new Date(meetup.endDateISO + "T12:00:00")
+      : null;
+  const monthOf = (date: Date) =>
+    date.toLocaleDateString("en-IN", { month: "short" }).toUpperCase();
   const weekday = day?.toLocaleDateString("en-IN", { weekday: "short" });
+  const dayRange = day
+    ? !endDay
+      ? `${day.getDate()} ${monthOf(day)}`
+      : endDay.getMonth() === day.getMonth()
+        ? `${day.getDate()}–${endDay.getDate()} ${monthOf(day)}`
+        : `${day.getDate()} ${monthOf(day)} – ${endDay.getDate()} ${monthOf(endDay)}`
+    : "";
   const { label, tone, Icon } = statusMeta(meetup);
   const cover = meetupCoverImage(meetup);
   const open = isRsvpOpen(meetup);
+  const hackathon = isHackathonEvent(meetup);
 
   return (
     <article
       className={cn(
-        "group flex h-full flex-col overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[0_1px_0_rgba(15,23,42,0.03)] transition-[border-color,box-shadow,transform] duration-300 ease-out hover:-translate-y-1 hover:border-[var(--color-border-strong)] hover:shadow-[0_12px_28px_-18px_rgba(15,23,42,0.28)]",
+        "group flex h-full flex-col overflow-hidden border border-(--color-border) bg-(--color-surface) shadow-[0_1px_0_rgba(15,23,42,0.03)] transition-[border-color,box-shadow,transform] duration-300 ease-out hover:-translate-y-1 hover:border-(--color-border-strong) hover:shadow-[0_12px_28px_-18px_rgba(15,23,42,0.28)]",
         className,
       )}
     >
       <Link
         to="/events/$slug"
         params={{ slug: meetup.slug }}
-        className="relative block aspect-[4/3] overflow-hidden bg-[var(--color-background-alt)]"
+        className={cn(
+          "relative block overflow-hidden bg-(--color-background-alt)",
+          compact ? "aspect-16/10" : "aspect-4/3",
+        )}
       >
         <img
           src={cover}
@@ -94,34 +120,55 @@ export function EventCard({ meetup, className }: { meetup: Meetup; className?: s
           {label}
         </span>
 
-        <div className="absolute inset-x-0 bottom-0 p-3.5 md:p-4">
+        <div className={cn("absolute inset-x-0 bottom-0", compact ? "p-3" : "p-3.5 md:p-4")}>
           {meetup.organization?.name ? (
-            <p className="text-[11px] font-medium tracking-[0.04em] text-white/75">
+            <p
+              className={cn(
+                "font-medium tracking-[0.04em] text-white/75",
+                compact ? "text-[10.5px]" : "text-[11px]",
+              )}
+            >
               {meetup.organization.name}
             </p>
           ) : null}
-          <h3 className="mt-1 line-clamp-2 font-display text-[1.05rem] leading-snug tracking-tight text-white md:text-[1.12rem]">
+          <h3
+            className={cn(
+              "mt-1 line-clamp-2 font-display leading-snug tracking-tight text-white",
+              compact ? "text-[0.95rem]" : "text-[1.05rem] md:text-[1.12rem]",
+            )}
+          >
             {meetup.title}
           </h3>
-          <p className="mt-1.5 text-[12px] font-medium text-white/85">
-            {confirmed ? `${weekday} · ${dayNum} ${monthShort}` : DATE_TBC_LABEL}
+          <p
+            className={cn(
+              "font-medium text-white/85",
+              compact ? "mt-1 text-[11.5px]" : "mt-1.5 text-[12px]",
+            )}
+          >
+            {confirmed ? `${weekday} · ${dayRange}` : DATE_TBC_LABEL}
           </p>
         </div>
       </Link>
 
-      <div className="flex flex-1 flex-col gap-3 p-4 md:px-4 md:pb-4 md:pt-3.5">
-        <div className="space-y-1.5 text-[13px] text-[var(--color-text-secondary)]">
+      <div
+        className={cn(
+          "flex flex-1 flex-col",
+          compact ? "gap-2.5 p-3" : "gap-3 p-4 md:px-4 md:pb-4 md:pt-3.5",
+        )}
+      >
+        <div
+          className={cn(
+            "text-(--color-text-secondary)",
+            compact ? "space-y-1 text-[12.5px]" : "space-y-1.5 text-[13px]",
+          )}
+        >
           <p className="inline-flex min-w-0 items-center gap-1.5">
-            <Clock
-              className="size-3.5 shrink-0 text-[var(--brand-accent)]"
-              strokeWidth={1.75}
-              aria-hidden
-            />
+            <Clock className="size-3.5 shrink-0 text-brand-accent" strokeWidth={1.75} aria-hidden />
             <span className="truncate">{meetup.time}</span>
           </p>
           <p className="inline-flex min-w-0 items-center gap-1.5">
             <MapPin
-              className="size-3.5 shrink-0 text-[var(--brand-accent)]"
+              className="size-3.5 shrink-0 text-brand-accent"
               strokeWidth={1.75}
               aria-hidden
             />
@@ -137,7 +184,8 @@ export function EventCard({ meetup, className }: { meetup: Meetup; className?: s
             to="/events/$slug"
             params={{ slug: meetup.slug }}
             className={cn(
-              "btn-secondary group/details min-w-0 flex-1 justify-center gap-1.5 !min-h-10 !px-3 !text-[13px]",
+              "btn-secondary group/details min-w-0 flex-1 justify-center gap-1.5 px-3!",
+              buttonSize,
               !open && "flex-none",
             )}
           >
@@ -148,10 +196,18 @@ export function EventCard({ meetup, className }: { meetup: Meetup; className?: s
               aria-hidden
             />
           </Link>
-          {open ? (
+          {open && hackathon ? (
+            <Link
+              to="/hackathon/register"
+              className={cn("btn-primary min-w-0 flex-1 justify-center gap-1.5 px-3!", buttonSize)}
+            >
+              <Ticket className="size-3.5" strokeWidth={1.75} aria-hidden />
+              Register
+            </Link>
+          ) : open ? (
             <RsvpButton
               event={meetup}
-              className="btn-primary min-w-0 flex-1 justify-center gap-1.5 !min-h-10 !px-3 !text-[13px]"
+              className={cn("btn-primary min-w-0 flex-1 justify-center gap-1.5 px-3!", buttonSize)}
             >
               <CalendarCheck className="size-3.5" strokeWidth={1.75} aria-hidden />
               RSVP

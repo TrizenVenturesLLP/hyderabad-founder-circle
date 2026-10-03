@@ -28,7 +28,11 @@ import {
 import { invalidateMeetupsCache } from "@/lib/events";
 import { cn } from "@/lib/utils";
 import { AdminPageHeader } from "@/components/admin/AdminPageChrome";
+import { AppSelect } from "@/components/AppSelect";
 import { toast } from "sonner";
+
+const editorSelectClass =
+  "mt-[0.4rem] rounded-[0.7rem] bg-(--color-background-alt) font-normal data-[state=open]:bg-white";
 
 const adminRoute = getRouteApi("/admin");
 
@@ -291,18 +295,17 @@ function AdminEventsPage() {
         actions={
           <>
             {isPlatform ? (
-              <select
+              <AppSelect
+                ariaLabel="Filter by organization"
                 value={orgFilter}
-                onChange={(e) => setOrgFilter(e.target.value)}
-                className="border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm"
-              >
-                <option value="all">All organizations</option>
-                {orgs.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
+                onValueChange={setOrgFilter}
+                options={[
+                  { value: "all", label: "All organizations" },
+                  ...orgs.map((o) => ({ value: o.id, label: o.name })),
+                ]}
+                shape="pill"
+                className="w-auto min-w-48"
+              />
             ) : null}
             <button type="button" className="btn-primary" onClick={startCreate}>
               <Plus className="size-4" strokeWidth={1.75} />
@@ -330,7 +333,7 @@ function AdminEventsPage() {
           return (
             <li
               key={item._id}
-              className="flex aspect-square flex-col border border-[var(--color-border)] bg-white p-4 transition-colors hover:border-[var(--color-border-strong)]"
+              className="flex aspect-square flex-col rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-(--shadow-small) transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-1 hover:border-[var(--color-border-strong)] hover:shadow-(--shadow-card-hover)"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -676,20 +679,18 @@ function EventEditorModal({
               <div className="space-y-4">
                 {isPlatform ? (
                   <Field label="Organization owner">
-                    <select
+                    <AppSelect
                       value={form.organizationId || ""}
-                      onChange={(e) =>
-                        updateField("organizationId", e.target.value)
+                      onValueChange={(value) =>
+                        updateField("organizationId", value)
                       }
-                      className="field"
-                    >
-                      <option value="">Select organization</option>
-                      {organizations.map((o) => (
-                        <option key={o.id} value={o.id}>
-                          {o.name}
-                        </option>
-                      ))}
-                    </select>
+                      placeholder="Select organization"
+                      options={organizations.map((o) => ({
+                        value: o.id,
+                        label: o.name,
+                      }))}
+                      className={editorSelectClass}
+                    />
                   </Field>
                 ) : null}
                 <Field label="Title">
@@ -765,36 +766,32 @@ function EventEditorModal({
 
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <Field label="Status">
-                    <select
+                    <AppSelect
                       value={form.status}
-                      onChange={(e) =>
-                        updateField(
-                          "status",
-                          e.target.value as AdminEvent["status"],
-                        )
+                      onValueChange={(value) =>
+                        updateField("status", value as AdminEvent["status"])
                       }
-                      className="field"
-                    >
-                      <option value="open">Open</option>
-                      <option value="coming-soon">Coming soon</option>
-                      <option value="completed">Completed</option>
-                    </select>
+                      options={[
+                        { value: "open", label: "Open" },
+                        { value: "coming-soon", label: "Coming soon" },
+                        { value: "completed", label: "Completed" },
+                      ]}
+                      className={editorSelectClass}
+                    />
                   </Field>
                   <Field label="Format">
-                    <select
+                    <AppSelect
                       value={form.format}
-                      onChange={(e) =>
-                        updateField(
-                          "format",
-                          e.target.value as AdminEvent["format"],
-                        )
+                      onValueChange={(value) =>
+                        updateField("format", value as AdminEvent["format"])
                       }
-                      className="field"
-                    >
-                      <option value="Offline">Offline</option>
-                      <option value="Online">Online</option>
-                      <option value="Hybrid">Hybrid</option>
-                    </select>
+                      options={[
+                        { value: "Offline", label: "Offline" },
+                        { value: "Online", label: "Online" },
+                        { value: "Hybrid", label: "Hybrid" },
+                      ]}
+                      className={editorSelectClass}
+                    />
                   </Field>
                   <Field label="Seats">
                     <input
@@ -951,27 +948,27 @@ function EventEditorModal({
                   <p className="text-sm font-medium text-foreground">
                     Payment methods
                   </p>
-                  <select
-                    className="rounded-lg border border-[var(--color-border)] px-2 py-1.5 text-xs"
-                    defaultValue=""
-                    onChange={(e) => {
-                      const type = e.target
-                        .value as AdminPaymentMethod["type"];
+                  <AppSelect
+                    ariaLabel="Add payment method"
+                    value=""
+                    placeholder="Add method…"
+                    onValueChange={(value) => {
+                      const type = value as AdminPaymentMethod["type"];
                       if (!type) return;
                       updatePaymentField("methods", [
                         ...(form.payment?.methods || []),
                         emptyPaymentMethod(type),
                       ]);
-                      e.target.value = "";
                     }}
-                  >
-                    <option value="">Add method…</option>
-                    {METHOD_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {t.replace(/_/g, " ")}
-                      </option>
-                    ))}
-                  </select>
+                    options={METHOD_TYPES.map((t) => ({
+                      value: t,
+                      label: <span className="capitalize">{t.replace(/_/g, " ")}</span>,
+                    }))}
+                    shape="pill"
+                    size="sm"
+                    icon={<Plus className="size-3.5" />}
+                    className="w-auto min-w-40"
+                  />
                 </div>
 
                 {(form.payment?.methods || []).length === 0 ? (

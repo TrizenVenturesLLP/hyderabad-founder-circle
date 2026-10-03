@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import {
   getMeetupBySlug,
+  isHackathonEvent,
   isMeetupCompleted,
   isRsvpOpen,
   meetupMapsEmbedUrl,
@@ -52,6 +53,7 @@ export const Route = createFileRoute("/events/$slug")({
   loader: async ({ params }) => {
     const meetup = await getMeetupBySlug(params.slug);
     if (!meetup) throw notFound();
+    if (isHackathonEvent(meetup)) throw redirect({ to: "/hackathon" });
     if (params.slug !== meetup.slug) {
       throw redirect({
         to: "/events/$slug",
@@ -63,10 +65,7 @@ export const Route = createFileRoute("/events/$slug")({
   head: ({ loaderData }) => {
     const m = loaderData?.meetup;
     const pageContent = m ? getEventPageContent(m) : null;
-    const organizer =
-      pageContent?.metaOrganizer ||
-      m?.organization?.name ||
-      "Trizen Community";
+    const organizer = pageContent?.metaOrganizer || m?.organization?.name || "Trizen Community";
     const title = m ? `${m.title} — ${organizer}` : "Meetup — Trizen Community";
     const desc = m
       ? `${meetupDateLabel(m)} · ${m.time} · ${meetupVenueLine(m)}. ${m.blurb}`
@@ -108,8 +107,7 @@ export const Route = createFileRoute("/events/$slug")({
                 url: absoluteUrl,
                 image: [ogImage],
                 ...(isMeetupDateConfirmed(m) ? { startDate: m.dateISO } : {}),
-                eventAttendanceMode:
-                  "https://schema.org/OfflineEventAttendanceMode",
+                eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
                 eventStatus: "https://schema.org/EventScheduled",
                 location: {
                   "@type": "Place",
@@ -232,16 +230,18 @@ const defaultFaqs = [
   },
 ];
 
-const audienceIcons = [
-  UserRound,
-  Users,
-  Lightbulb,
-  Briefcase,
-  Handshake,
-  Rocket,
-];
+const audienceIcons = [UserRound, Users, Lightbulb, Briefcase, Handshake, Rocket];
 
-const eventGallery = [
+const eventGalleries: Record<string, { src: string; alt: string }[]> = {
+  "hyderabad-founders-network-september": [
+    {
+      src: "/september-2026-1.jpg",
+      alt: "Hyderabad Founders Network September meetup — group photo at NanoSpace",
+    },
+  ],
+};
+
+const defaultEventGallery = [
   {
     src: "/july-2026-1.jpeg",
     alt: "Hyderabad Founders Network July meetup — group photo",
@@ -280,13 +280,7 @@ function SectionLabel({ children }: { children: ReactNode }) {
   );
 }
 
-function PartnerTile({
-  partner,
-  compact = false,
-}: {
-  partner: EventPartner;
-  compact?: boolean;
-}) {
+function PartnerTile({ partner, compact = false }: { partner: EventPartner; compact?: boolean }) {
   const arrow = compact ? null : (
     <ArrowUpRight
       className="ml-auto size-3.5 shrink-0 text-[var(--color-text-muted)] transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-[var(--brand-accent)]"
@@ -388,10 +382,7 @@ function PartnerTierPartners({
         <Fragment key={partner.name}>
           {index > 0 ? (
             <li className="flex justify-center py-0.5">
-              <span
-                className="text-[13px] text-[var(--color-text-muted)]"
-                aria-hidden
-              >
+              <span className="text-[13px] text-[var(--color-text-muted)]" aria-hidden>
                 ×
               </span>
             </li>
@@ -587,13 +578,7 @@ function SpeakerCard({ speaker }: { speaker: EventSpeaker }) {
   );
 }
 
-function EventStatusBadge({
-  completed,
-  open,
-}: {
-  completed: boolean;
-  open: boolean;
-}) {
+function EventStatusBadge({ completed, open }: { completed: boolean; open: boolean }) {
   if (open) {
     return (
       <span className="inline-flex items-center gap-1.5 bg-[var(--brand-accent)] px-2.5 py-1 text-[10px] font-semibold tracking-[0.05em] text-white">
@@ -639,12 +624,12 @@ function EventDetail() {
   const galleryReveal = useInView<HTMLElement>(scrollRevealOpts);
   const ctaReveal = useInView<HTMLElement>(scrollRevealOpts);
   const completed = isMeetupCompleted(meetup);
+  const eventGallery = eventGalleries[meetup.slug] ?? defaultEventGallery;
   const open = isRsvpOpen(meetup);
   const hasPartners = pageContent.partnerTiers.length > 0;
   const heroContent = pageContent.hero;
   const supportedByPartners =
-    pageContent.partnerTiers.find((tier) => tier.label === "Supported by")
-      ?.partners ?? [];
+    pageContent.partnerTiers.find((tier) => tier.label === "Supported by")?.partners ?? [];
   const partnerGridTiers = pageContent.partnerTiers.map((tier) => ({
     ...tier,
     layout: "stack" as const,
@@ -663,10 +648,7 @@ function EventDetail() {
               height={1080}
               fetchPriority="high"
               decoding="async"
-              className={cn(
-                "h-full w-full object-cover",
-                meetupCoverObjectClass(meetup),
-              )}
+              className={cn("h-full w-full object-cover", meetupCoverObjectClass(meetup))}
             />
           </div>
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,10,24,0.5)_0%,rgba(8,10,24,0.78)_42%,rgba(8,10,24,0.94)_100%)]" />
@@ -678,10 +660,7 @@ function EventDetail() {
             aria-label="Breadcrumb"
             className="hero-reveal mb-auto flex flex-wrap items-center gap-x-1.5 pb-5 text-[12px] text-white/70 [text-shadow:0_1px_8px_rgba(0,0,0,0.5)]"
           >
-            <Link
-              to="/events"
-              className="transition-colors duration-200 hover:text-white"
-            >
+            <Link to="/events" className="transition-colors duration-200 hover:text-white">
               Events
             </Link>
             <span aria-hidden className="text-white/35">
@@ -752,11 +731,7 @@ function EventDetail() {
                 className="inline-flex min-h-[46px] items-center justify-center gap-1.5 border border-white/35 bg-white/12 px-5 text-[14px] font-medium text-white backdrop-blur-[2px] transition-colors duration-200 hover:border-white/50 hover:bg-white/18"
               >
                 Get Directions
-                <ArrowUpRight
-                  className="size-3.5"
-                  strokeWidth={1.75}
-                  aria-hidden
-                />
+                <ArrowUpRight className="size-3.5" strokeWidth={1.75} aria-hidden />
               </a>
             </div>
           </div>
@@ -764,8 +739,7 @@ function EventDetail() {
       </header>
 
       {heroContent &&
-      (pageContent.collaborativeHosts.length > 0 ||
-        supportedByPartners.length > 0) ? (
+      (pageContent.collaborativeHosts.length > 0 || supportedByPartners.length > 0) ? (
         <div className="border-b border-[var(--color-border)] bg-[var(--brand-primary)]">
           <div className="page-container py-4 md:py-5">
             <HeroPosterFooter
@@ -846,9 +820,7 @@ function EventDetail() {
                 )}
               >
                 <div>
-                  <SectionLabel>
-                    {pageContent.why?.label ?? "Why this meetup?"}
-                  </SectionLabel>
+                  <SectionLabel>{pageContent.why?.label ?? "Why this meetup?"}</SectionLabel>
                   <h2 className="mt-3 max-w-[22ch] font-display text-[clamp(1.5rem,2.5vw,2.05rem)] leading-[1.1] tracking-tight text-foreground">
                     {pageContent.why?.headline ??
                       "More than networking. A community that grows together."}
@@ -860,25 +832,19 @@ function EventDetail() {
                       {pageContent.why.paragraphs.map((paragraph) => (
                         <p key={paragraph}>{paragraph}</p>
                       ))}
-                      <p className="font-medium text-foreground">
-                        {pageContent.why.closingLine}
-                      </p>
+                      <p className="font-medium text-foreground">{pageContent.why.closingLine}</p>
                     </>
                   ) : (
                     <>
+                      <p>Most startup events end when everyone leaves the room.</p>
                       <p>
-                        Most startup events end when everyone leaves the room.
+                        At Hyderabad Founders Network, every meetup is an opportunity to build
+                        relationships that continue beyond the event.
                       </p>
                       <p>
-                        At Hyderabad Founders Network, every meetup is an
-                        opportunity to build relationships that continue beyond
-                        the event.
-                      </p>
-                      <p>
-                        Whether you&apos;re building your first startup or
-                        scaling your next venture, you&apos;ll meet people who
-                        understand the journey and are willing to share their
-                        experiences, ideas and support.
+                        Whether you&apos;re building your first startup or scaling your next
+                        venture, you&apos;ll meet people who understand the journey and are willing
+                        to share their experiences, ideas and support.
                       </p>
                     </>
                   )}
@@ -903,9 +869,7 @@ function EventDetail() {
                   </div>
                   <div className="flex justify-between gap-3">
                     <dt className="text-[var(--color-text-muted)]">Time</dt>
-                    <dd className="text-right font-medium text-foreground">
-                      {meetup.time}
-                    </dd>
+                    <dd className="text-right font-medium text-foreground">{meetup.time}</dd>
                   </div>
                   <div className="flex justify-between gap-3">
                     <dt className="text-[var(--color-text-muted)]">Venue</dt>
@@ -925,11 +889,7 @@ function EventDetail() {
                   className="btn-primary mt-5 w-full justify-center gap-1.5"
                 >
                   <Ticket className="size-3.5" strokeWidth={1.75} aria-hidden />
-                  {open
-                    ? "Register Now"
-                    : completed
-                      ? "Event completed"
-                      : "Coming soon"}
+                  {open ? "Register Now" : completed ? "Event completed" : "Coming soon"}
                 </RsvpButton>
                 {isMeetupDateConfirmed(meetup) ? (
                   <a
@@ -987,7 +947,12 @@ function EventDetail() {
                 galleryReveal.inView && "is-visible",
               )}
             >
-              <figure className="gallery-tile overflow-hidden sm:col-span-7 sm:row-span-2">
+              <figure
+                className={cn(
+                  "gallery-tile overflow-hidden",
+                  eventGallery.length > 1 ? "sm:col-span-7 sm:row-span-2" : "sm:col-span-12",
+                )}
+              >
                 <img
                   src={eventGallery[0].src}
                   alt={eventGallery[0].alt}
@@ -995,14 +960,16 @@ function EventDetail() {
                   decoding="async"
                   width={1600}
                   height={1100}
-                  className="aspect-[16/10] h-full w-full object-cover object-center sm:aspect-auto sm:min-h-[16rem] md:min-h-[18rem]"
+                  className={cn(
+                    "h-full w-full object-cover object-center",
+                    eventGallery.length > 1
+                      ? "aspect-[16/10] sm:aspect-auto sm:min-h-[16rem] md:min-h-[18rem]"
+                      : "aspect-[4/3] sm:aspect-[21/10]",
+                  )}
                 />
               </figure>
               {eventGallery.slice(1).map((shot) => (
-                <figure
-                  key={shot.src}
-                  className="gallery-tile overflow-hidden sm:col-span-5"
-                >
+                <figure key={shot.src} className="gallery-tile overflow-hidden sm:col-span-5">
                   <img
                     src={shot.src}
                     alt={shot.alt}
@@ -1027,9 +994,9 @@ function EventDetail() {
             >
               <SectionLabel>Meetup recap</SectionLabel>
               <p className="mt-2.5 text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
-                Founders, operators, and aspiring entrepreneurs came together to
-                exchange ideas, hear founder stories, and build lasting
-                connections. Thank you to everyone who joined us.
+                Founders, operators, and aspiring entrepreneurs came together to exchange ideas,
+                hear founder stories, and build lasting connections. Thank you to everyone who
+                joined us.
               </p>
             </div>
           </div>
@@ -1042,16 +1009,10 @@ function EventDetail() {
         className="border-b border-[var(--color-border)] bg-[var(--color-background-alt)] section-space"
       >
         <div className="page-container">
-          <div
-            className={cn(
-              "reveal-up max-w-xl",
-              whoReveal.inView && "is-visible",
-            )}
-          >
+          <div className={cn("reveal-up max-w-xl", whoReveal.inView && "is-visible")}>
             <SectionLabel>Who should attend?</SectionLabel>
             <h2 className="mt-3 font-display text-[clamp(1.7rem,2.8vw,2.25rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
-              {pageContent.audience?.heading ??
-                "Built for people who are building."}
+              {pageContent.audience?.heading ?? "Built for people who are building."}
             </h2>
             <p className="mt-3 max-w-[36ch] text-[14.5px] leading-relaxed text-[var(--color-text-secondary)]">
               {pageContent.audience?.intro ??
@@ -1073,10 +1034,7 @@ function EventDetail() {
             ).map((item) => {
               const Icon = item.icon;
               return (
-                <li
-                  key={item.title}
-                  className="border-t border-[var(--color-border)] py-5"
-                >
+                <li key={item.title} className="border-t border-[var(--color-border)] py-5">
                   <div className="flex items-start gap-3">
                     <Icon
                       className="mt-0.5 size-4 shrink-0 text-[var(--brand-accent)]"
@@ -1105,12 +1063,7 @@ function EventDetail() {
         className="border-b border-[var(--color-border)] section-space"
       >
         <div className="page-container grid gap-14 lg:grid-cols-2 lg:gap-16">
-          <div
-            className={cn(
-              "reveal-left",
-              takeawaysReveal.inView && "is-visible",
-            )}
-          >
+          <div className={cn("reveal-left", takeawaysReveal.inView && "is-visible")}>
             <SectionLabel>What you&apos;ll get</SectionLabel>
             <h2 className="mt-3 font-display text-[clamp(1.55rem,2.6vw,2rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
               {pageContent.takeaways?.heading ?? "What you'll take away"}
@@ -1125,8 +1078,7 @@ function EventDetail() {
                 takeawaysReveal.inView && "is-visible",
               )}
             >
-              {(pageContent.takeaways?.items ?? defaultTakeaways).map(
-                (item, i) => (
+              {(pageContent.takeaways?.items ?? defaultTakeaways).map((item, i) => (
                 <li
                   key={item.title}
                   className="grid gap-1 py-4 sm:grid-cols-[2.5rem_minmax(0,1fr)] sm:gap-3"
@@ -1146,16 +1098,12 @@ function EventDetail() {
                     </p>
                   </div>
                 </li>
-              ),
-              )}
+              ))}
             </ul>
           </div>
 
           <div
-            className={cn(
-              "reveal-right",
-              takeawaysReveal.inView && "is-visible",
-            )}
+            className={cn("reveal-right", takeawaysReveal.inView && "is-visible")}
             style={{
               transitionDelay: takeawaysReveal.inView ? "90ms" : undefined,
             }}
@@ -1205,12 +1153,7 @@ function EventDetail() {
           className="border-b border-[var(--color-border)] bg-[var(--color-background-alt)] section-space"
         >
           <div className="page-container">
-            <div
-              className={cn(
-                "reveal-up max-w-xl",
-                speakersReveal.inView && "is-visible",
-              )}
-            >
+            <div className={cn("reveal-up max-w-xl", speakersReveal.inView && "is-visible")}>
               <SectionLabel>Speakers</SectionLabel>
               <h2 className="mt-3 font-display text-[clamp(1.55rem,2.6vw,2rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
                 {pageContent.speakersHeading}
@@ -1243,19 +1186,13 @@ function EventDetail() {
           className="border-b border-[var(--color-border)] section-space"
         >
           <div className="page-container">
-            <div
-              className={cn(
-                "reveal-up max-w-xl",
-                hostsReveal.inView && "is-visible",
-              )}
-            >
+            <div className={cn("reveal-up max-w-xl", hostsReveal.inView && "is-visible")}>
               <SectionLabel>Featured community members</SectionLabel>
               <h2 className="mt-3 font-display text-[clamp(1.55rem,2.6vw,2rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
                 Community hosts
               </h2>
               <p className="mt-2.5 text-[14.5px] leading-relaxed text-[var(--color-text-secondary)]">
-                Each meetup is led by founders from the community — not speakers
-                on a stage.
+                Each meetup is led by founders from the community — not speakers on a stage.
               </p>
             </div>
 
@@ -1388,19 +1325,12 @@ function EventDetail() {
               className="btn-primary gap-1.5 self-start sm:self-auto"
             >
               Get Directions
-              <ArrowUpRight
-                className="size-3.5"
-                strokeWidth={1.75}
-                aria-hidden
-              />
+              <ArrowUpRight className="size-3.5" strokeWidth={1.75} aria-hidden />
             </a>
           </div>
 
           <div
-            className={cn(
-              "reveal-up mt-5 overflow-hidden",
-              venueReveal.inView && "is-visible",
-            )}
+            className={cn("reveal-up mt-5 overflow-hidden", venueReveal.inView && "is-visible")}
             style={{
               transitionDelay: venueReveal.inView ? "70ms" : undefined,
             }}
@@ -1422,15 +1352,10 @@ function EventDetail() {
             )}
           >
             {(pageContent.hideRefreshmentsAmenity
-              ? venueAmenities.filter(
-                  (item) => item.label !== "Coffee & Refreshments",
-                )
+              ? venueAmenities.filter((item) => item.label !== "Coffee & Refreshments")
               : venueAmenities
             ).map(({ label, icon: Icon }) => (
-              <li
-                key={label}
-                className="flex items-center gap-2.5 text-[14px] text-foreground"
-              >
+              <li key={label} className="flex items-center gap-2.5 text-[14px] text-foreground">
                 <Icon
                   className="size-4 shrink-0 text-[var(--brand-accent)]"
                   strokeWidth={1.75}
@@ -1449,12 +1374,7 @@ function EventDetail() {
           className="border-b border-[var(--color-border)] section-space"
         >
           <div className="page-container">
-            <div
-              className={cn(
-                "reveal-up max-w-xl",
-                partnersReveal.inView && "is-visible",
-              )}
-            >
+            <div className={cn("reveal-up max-w-xl", partnersReveal.inView && "is-visible")}>
               <SectionLabel>Partners</SectionLabel>
               <h2 className="mt-3 font-display text-[clamp(1.55rem,2.6vw,2rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
                 Supported by the ecosystem
@@ -1482,17 +1402,13 @@ function EventDetail() {
                   key={tier.label}
                   className={cn(
                     "flex min-h-[7.5rem] flex-col bg-[var(--color-surface)] p-4 md:p-5",
-                    (tier.layout === "inline" || tier.label === "Supported by") &&
-                      "sm:col-span-2",
+                    (tier.layout === "inline" || tier.label === "Supported by") && "sm:col-span-2",
                   )}
                 >
                   <p className="text-[10px] font-medium tracking-[0.1em] text-[var(--color-text-muted)] uppercase">
                     {tier.label}
                   </p>
-                  <PartnerTierPartners
-                    partners={tier.partners}
-                    layout={tier.layout}
-                  />
+                  <PartnerTierPartners partners={tier.partners} layout={tier.layout} />
                 </div>
               ))}
             </div>
@@ -1510,12 +1426,7 @@ function EventDetail() {
             className="border-b border-[var(--color-border)] py-10 md:py-12"
           >
             <div className="page-container grid gap-8 lg:grid-cols-12 lg:gap-12">
-              <div
-                className={cn(
-                  "reveal-left lg:col-span-5",
-                  faqReveal.inView && "is-visible",
-                )}
-              >
+              <div className={cn("reveal-left lg:col-span-5", faqReveal.inView && "is-visible")}>
                 <SectionLabel>Registration</SectionLabel>
                 <h2 className="mt-2.5 font-display text-[clamp(1.4rem,2.4vw,1.75rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
                   Reserve your seat
@@ -1551,11 +1462,7 @@ function EventDetail() {
                       open && "ring-1 ring-[var(--brand-accent)]",
                     )}
                   >
-                    <CalendarCheck
-                      className="size-3.5"
-                      strokeWidth={1.75}
-                      aria-hidden
-                    />
+                    <CalendarCheck className="size-3.5" strokeWidth={1.75} aria-hidden />
                     {open ? "Register Now" : completed ? "Event completed" : "Coming soon"}
                   </RsvpButton>
                   {!open && !completed ? (
@@ -1567,10 +1474,7 @@ function EventDetail() {
               </div>
 
               <div
-                className={cn(
-                  "reveal-right lg:col-span-7",
-                  faqReveal.inView && "is-visible",
-                )}
+                className={cn("reveal-right lg:col-span-7", faqReveal.inView && "is-visible")}
                 style={{
                   transitionDelay: faqReveal.inView ? "80ms" : undefined,
                 }}
@@ -1613,12 +1517,9 @@ function EventDetail() {
               )}
             >
               <div className="mx-auto max-w-xl">
-                <SectionLabel>
-                  {pageContent.cta?.label ?? "Community"}
-                </SectionLabel>
+                <SectionLabel>{pageContent.cta?.label ?? "Community"}</SectionLabel>
                 <h2 className="mt-2.5 font-display text-[clamp(1.4rem,2.4vw,1.8rem)] tracking-tight text-foreground">
-                  {pageContent.cta?.heading ??
-                    "This meetup is just the beginning."}
+                  {pageContent.cta?.heading ?? "This meetup is just the beginning."}
                 </h2>
                 <p className="mt-3 text-[14.5px] leading-relaxed text-[var(--color-text-secondary)]">
                   {pageContent.cta?.body ??
@@ -1637,11 +1538,7 @@ function EventDetail() {
                 </a>
                 <Link to="/events" className="btn-secondary gap-1.5">
                   Upcoming Events
-                  <ArrowUpRight
-                    className="size-3.5"
-                    strokeWidth={1.75}
-                    aria-hidden
-                  />
+                  <ArrowUpRight className="size-3.5" strokeWidth={1.75} aria-hidden />
                 </Link>
               </div>
             </div>
@@ -1653,17 +1550,12 @@ function EventDetail() {
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-border)] bg-[var(--color-surface)]/95 px-3 py-3 backdrop-blur-sm lg:hidden">
           <div className="mx-auto flex max-w-lg items-center gap-3">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-medium text-foreground">
-                {meetup.title}
-              </p>
+              <p className="truncate text-[13px] font-medium text-foreground">{meetup.title}</p>
               <p className="truncate text-[12px] text-[var(--color-text-secondary)]">
                 ₹{eventFeeInr(meetup)} · {meetupDateLabel(meetup)}
               </p>
             </div>
-            <RsvpButton
-              event={meetup}
-              className="btn-primary shrink-0 gap-1.5 px-4"
-            >
+            <RsvpButton event={meetup} className="btn-primary shrink-0 gap-1.5 px-4">
               <Ticket className="size-3.5" strokeWidth={1.75} aria-hidden />
               {open ? "Register" : completed ? "Done" : "Soon"}
             </RsvpButton>

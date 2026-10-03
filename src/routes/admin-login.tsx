@@ -13,7 +13,10 @@ export const Route = createFileRoute("/admin-login")({
   },
   component: AdminLoginPage,
   head: () => ({
-    meta: [{ title: "Admin Login — Trizen Community" }],
+    meta: [
+      { title: "Admin Login — Trizen Community" },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
   }),
 });
 
@@ -50,22 +53,22 @@ function AdminLoginPage() {
         }}
       />
 
-      <div className="relative w-full max-w-[420px]">
+      <div className="relative w-full max-w-105">
         <div className="mb-8 text-center">
-          <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-[var(--brand-primary)] text-white shadow-sm">
+          <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-brand-primary text-white shadow-sm">
             <Shield className="size-5" strokeWidth={1.75} />
           </div>
-          <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--brand-accent)]">
+          <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.16em] text-brand-accent">
             Trizen Community
           </p>
           <h1 className="mt-2 font-display text-3xl tracking-tight text-foreground">
             Admin sign in
           </h1>
-          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+          <p className="mt-2 text-sm text-(--color-text-secondary)">
             Platform administrators only. Organizations use{" "}
             <Link
               to="/org-login"
-              className="font-medium text-[var(--brand-accent)] underline-offset-2 hover:underline"
+              className="font-medium text-brand-accent underline-offset-2 hover:underline"
             >
               Organization login
             </Link>
@@ -75,12 +78,10 @@ function AdminLoginPage() {
 
         <form
           onSubmit={onSubmit}
-          className="rounded-[22px] border border-[var(--color-border)] bg-white/90 p-7 shadow-[0_20px_50px_-28px_rgba(59,35,24,0.35)] backdrop-blur-sm"
+          className="rounded-[22px] border border-(--color-border) bg-white/90 p-7 shadow-[0_20px_50px_-28px_rgba(59,35,24,0.35)] backdrop-blur-sm"
         >
           <label className="block">
-            <span className="text-xs font-semibold text-[var(--color-text-muted)]">
-              Email
-            </span>
+            <span className="text-xs font-semibold text-(--color-text-muted)">Email</span>
             <input
               type="email"
               required
@@ -88,14 +89,12 @@ function AdminLoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@trizenventures.com"
-              className="mt-1.5 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background-alt)] px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-[var(--brand-accent)] focus:bg-white"
+              className="mt-1.5 w-full rounded-xl border border-(--color-border) bg-(--color-background-alt) px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-brand-accent focus:bg-white"
             />
           </label>
 
           <div className="mt-4">
-            <span className="text-xs font-semibold text-[var(--color-text-muted)]">
-              Password
-            </span>
+            <span className="text-xs font-semibold text-(--color-text-muted)">Password</span>
             <div className="relative mt-1.5">
               <input
                 type={showPassword ? "text" : "password"}
@@ -104,13 +103,13 @@ function AdminLoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background-alt)] px-3.5 py-2.5 pr-11 text-sm outline-none transition-colors focus:border-[var(--brand-accent)] focus:bg-white"
+                className="w-full rounded-xl border border-(--color-border) bg-(--color-background-alt) px-3.5 py-2.5 pr-11 text-sm outline-none transition-colors focus:border-brand-accent focus:bg-white"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-lg p-1.5 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-background-warm)] hover:text-foreground"
+                className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-lg p-1.5 text-(--color-text-muted) transition-colors hover:bg-(--color-background-warm) hover:text-foreground"
               >
                 {showPassword ? (
                   <EyeOff className="size-4" strokeWidth={1.75} />

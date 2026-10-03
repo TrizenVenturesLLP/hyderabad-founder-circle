@@ -61,14 +61,14 @@ function AdminAnalyticsPage() {
         title="Analytics"
         description="Traffic and booking drop-off"
         actions={
-          <div className="inline-flex border border-[var(--color-border)] bg-white p-0.5">
+          <div className="inline-flex rounded-full border border-[var(--color-border)] bg-white p-1 shadow-(--shadow-small)">
             {DAY_OPTIONS.map((d) => (
               <button
                 key={d}
                 type="button"
                 onClick={() => setDays(d)}
                 className={cn(
-                  "px-3 py-1.5 text-[12px] font-medium tabular-nums transition-colors",
+                  "rounded-full px-3.5 py-1.5 text-[12px] font-medium tabular-nums transition-colors",
                   days === d
                     ? "bg-[var(--brand-accent)] text-white"
                     : "text-[var(--color-text-secondary)] hover:text-foreground",

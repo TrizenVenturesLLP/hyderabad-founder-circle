@@ -2,14 +2,18 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
+  CalendarDays,
   CalendarPlus,
   ClipboardList,
+  Clock3,
+  MapPin,
   Megaphone,
   Network,
   Radio,
   Sparkles,
   Users,
   Wrench,
+  type LucideIcon,
 } from "lucide-react";
 import { EventCard } from "@/components/EventCard";
 import { useInView } from "@/hooks/use-in-view";
@@ -20,17 +24,14 @@ import {
   getMeetups,
   isMeetupCompleted,
   isRsvpOpen,
-  meetupCoverImage,
   meetupDateLabel,
+  meetupShortDateLabel,
   type Meetup,
 } from "@/lib/events";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
-    const [meetups, organizations] = await Promise.all([
-      getMeetups(),
-      getEventOrganizations(),
-    ]);
+    const [meetups, organizations] = await Promise.all([getMeetups(), getEventOrganizations()]);
     const upcoming = meetups.filter((m) => !isMeetupCompleted(m));
     const featured = (upcoming.length > 0 ? upcoming : meetups).slice(0, 6);
     return {
@@ -156,15 +157,41 @@ const faqs = [
   },
 ];
 
+function HeroEventFact({
+  Icon,
+  label,
+  value,
+  className,
+}: {
+  Icon: LucideIcon;
+  label: string;
+  value: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex items-start gap-3", className)}>
+      <Icon
+        className="mt-0.5 size-4 shrink-0 text-[var(--brand-accent)]"
+        strokeWidth={1.75}
+        aria-hidden
+      />
+      <div className="min-w-0">
+        <dt className="text-[11.5px] font-medium text-[var(--color-text-muted)]">{label}</dt>
+        <dd className="mt-0.5 font-medium text-foreground">{value}</dd>
+      </div>
+    </div>
+  );
+}
+
 function SectionLabel({ children }: { children: string }) {
   return (
-    <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--brand-accent)]">
+    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--brand-accent)]">
       {children}
     </p>
   );
 }
 
-function HeroSection({ previewEvents }: { previewEvents: Meetup[] }) {
+function HeroSection({ event }: { event: Meetup | null }) {
   return (
     <section
       id="hero"
@@ -179,100 +206,85 @@ function HeroSection({ previewEvents }: { previewEvents: Meetup[] }) {
         }}
       />
 
-      <div className="page-container relative grid items-center gap-8 py-12 md:gap-10 md:py-14 lg:grid-cols-12 lg:gap-12 lg:py-16">
+      <div className="page-container relative grid items-center gap-7 py-9 md:gap-8 md:py-11 lg:grid-cols-12 lg:gap-10 lg:py-12">
         <div className="lg:col-span-6">
           <p className="hero-reveal inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-white/80 px-3 py-1 text-[12px] font-medium text-[var(--color-text-secondary)] shadow-[var(--shadow-small)] backdrop-blur-sm">
             <Megaphone className="size-3.5 text-[var(--brand-accent)]" />
             Event hosting platform · Hyderabad-first
           </p>
           <h1
-            className="hero-reveal hero-reveal-delay-1 mt-5 max-w-[14ch] font-semibold leading-[1.05] tracking-[-0.035em] text-foreground"
+            className="hero-reveal hero-reveal-delay-1 mt-4 max-w-[14ch] font-semibold leading-[1.06] tracking-[-0.03em] text-foreground"
             style={{
               fontFamily: "var(--font-brand)",
-              fontSize: "clamp(2.2rem, 6vw, 3.6rem)",
+              fontSize: "clamp(1.9rem, 4.6vw, 2.85rem)",
             }}
           >
             Discover events that bring people together.
           </h1>
-          <p className="hero-reveal hero-reveal-delay-2 mt-4 max-w-[36rem] text-[15px] leading-relaxed text-[var(--color-text-secondary)] md:text-[16px]">
+          <p className="hero-reveal hero-reveal-delay-2 mt-3 max-w-[34rem] text-[14px] leading-relaxed text-[var(--color-text-secondary)] md:text-[15px]">
             Find meetups, workshops, networking events, and experiences happening in Hyderabad — all
             in one place.
           </p>
-          <div className="hero-reveal hero-reveal-delay-3 mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="hero-reveal hero-reveal-delay-3 mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Link
               to="/events"
-              className="btn-primary group/cta inline-flex min-h-[48px] items-center justify-center gap-2 !rounded-full px-6 text-[14.5px] font-medium"
+              className="btn-primary group/cta inline-flex !min-h-11 items-center justify-center gap-2 !rounded-full px-5 text-[14px] font-medium"
             >
               Explore Events
               <ArrowRight className="btn-arrow size-4" strokeWidth={1.75} />
             </Link>
           </div>
-          <p className="hero-reveal hero-reveal-delay-4 mt-4 text-[13px] text-[var(--color-text-muted)]">
+          <p className="hero-reveal hero-reveal-delay-4 mt-3 text-[12.5px] text-[var(--color-text-muted)]">
             Free and paid events from communities across Hyderabad.
           </p>
         </div>
 
-        <div className="hero-card-reveal hero-reveal-delay-2 relative lg:col-span-6">
-          <div
-            className="absolute -inset-4 rounded-[2rem] bg-[linear-gradient(145deg,color-mix(in_oklab,var(--brand-accent)_12%,transparent),transparent_60%)] blur-2xl"
-            aria-hidden
-          />
-          <div className="relative grid gap-3 sm:grid-cols-2">
-            {previewEvents.slice(0, 2).map((event, i) => (
-              <Link
-                key={event.slug}
-                to="/events/$slug"
-                params={{ slug: event.slug }}
-                className={cn(
-                  "group overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[var(--shadow-card)] transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_-20px_rgba(15,23,42,0.35)]",
-                  i === 0 && "sm:col-span-2 sm:flex sm:min-h-[11.5rem]",
-                )}
-              >
-                <div
-                  className={cn(
-                    "relative overflow-hidden bg-[var(--color-background-alt)]",
-                    i === 0
-                      ? "aspect-[16/9] sm:aspect-auto sm:w-[46%] sm:shrink-0"
-                      : "aspect-[16/10]",
-                  )}
-                >
-                  <img
-                    src={meetupCoverImage(event)}
-                    alt=""
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                    loading={i === 0 ? "eager" : "lazy"}
-                    fetchPriority={i === 0 ? "high" : undefined}
-                  />
-                </div>
-                <div className="flex flex-1 flex-col justify-center p-4 sm:p-5">
-                  <p className="text-[11px] font-semibold tracking-[0.06em] text-[var(--brand-accent)]">
-                    {event.organization?.name || event.format}
-                    {isRsvpOpen(event) ? " · Open" : ""}
-                  </p>
-                  <h2 className="mt-1.5 line-clamp-2 font-display text-[1.02rem] leading-snug tracking-tight text-foreground">
-                    {event.title}
-                  </h2>
-                  <p className="mt-2 text-[13px] text-[var(--color-text-secondary)]">
-                    {meetupDateLabel(event)} · {event.city}
-                  </p>
-                </div>
-              </Link>
-            ))}
-            {previewEvents.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-[var(--color-border-strong)] bg-white/70 p-8 text-center sm:col-span-2">
-                <p className="font-display text-[1.05rem] text-foreground">
-                  Events are loading soon
-                </p>
-                <Link
-                  to="/events"
-                  className="mt-3 inline-flex text-[14px] font-medium text-[var(--brand-accent)] hover:underline"
-                >
-                  Browse the events page →
-                </Link>
-              </div>
+        {event ? (
+          <div className="hero-card-reveal hero-reveal-delay-2 lg:col-span-6 lg:border-l lg:border-[var(--color-border)] lg:pl-10">
+            <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.08em] text-[var(--brand-accent)] uppercase">
+              {!isMeetupCompleted(event) ? (
+                <span className="relative flex size-2" aria-hidden>
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-[var(--brand-accent)] opacity-60" />
+                  <span className="relative inline-flex size-2 rounded-full bg-[var(--brand-accent)]" />
+                </span>
+              ) : null}
+              {isMeetupCompleted(event) ? "Latest event" : "Upcoming event"}
+              {event.organization?.name ? (
+                <span className="font-medium text-[var(--color-text-muted)] normal-case tracking-normal">
+                  · by {event.organization.name}
+                </span>
+              ) : null}
+            </p>
+            <h2 className="mt-2.5 font-display text-[clamp(1.4rem,2.5vw,1.9rem)] leading-[1.12] tracking-[-0.025em] text-foreground">
+              {event.title}
+            </h2>
+            {event.blurb ? (
+              <p className="mt-2.5 max-w-[46ch] text-[13.5px] leading-relaxed text-[var(--color-text-secondary)]">
+                {event.blurb}
+              </p>
             ) : null}
+
+            <dl className="mt-5 grid gap-3 text-[13px] sm:grid-cols-2">
+              <HeroEventFact Icon={CalendarDays} label="Date" value={meetupShortDateLabel(event)} />
+              {event.time ? <HeroEventFact Icon={Clock3} label="Time" value={event.time} /> : null}
+              <HeroEventFact
+                Icon={MapPin}
+                label="Venue"
+                value={[event.venue, event.area || event.city].filter(Boolean).join(", ")}
+                className="sm:col-span-2"
+              />
+            </dl>
+
+            <Link
+              to="/events/$slug"
+              params={{ slug: event.slug }}
+              className="group/cta mt-5 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-[var(--brand-accent)] hover:underline"
+            >
+              {isRsvpOpen(event) ? "Register now" : "View event details"}
+              <ArrowRight className="btn-arrow size-4" strokeWidth={1.75} />
+            </Link>
           </div>
-        </div>
+        ) : null}
       </div>
     </section>
   );
@@ -285,7 +297,7 @@ function DiscoverySection({ events }: { events: Meetup[] }) {
     <section
       ref={ref}
       id="discover"
-      className="section-space border-b border-[var(--color-border)] bg-[var(--color-surface)]"
+      className="py-9 md:py-12 border-b border-[var(--color-border)] bg-[var(--color-surface)]"
     >
       <div className="page-container">
         <div
@@ -296,16 +308,16 @@ function DiscoverySection({ events }: { events: Meetup[] }) {
         >
           <div className="max-w-2xl">
             <SectionLabel>Upcoming events</SectionLabel>
-            <h2 className="mt-2.5 font-display text-[clamp(1.65rem,2.8vw,2.2rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
+            <h2 className="mt-2.5 font-display text-[clamp(1.4rem,2.3vw,1.8rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
               Happening in Hyderabad
             </h2>
-            <p className="mt-2 max-w-[42ch] text-[14.5px] leading-relaxed text-[var(--color-text-secondary)]">
+            <p className="mt-2 max-w-[42ch] text-[13.5px] leading-relaxed text-[var(--color-text-secondary)]">
               Register in minutes — open events from communities on the platform.
             </p>
           </div>
           <Link
             to="/events"
-            className="btn-secondary group/cta inline-flex gap-2 !rounded-full self-start md:self-auto"
+            className="btn-secondary group/cta inline-flex gap-2 !min-h-10 !rounded-full !text-[13.5px] self-start md:self-auto"
           >
             Explore All Events
             <ArrowRight className="btn-arrow size-4" strokeWidth={1.75} />
@@ -315,21 +327,19 @@ function DiscoverySection({ events }: { events: Meetup[] }) {
         {events.length > 0 ? (
           <ul
             className={cn(
-              "stagger-in mt-8 flex list-none gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 sm:[&::-webkit-scrollbar]:hidden xl:grid-cols-3 [&::-webkit-scrollbar]:hidden",
+              "stagger-in mt-6 flex list-none gap-3.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 sm:[&::-webkit-scrollbar]:hidden xl:grid-cols-3 [&::-webkit-scrollbar]:hidden",
               inView && "is-visible",
             )}
           >
             {events.map((meetup) => (
-              <li key={meetup.slug} className="w-[min(86vw,320px)] shrink-0 sm:w-auto sm:shrink">
-                <EventCard meetup={meetup} />
+              <li key={meetup.slug} className="w-[min(80vw,290px)] shrink-0 sm:w-auto sm:shrink">
+                <EventCard meetup={meetup} size="compact" />
               </li>
             ))}
           </ul>
         ) : (
-          <div className="mt-8 border border-[var(--color-border)] bg-[var(--color-background)] px-6 py-10 text-center">
-            <p className="font-display text-[1.1rem] text-foreground">
-              No upcoming events right now
-            </p>
+          <div className="mt-6 border border-[var(--color-border)] bg-[var(--color-background)] px-5 py-8 text-center">
+            <p className="font-display text-[1rem] text-foreground">No upcoming events right now</p>
             <p className="mx-auto mt-2 max-w-md text-[14px] text-[var(--color-text-secondary)]">
               Check the events page for past sessions, or apply to host the next one.
             </p>
@@ -350,34 +360,34 @@ function EventTypesSection() {
     <section
       ref={ref}
       id="event-types"
-      className="section-space border-t border-[var(--color-border)]"
+      className="py-9 md:py-12 border-t border-[var(--color-border)]"
     >
       <div className="page-container">
         <div className={cn("reveal-up mx-auto max-w-2xl text-center", inView && "is-visible")}>
           <SectionLabel>What kind of events?</SectionLabel>
-          <h2 className="mt-2.5 font-display text-[clamp(1.65rem,2.8vw,2.2rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
+          <h2 className="mt-2.5 font-display text-[clamp(1.4rem,2.3vw,1.8rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
             Something for everyone
           </h2>
         </div>
 
         <ul
           className={cn(
-            "stagger-in mt-8 grid list-none gap-3 sm:grid-cols-2 lg:grid-cols-3",
+            "stagger-in mt-6 grid list-none gap-3 sm:grid-cols-2 lg:grid-cols-3",
             inView && "is-visible",
           )}
         >
           {eventTypes.map(({ title, desc, Icon }) => (
             <li
               key={title}
-              className="group border border-[var(--color-border)] bg-[var(--color-surface)] p-5 transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-1 hover:border-[var(--color-border-strong)] hover:shadow-[0_12px_28px_-18px_rgba(15,23,42,0.22)]"
+              className="group border border-[var(--color-border)] bg-[var(--color-surface)] p-4 transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-1 hover:border-[var(--color-border-strong)] hover:shadow-[0_12px_28px_-18px_rgba(15,23,42,0.22)]"
             >
-              <span className="inline-flex size-10 items-center justify-center bg-[var(--brand-accent-soft)] text-[var(--brand-accent)] transition-colors duration-300 group-hover:bg-[var(--brand-accent)] group-hover:text-white">
-                <Icon className="size-5" strokeWidth={1.75} aria-hidden />
+              <span className="inline-flex size-8 items-center justify-center bg-[var(--brand-accent-soft)] text-[var(--brand-accent)] transition-colors duration-300 group-hover:bg-[var(--brand-accent)] group-hover:text-white">
+                <Icon className="size-4" strokeWidth={1.75} aria-hidden />
               </span>
-              <h3 className="mt-4 font-display text-[1.05rem] tracking-tight text-foreground">
+              <h3 className="mt-3 font-display text-[0.95rem] tracking-tight text-foreground">
                 {title}
               </h3>
-              <p className="mt-1.5 text-[13.5px] leading-relaxed text-[var(--color-text-secondary)]">
+              <p className="mt-1 text-[12.5px] leading-relaxed text-[var(--color-text-secondary)]">
                 {desc}
               </p>
             </li>
@@ -405,7 +415,7 @@ function CommunitiesSection({
   if (communities.length === 0) return null;
 
   return (
-    <section ref={ref} id="communities" className="section-space">
+    <section ref={ref} id="communities" className="py-9 md:py-12">
       <div className="page-container">
         <div
           className={cn(
@@ -415,16 +425,16 @@ function CommunitiesSection({
         >
           <div className="max-w-xl">
             <SectionLabel>Communities</SectionLabel>
-            <h2 className="mt-2.5 font-display text-[clamp(1.65rem,2.8vw,2.2rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
+            <h2 className="mt-2.5 font-display text-[clamp(1.4rem,2.3vw,1.8rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
               Communities &amp; organizers
             </h2>
-            <p className="mt-2 max-w-[44ch] text-[14.5px] leading-relaxed text-[var(--color-text-secondary)]">
+            <p className="mt-2 max-w-[44ch] text-[13.5px] leading-relaxed text-[var(--color-text-secondary)]">
               Browse events by the communities hosting on Trizen Community.
             </p>
           </div>
           <Link
             to="/communities"
-            className="group/cta inline-flex items-center gap-1.5 text-[14px] font-medium text-[var(--brand-accent)] hover:underline"
+            className="group/cta inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--brand-accent)] hover:underline"
           >
             View all
             <ArrowRight className="btn-arrow size-3.5" strokeWidth={1.75} />
@@ -433,7 +443,7 @@ function CommunitiesSection({
 
         <ul
           className={cn(
-            "stagger-in mt-8 grid list-none gap-4 sm:grid-cols-2 lg:grid-cols-3",
+            "stagger-in mt-6 grid list-none gap-3.5 sm:grid-cols-2 lg:grid-cols-3",
             inView && "is-visible",
           )}
         >
@@ -444,7 +454,7 @@ function CommunitiesSection({
                 params={{ slug: org.slug }}
                 className="group flex h-full flex-col overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-1 hover:border-[var(--color-border-strong)] hover:shadow-[0_12px_28px_-18px_rgba(15,23,42,0.22)]"
               >
-                <div className="relative aspect-[16/10] overflow-hidden bg-[var(--color-background-alt)]">
+                <div className="relative aspect-[16/9] overflow-hidden bg-[var(--color-background-alt)]">
                   <img
                     src={org.cover}
                     alt=""
@@ -460,18 +470,18 @@ function CommunitiesSection({
                     aria-hidden
                   />
                 </div>
-                <div className="flex flex-1 flex-col p-4 md:p-5">
-                  <h3 className="font-display text-[1.1rem] tracking-tight text-foreground transition-colors group-hover:text-[var(--brand-accent)]">
+                <div className="flex flex-1 flex-col p-3.5 md:p-4">
+                  <h3 className="font-display text-[0.98rem] tracking-tight text-foreground transition-colors group-hover:text-[var(--brand-accent)]">
                     {org.name}
                   </h3>
-                  <p className="mt-1.5 text-[13px] text-[var(--color-text-secondary)]">
+                  <p className="mt-1 text-[12.5px] text-[var(--color-text-secondary)]">
                     {org.eventCount === 0
                       ? "No events listed yet"
                       : org.upcomingCount > 0
                         ? `${org.upcomingCount} upcoming · ${org.eventCount} total`
                         : `${org.eventCount} past event${org.eventCount === 1 ? "" : "s"}`}
                   </p>
-                  <span className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--brand-accent)]">
+                  <span className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[var(--brand-accent)]">
                     View community
                     <ArrowRight
                       className="size-3.5 transition-transform group-hover:translate-x-0.5"
@@ -495,34 +505,34 @@ function AttendeeStepsSection() {
     <section
       ref={ref}
       id="how-attendees"
-      className="section-space border-y border-[var(--color-border)] bg-[var(--color-background-alt)]"
+      className="py-9 md:py-12 border-y border-[var(--color-border)] bg-[var(--color-background-alt)]"
     >
       <div className="page-container">
         <div
           className={cn(
-            "reveal-up grid gap-8 lg:grid-cols-12 lg:items-start lg:gap-12",
+            "reveal-up grid gap-6 lg:grid-cols-12 lg:items-start lg:gap-10",
             inView && "is-visible",
           )}
         >
           <div className="lg:col-span-4">
             <SectionLabel>How Trizen Community works</SectionLabel>
-            <h2 className="mt-2.5 max-w-[14ch] font-display text-[clamp(1.6rem,2.6vw,2.1rem)] leading-[1.1] tracking-[-0.03em] text-foreground">
+            <h2 className="mt-2.5 max-w-[14ch] font-display text-[clamp(1.4rem,2.3vw,1.8rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
               From discovery to attendance
             </h2>
-            <p className="mt-3 max-w-[34ch] text-[14.5px] leading-relaxed text-[var(--color-text-secondary)]">
+            <p className="mt-2 max-w-[34ch] text-[13.5px] leading-relaxed text-[var(--color-text-secondary)]">
               Three steps. No account required — register per event and show up.
             </p>
           </div>
 
           <ol
             className={cn(
-              "stagger-in relative grid list-none gap-6 lg:col-span-8 lg:grid-cols-3 lg:gap-0",
+              "stagger-in relative grid list-none gap-5 lg:col-span-8 lg:grid-cols-3 lg:gap-0",
               inView && "is-visible",
             )}
           >
             <div
               className={cn(
-                "steps-progress pointer-events-none absolute top-[1.15rem] right-4 left-4 hidden lg:block",
+                "steps-progress pointer-events-none absolute top-4 right-4 left-4 hidden lg:block",
                 inView && "is-visible",
               )}
               aria-hidden
@@ -538,13 +548,13 @@ function AttendeeStepsSection() {
                   index === attendeeSteps.length - 1 && "lg:pr-0",
                 )}
               >
-                <span className="relative z-[1] inline-flex size-9 items-center justify-center border border-[var(--color-border)] bg-[var(--color-background-alt)] font-display text-[0.95rem] font-semibold tabular-nums text-[var(--brand-accent)]">
+                <span className="relative z-[1] inline-flex size-8 items-center justify-center border border-[var(--color-border)] bg-[var(--color-background-alt)] font-display text-[0.85rem] font-semibold tabular-nums text-[var(--brand-accent)]">
                   {item.step}
                 </span>
-                <h3 className="mt-4 font-display text-[1.15rem] tracking-tight text-foreground">
+                <h3 className="mt-3 font-display text-[1rem] tracking-tight text-foreground">
                   {item.title}
                 </h3>
-                <p className="mt-2 max-w-[28ch] text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
+                <p className="mt-1.5 max-w-[28ch] text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
                   {item.body}
                 </p>
               </li>
@@ -560,32 +570,35 @@ function HostCtaSection() {
   const { ref, inView } = useInView<HTMLElement>(scrollRevealOpts);
 
   return (
-    <section ref={ref} id="host" className="section-space border-y border-[var(--color-border)]">
+    <section ref={ref} id="host" className="py-9 md:py-12 border-y border-[var(--color-border)]">
       <div className="page-container">
         <div
           className={cn(
-            "reveal-up grid gap-8 overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] lg:grid-cols-12 lg:gap-0",
+            "reveal-up grid gap-6 overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] lg:grid-cols-12 lg:gap-0",
             inView && "is-visible",
           )}
         >
-          <div className="flex flex-col justify-center p-6 md:p-8 lg:col-span-7 lg:p-10">
+          <div className="flex flex-col justify-center p-5 md:p-7 lg:col-span-7 lg:p-8">
             <SectionLabel>For organizers</SectionLabel>
-            <h2 className="mt-2.5 max-w-[18ch] font-display text-[clamp(1.55rem,2.6vw,2.05rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
+            <h2 className="mt-2.5 max-w-[18ch] font-display text-[clamp(1.4rem,2.3vw,1.8rem)] leading-[1.12] tracking-[-0.03em] text-foreground">
               Host your community’s next event here.
             </h2>
-            <p className="mt-3 max-w-[42ch] text-[14.5px] leading-relaxed text-[var(--color-text-secondary)]">
+            <p className="mt-2 max-w-[42ch] text-[13.5px] leading-relaxed text-[var(--color-text-secondary)]">
               Publish a listing, take registrations and payments, and keep attendees informed —
               without standing up a separate site.
             </p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Link to="/host" className="btn-primary group/cta inline-flex gap-2 !rounded-full">
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                to="/host"
+                className="btn-primary group/cta inline-flex gap-2 !min-h-10 !rounded-full !text-[13.5px]"
+              >
                 <CalendarPlus className="size-4" strokeWidth={1.75} aria-hidden />
                 Host an Event
                 <ArrowRight className="btn-arrow size-4" strokeWidth={1.75} />
               </Link>
               <Link
                 to="/org-login"
-                className="inline-flex items-center gap-1.5 text-[14px] font-medium text-[var(--brand-accent)] hover:underline"
+                className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--brand-accent)] hover:underline"
               >
                 Organizer login
                 <ArrowRight className="size-3.5" strokeWidth={1.75} />
@@ -599,11 +612,11 @@ function HostCtaSection() {
             )}
           >
             {whyPoints.map((item) => (
-              <li key={item.title} className="px-6 py-5 md:px-7">
-                <h3 className="text-[14.5px] font-semibold tracking-tight text-foreground">
+              <li key={item.title} className="px-5 py-4 md:px-6">
+                <h3 className="text-[13.5px] font-semibold tracking-tight text-foreground">
                   {item.title}
                 </h3>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
+                <p className="mt-1 text-[12.5px] leading-relaxed text-[var(--color-text-secondary)]">
                   {item.body}
                 </p>
               </li>
@@ -620,15 +633,15 @@ function FaqSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section ref={ref} id="faq" className="section-space bg-[var(--color-background-alt)]">
+    <section ref={ref} id="faq" className="py-9 md:py-12 bg-[var(--color-background-alt)]">
       <div className="page-container">
-        <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-12 lg:gap-12">
+        <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-12 lg:gap-10">
           <div className={cn("reveal-left lg:col-span-4", inView && "is-visible")}>
             <SectionLabel>FAQ</SectionLabel>
-            <h2 className="mt-3 font-display text-[clamp(1.7rem,2.8vw,2.25rem)] tracking-tight text-foreground">
+            <h2 className="mt-2.5 font-display text-[clamp(1.4rem,2.3vw,1.8rem)] tracking-tight text-foreground">
               Questions, answered
             </h2>
-            <p className="mt-3 max-w-[30ch] text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
+            <p className="mt-2 max-w-[30ch] text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
               Straight answers about finding and registering for events.
             </p>
           </div>
@@ -640,10 +653,10 @@ function FaqSection() {
                   <button
                     type="button"
                     aria-expanded={open}
-                    className="flex w-full items-center justify-between gap-4 py-4 text-left transition-colors hover:text-[var(--brand-accent)]"
+                    className="flex w-full items-center justify-between gap-4 py-3.5 text-left transition-colors hover:text-[var(--brand-accent)]"
                     onClick={() => setOpenIndex(open ? null : i)}
                   >
-                    <span className="font-display text-[1.02rem] tracking-tight text-foreground">
+                    <span className="font-display text-[0.95rem] tracking-tight text-foreground">
                       {item.q}
                     </span>
                     <span
@@ -663,7 +676,7 @@ function FaqSection() {
                     )}
                   >
                     <div className="overflow-hidden">
-                      <p className="pb-4 pr-8 text-[14px] leading-[1.7] text-[var(--color-text-secondary)]">
+                      <p className="pb-3.5 pr-8 text-[13px] leading-[1.65] text-[var(--color-text-secondary)]">
                         {item.a}
                       </p>
                     </div>
@@ -683,26 +696,26 @@ function FinalCtaSection() {
 
   return (
     <section ref={ref} className="border-t border-[var(--color-border)] bg-[var(--brand-primary)]">
-      <div className="page-container py-14 md:py-16">
+      <div className="page-container py-10 md:py-12">
         <div className={cn("reveal-up mx-auto max-w-2xl text-center", inView && "is-visible")}>
-          <h2 className="mx-auto max-w-[16ch] font-display text-[clamp(1.85rem,3.8vw,2.6rem)] leading-[1.08] tracking-[-0.03em] text-white">
+          <h2 className="mx-auto max-w-[16ch] font-display text-[clamp(1.55rem,3vw,2.1rem)] leading-[1.1] tracking-[-0.03em] text-white">
             Find your next event.
           </h2>
-          <p className="mx-auto mt-4 max-w-md text-[15px] leading-[1.65] text-white/75">
+          <p className="mx-auto mt-3 max-w-md text-[14px] leading-[1.6] text-white/75">
             Browse what&apos;s happening in Hyderabad and register for an experience worth showing
             up for.
           </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               to="/events"
-              className="group/cta inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-white px-6 text-[14.5px] font-medium text-[var(--brand-primary)] transition-opacity hover:opacity-90"
+              className="group/cta inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-white px-5 text-[14px] font-medium text-[var(--brand-primary)] transition-opacity hover:opacity-90"
             >
               Explore Events
               <ArrowRight className="btn-arrow size-4" strokeWidth={1.75} />
             </Link>
             <Link
               to="/host"
-              className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full border border-white/30 px-6 text-[14.5px] font-medium text-white transition-colors hover:bg-white/10"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/30 px-5 text-[14px] font-medium text-white transition-colors hover:bg-white/10"
             >
               <CalendarPlus className="size-4" strokeWidth={1.75} aria-hidden />
               Host an Event
@@ -763,11 +776,17 @@ function StickyExploreBar() {
 
 function Home() {
   const { upcoming, meetups, organizations } = Route.useLoaderData();
-  const preview = upcoming.length > 0 ? upcoming : meetups.slice(0, 2);
+  const heroEvent = useMemo(() => {
+    const byDate = (m: Meetup) => m.endDateISO || m.dateISO;
+    const next = meetups
+      .filter((m) => !isMeetupCompleted(m))
+      .sort((a, b) => a.dateISO.localeCompare(b.dateISO))[0];
+    return next ?? [...meetups].sort((a, b) => byDate(b).localeCompare(byDate(a)))[0] ?? null;
+  }, [meetups]);
 
   return (
     <div className="relative bg-[var(--color-background)] pb-24 md:pb-0">
-      <HeroSection previewEvents={preview.slice(0, 2)} />
+      <HeroSection event={heroEvent} />
       <DiscoverySection events={upcoming} />
       <CommunitiesSection organizations={organizations} events={meetups} />
       <AttendeeStepsSection />

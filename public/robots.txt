@@ -1,4 +1,13 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /jury
+Disallow: /dashboard
+Disallow: /org-login
+Disallow: /api/
+Disallow: /hackathon/login
+Disallow: /hackathon/register
+Disallow: /hackathon/set-password
+Disallow: /hackathon/problems/
 
 Sitemap: https://community.trizenventures.com/sitemap.xml
