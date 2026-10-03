@@ -525,6 +525,33 @@ function AdminHackathonEvaluationsPage() {
                     />
                   </div>
 
+                  {summary.items.some((i) => i.comments) ? (
+                    <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                      {summary.items
+                        .filter((i) => Boolean(i.comments))
+                        .map((i) => {
+                          const isApprove =
+                            i.comments.toLowerCase().includes("approve") ||
+                            i.comments.toLowerCase().includes("accept");
+                          const isReject = i.comments.toLowerCase().includes("reject");
+                          return (
+                            <span
+                              key={i._id}
+                              className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-bold border ${
+                                isApprove
+                                  ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                  : isReject
+                                    ? "bg-red-100 text-red-800 border-red-300"
+                                    : "bg-slate-100 text-slate-800 border-slate-300"
+                              }`}
+                            >
+                              {i.comments}
+                            </span>
+                          );
+                        })}
+                    </div>
+                  ) : null}
+
                   <ul className="mt-3 min-h-0 flex-1 space-y-1.5 overflow-hidden">
                     {summary.criterionAverages.map((criterion) => (
                       <li key={criterion.id} className="text-[11.5px]">
@@ -635,16 +662,38 @@ function AdminHackathonEvaluationsPage() {
                           ))}
                         </div>
 
-                        <label className="block text-[11.5px] font-semibold text-foreground mt-3">
-                          Comments
-                          <textarea
-                            rows={2}
-                            value={editComments}
-                            onChange={(e) => setEditComments(e.target.value)}
-                            placeholder="Add evaluation comments..."
-                            className="mt-1 block w-full border border-border bg-white px-2.5 py-1.5 text-xs outline-none focus:border-primary resize-none"
-                          />
-                        </label>
+                        <div className="mt-3">
+                          <p className="text-[11.5px] font-semibold text-foreground">
+                            Decision / Comment
+                          </p>
+                          <div className="mt-1.5 flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditComments("Approved")}
+                              className={`rounded px-3 py-1 text-xs font-bold transition-colors ${
+                                editComments === "Approved" ||
+                                editComments.toLowerCase().includes("approve") ||
+                                editComments.toLowerCase().includes("accept")
+                                  ? "bg-emerald-600 text-white"
+                                  : "border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                              }`}
+                            >
+                              Accept
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditComments("Rejected")}
+                              className={`rounded px-3 py-1 text-xs font-bold transition-colors ${
+                                editComments === "Rejected" ||
+                                editComments.toLowerCase().includes("reject")
+                                  ? "bg-red-600 text-white"
+                                  : "border border-red-300 bg-red-50 text-red-700 hover:bg-red-100"
+                              }`}
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </div>
 
                         <div className="mt-3 flex items-center justify-end gap-2">
                           <button
