@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { ClipboardCheck, RotateCcw, Search, Trophy, X } from "lucide-react";
+import { ClipboardCheck, Pencil, RotateCcw, Search, Trophy, X } from "lucide-react";
 import { toast } from "sonner";
 import { AppSelect } from "@/components/AppSelect";
 import { AdminPageHeader, AdminPanel } from "@/components/admin/AdminPageChrome";
@@ -15,6 +15,7 @@ import {
 import {
   fetchAdminHackathonEvaluations,
   reopenAdminHackathonEvaluation,
+  updateAdminHackathonEvaluation,
   type AdminHackathonEvaluation,
 } from "@/lib/admin-api";
 
@@ -90,6 +91,9 @@ function AdminHackathonEvaluationsPage() {
   const [sortKey, setSortKey] = useState<SortKey>("rank");
   const [openTeamKey, setOpenTeamKey] = useState<string | null>(null);
   const [round, setRound] = useState(1);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editScores, setEditScores] = useState<Record<string, number>>({});
+  const [editComments, setEditComments] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -102,6 +106,42 @@ function AdminHackathonEvaluationsPage() {
       setLoading(false);
     }
   }, [hackathonId, round]);
+
+  function startEditingScore(item: AdminHackathonEvaluation) {
+    const initialScores: Record<string, number> = {};
+    rubric.forEach((criterion) => {
+      const existing = item.criteriaScores.find((s) => s.criterionId === criterion.id);
+      initialScores[criterion.id] = existing ? existing.score : 0;
+    });
+    setEditScores(initialScores);
+    setEditComments(item.comments || "");
+    setEditingId(item._id);
+  }
+
+  async function handleSaveScore(item: AdminHackathonEvaluation) {
+    setWorkingId(item._id);
+    try {
+      const criteriaScores = rubric.map((criterion) => ({
+        criterionId: criterion.id,
+        score: Number(editScores[criterion.id]) || 0,
+      }));
+      await updateAdminHackathonEvaluation(hackathonId, item._id, {
+        teamId: item.teamId._id,
+        juryMemberId: item.juryMemberId._id || "",
+        round,
+        criteriaScores,
+        comments: editComments,
+        status: "submitted",
+      });
+      toast.success("Evaluation score updated successfully.");
+      setEditingId(null);
+      await load();
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Could not save evaluation score.");
+    } finally {
+      setWorkingId("");
+    }
+  }
 
   const maxRound = results.maxRound ?? 1;
 
@@ -556,74 +596,156 @@ function AdminHackathonEvaluationsPage() {
                 </DialogDescription>
               </DialogHeader>
               <div className="min-h-0 flex-1 divide-y divide-border overflow-y-auto">
-                {openTeam.items.map((item) => (
-                  <section key={item._id} className="px-5 py-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-[13px] font-semibold text-foreground">
-                          {item.juryMemberId.name}
-                        </p>
-                        <p className="truncate text-[11.5px] text-muted-foreground">
-                          {item.juryMemberId.email}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <span className="text-base font-bold text-foreground tabular-nums">
-                          {item.status === "pending" ? "—" : item.totalScore}
-                          <span className="text-xs font-normal text-muted-foreground"> / 100</span>
-                        </span>
-                        <span
-                          className={`px-1.5 py-0.5 text-[10.5px] font-semibold capitalize ${evaluationStatusTone[item.status]}`}
-                        >
-                          {item.status}
-                        </span>
-                      </div>
-                    </div>
-                    {item.criteriaScores.length ? (
-                      <div className="mt-2.5 flex flex-wrap gap-1.5">
-                        {item.criteriaScores.map((score) => (
-                          <span
-                            key={score.criterionId}
-                            className="border border-border bg-white px-2 py-0.5 text-[11px] text-muted-foreground"
-                          >
-                            {criterionName(score.criterionId)}:{" "}
-                            <strong className="text-foreground">{score.score}</strong>/
-                            {criterionMax(score.criterionId)}
+                {openTeam.items.map((item) => {
+                  const isEditingThis = editingId === item._id;
+
+                  if (isEditingThis) {
+                    const currentTotal = rubric.reduce(
+                      (sum, c) => sum + (Number(editScores[c.id]) || 0),
+                      0,
+                    );
+
+                    return (
+                      <section key={item._id} className="bg-slate-50 p-4 border-b border-border">
+                        <div className="flex items-center justify-between gap-2 pb-2">
+                          <p className="text-xs font-bold text-foreground">
+                            Edit Scores for {item.juryMemberId.name}
+                          </p>
+                          <span className="text-xs font-bold text-primary tabular-nums">
+                            Total: {currentTotal} / 100
                           </span>
-                        ))}
+                        </div>
+
+                        <div className="grid gap-2.5 sm:grid-cols-2 mt-2">
+                          {rubric.map((criterion) => (
+                            <label key={criterion.id} className="block text-[11.5px] font-semibold text-foreground">
+                              {criterion.name} (Max {criterion.maxMarks})
+                              <input
+                                type="number"
+                                min={0}
+                                max={criterion.maxMarks}
+                                value={editScores[criterion.id] ?? 0}
+                                onChange={(e) => {
+                                  const val = Math.max(0, Math.min(criterion.maxMarks, Number(e.target.value) || 0));
+                                  setEditScores((prev) => ({ ...prev, [criterion.id]: val }));
+                                }}
+                                className="mt-1 block w-full border border-border bg-white px-2.5 py-1 text-xs outline-none focus:border-primary"
+                              />
+                            </label>
+                          ))}
+                        </div>
+
+                        <label className="block text-[11.5px] font-semibold text-foreground mt-3">
+                          Comments
+                          <textarea
+                            rows={2}
+                            value={editComments}
+                            onChange={(e) => setEditComments(e.target.value)}
+                            placeholder="Add evaluation comments..."
+                            className="mt-1 block w-full border border-border bg-white px-2.5 py-1.5 text-xs outline-none focus:border-primary resize-none"
+                          />
+                        </label>
+
+                        <div className="mt-3 flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditingId(null)}
+                            className="h-7 border border-border bg-white px-3 text-[11.5px] font-semibold text-foreground hover:bg-muted"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            disabled={workingId === item._id}
+                            onClick={() => void handleSaveScore(item)}
+                            className="h-7 bg-primary px-3 text-[11.5px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                          >
+                            {workingId === item._id ? "Saving…" : "Save Score"}
+                          </button>
+                        </div>
+                      </section>
+                    );
+                  }
+
+                  return (
+                    <section key={item._id} className="px-5 py-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-[13px] font-semibold text-foreground">
+                            {item.juryMemberId.name}
+                          </p>
+                          <p className="truncate text-[11.5px] text-muted-foreground">
+                            {item.juryMemberId.email}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <span className="text-base font-bold text-foreground tabular-nums">
+                            {item.status === "pending" ? "—" : item.totalScore}
+                            <span className="text-xs font-normal text-muted-foreground"> / 100</span>
+                          </span>
+                          <span
+                            className={`px-1.5 py-0.5 text-[10.5px] font-semibold capitalize ${evaluationStatusTone[item.status]}`}
+                          >
+                            {item.status}
+                          </span>
+                        </div>
                       </div>
-                    ) : null}
-                    {item.comments ? (
-                      <p className="mt-2.5 bg-muted/40 px-3 py-2 text-[12.5px] leading-5 text-foreground">
-                        {item.comments}
-                      </p>
-                    ) : null}
-                    <div className="mt-2.5 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-                      <span>
-                        {item.submittedAt
-                          ? `Submitted ${new Date(item.submittedAt).toLocaleString(undefined, {
-                              day: "numeric",
-                              month: "short",
-                              hour: "numeric",
-                              minute: "2-digit",
-                            })}`
-                          : item.status === "draft"
-                            ? "Saved as draft"
-                            : "Not evaluated yet"}
-                      </span>
-                      {item.status === "submitted" ? (
-                        <button
-                          type="button"
-                          disabled={workingId === item._id}
-                          onClick={() => void reopen(item)}
-                          className="h-7 border border-border bg-white px-2.5 text-[11.5px] font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-60"
-                        >
-                          {workingId === item._id ? "Reopening…" : "Reopen"}
-                        </button>
+                      {item.criteriaScores.length ? (
+                        <div className="mt-2.5 flex flex-wrap gap-1.5">
+                          {item.criteriaScores.map((score) => (
+                            <span
+                              key={score.criterionId}
+                              className="border border-border bg-white px-2 py-0.5 text-[11px] text-muted-foreground"
+                            >
+                              {criterionName(score.criterionId)}:{" "}
+                              <strong className="text-foreground">{score.score}</strong>/
+                              {criterionMax(score.criterionId)}
+                            </span>
+                          ))}
+                        </div>
                       ) : null}
-                    </div>
-                  </section>
-                ))}
+                      {item.comments ? (
+                        <p className="mt-2.5 bg-muted/40 px-3 py-2 text-[12.5px] leading-5 text-foreground">
+                          {item.comments}
+                        </p>
+                      ) : null}
+                      <div className="mt-2.5 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                        <span>
+                          {item.submittedAt
+                            ? `Submitted ${new Date(item.submittedAt).toLocaleString(undefined, {
+                                day: "numeric",
+                                month: "short",
+                                hour: "numeric",
+                                minute: "2-digit",
+                              })}`
+                            : item.status === "draft"
+                              ? "Saved as draft"
+                              : "Not evaluated yet"}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startEditingScore(item)}
+                            className="inline-flex h-7 items-center gap-1 border border-border bg-white px-2.5 text-[11.5px] font-semibold text-foreground transition-colors hover:bg-muted"
+                          >
+                            <Pencil className="size-3" />
+                            Edit score
+                          </button>
+                          {item.status === "submitted" ? (
+                            <button
+                              type="button"
+                              disabled={workingId === item._id}
+                              onClick={() => void reopen(item)}
+                              className="h-7 border border-border bg-white px-2.5 text-[11.5px] font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+                            >
+                              {workingId === item._id ? "Reopening…" : "Reopen"}
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    </section>
+                  );
+                })}
               </div>
             </>
           ) : null}

@@ -1412,15 +1412,26 @@ function AdminHackathonsPage() {
                           {team.submission.ppt_url && (
                             <div>
                               <p className="text-xs font-semibold text-foreground">Presentation</p>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  void handleDownloadSubmission(team.submission!.ppt_url!)
-                                }
-                                className="mt-1 inline-flex text-xs font-semibold text-primary hover:underline"
-                              >
-                                Download PPT / PDF
-                              </button>
+                              {team.submission.ppt_url.startsWith("http") ? (
+                                <a
+                                  href={team.submission.ppt_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="mt-1 inline-flex text-xs font-semibold text-primary hover:underline"
+                                >
+                                  View PPT / PDF
+                                </a>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleDownloadSubmission(team.submission!.ppt_url!)
+                                  }
+                                  className="mt-1 inline-flex text-xs font-semibold text-primary hover:underline"
+                                >
+                                  Download PPT / PDF
+                                </button>
+                              )}
                             </div>
                           )}
 
@@ -1436,6 +1447,29 @@ function AdminHackathonsPage() {
                                 className="mt-1 inline-flex text-xs font-semibold text-primary hover:underline"
                               >
                                 View Recorded Video
+                              </a>
+                            </div>
+                          )}
+
+                          {team.submission.room_number && (
+                            <div>
+                              <p className="text-xs font-semibold text-foreground">Room Number</p>
+                              <p className="mt-1 text-xs font-medium text-foreground">
+                                {team.submission.room_number}
+                              </p>
+                            </div>
+                          )}
+
+                          {team.submission.other_links && (
+                            <div>
+                              <p className="text-xs font-semibold text-foreground">Other Links</p>
+                              <a
+                                href={team.submission.other_links}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-1 inline-flex text-xs font-semibold text-primary hover:underline break-all"
+                              >
+                                {team.submission.other_links}
                               </a>
                             </div>
                           )}

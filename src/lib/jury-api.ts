@@ -75,8 +75,11 @@ export type JuryTeam = {
     description: string;
     githubRepo: string;
     videoUrl: string;
+    roomNumber?: string;
+    otherLinks?: string;
     submittedAt: string | null;
     hasFile: boolean;
+    pptUrl?: string;
   };
   /** Latest evaluation round the team has been selected for. */
   round?: number;

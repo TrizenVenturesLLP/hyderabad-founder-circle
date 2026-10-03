@@ -1,5 +1,5 @@
 import { createFileRoute, notFound, redirect, useNavigate } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
   CalendarDays,
@@ -28,7 +28,7 @@ import {
   getHackathonProblemStatements,
   getHackathonUserDetails,
 } from "@/lib/hackathon-api";
-import { getStatementDomainIds, type ProblemStatement } from "@/lib/hackathon";
+import { getStatementDomainIds, SUBMISSION_DEADLINE_ISO, type ProblemStatement } from "@/lib/hackathon";
 import { StudentShell } from "@/components/student/StudentShell";
 import { ProjectSubmissionDialog } from "@/components/student/ProjectSubmissionDialog";
 
@@ -139,6 +139,34 @@ function ProblemStatementDetailsPage() {
   const [isConfirming, setIsConfirming] = useState(false);
   const [submittedAt, setSubmittedAt] = useState<string | null>(loaderData.submittedAt);
   const [isSubmitOpen, setIsSubmitOpen] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const deadlineMs = new Date(SUBMISSION_DEADLINE_ISO).getTime();
+  const diffMs = deadlineMs - now;
+  const isExpired = diffMs <= 0;
+
+  function formatCountdown(ms: number) {
+    if (ms <= 0) return "00h 00m 00s";
+    const totalSecs = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSecs / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
+    const secs = totalSecs % 60;
+    return `${String(hours).padStart(2, "0")}h ${String(mins).padStart(2, "0")}m ${String(secs).padStart(2, "0")}s`;
+  }
+
+  const deadlineDateFormatted = new Date(SUBMISSION_DEADLINE_ISO).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 
   const confirmed = teamStatementId === String(statement.id).toUpperCase();
   const lockedToOther = !!teamStatementId && !confirmed;
@@ -375,14 +403,33 @@ function ProblemStatementDetailsPage() {
                 </div>
               ) : null}
               {confirmed && isLead && !submittedAt ? (
-                <button
-                  type="button"
-                  onClick={() => setIsSubmitOpen(true)}
-                  className="inline-flex h-10 w-full items-center sm:h-9 justify-center gap-1.5 bg-(--brand-primary) px-4 text-[13px] font-semibold text-white transition hover:bg-(--brand-primary-hover)"
-                >
-                  <Upload className="size-4" />
-                  Submit project
-                </button>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2 border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                    <span className="flex items-center gap-1.5 font-semibold">
+                      <Clock3 className="size-3.5 text-amber-600 animate-pulse" />
+                      Deadline: {deadlineDateFormatted}
+                    </span>
+                    <span className="font-mono font-bold text-amber-900 tabular-nums">
+                      {formatCountdown(diffMs)}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => !isExpired && setIsSubmitOpen(true)}
+                    disabled={isExpired}
+                    className="inline-flex h-10 w-full items-center sm:h-9 justify-center gap-1.5 bg-(--brand-primary) px-4 text-[13px] font-semibold text-white transition hover:bg-(--brand-primary-hover) disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
+                  >
+                    <Upload className="size-4" />
+                    {isExpired ? "Submissions closed" : "Submit project"}
+                  </button>
+
+                  {isExpired ? (
+                    <p className="border border-red-200 bg-red-50 p-2.5 text-[11.5px] leading-relaxed font-medium text-red-700">
+                      We are unable to submit because the project submission deadline ({deadlineDateFormatted}) has ended. New submissions are no longer accepted.
+                    </p>
+                  ) : null}
+                </div>
               ) : null}
               {isLead && !confirmed && statement.available === false ? (
                 <p className="border border-amber-200 bg-amber-50 px-3 py-2 text-[12.5px] text-amber-800">

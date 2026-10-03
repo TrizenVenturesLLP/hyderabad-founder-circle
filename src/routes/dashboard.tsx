@@ -39,6 +39,7 @@ import {
 } from "@/lib/hackathon-api";
 import {
   FINAL_EVALUATION_ROUND,
+  SUBMISSION_DEADLINE_ISO,
   getStatementDomainIds,
   type HackathonDetails,
   type HackathonStudentProfile,
@@ -300,6 +301,17 @@ function DashboardPage() {
   const memberCount = backendUser?.members?.length || 1;
   const submittedAt = backendUser?.submission?.submitted_at;
 
+  const submissionDeadlineMs = new Date(SUBMISSION_DEADLINE_ISO).getTime();
+  const isSubmissionExpired = Date.now() > submissionDeadlineMs;
+  const deadlineDateFormatted = new Date(SUBMISSION_DEADLINE_ISO).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
   function handleLogout() {
     logoutHackathonStudent();
     void navigate({ to: "/hackathon", replace: true });
@@ -445,8 +457,7 @@ function DashboardPage() {
                       Disqualified in Round {roundResult.round}
                     </p>
                     <p className="mt-0.5 text-[13px] text-red-800">
-                      Your team's overall score didn't reach the Round {roundResult.round} cutoff.
-                      Thank you for participating.
+                      Thank you for participating in Round {roundResult.round} of the AI HACK X MRDU 2026 Hackathon. Your team has not been selected to proceed to the next round. We appreciate your participation and effort.
                     </p>
                   </>
                 )}
@@ -478,42 +489,51 @@ function DashboardPage() {
           <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_17rem]">
             <div className="min-w-0 space-y-5">
               {confirmedStatement && backendUser && (
-                <div className={`${cardClass} flex flex-wrap items-center gap-3 p-4 sm:p-5`}>
-                  <span className="grid size-9 shrink-0 place-items-center rounded-md bg-(--brand-accent-soft) text-(--brand-accent)">
-                    <Upload className="size-4" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-semibold tracking-[0.08em] text-(--brand-accent) uppercase">
-                      Final submission
-                    </p>
-                    <p className="mt-0.5 text-[13px] text-(--color-text-secondary)">
-                      {submittedAt
-                        ? `${isLead ? "You" : leadName} submitted your team's project.`
-                        : isLead
-                          ? "Submit your project from your problem statement page."
-                          : `${leadName} submits the project for your team.`}
-                    </p>
-                  </div>
-                  {isLead && !submittedAt ? (
-                    <Link
-                      to="/hackathon/problems/$problemId"
-                      params={{ problemId: confirmedStatement.id }}
-                      className="inline-flex h-9 items-center justify-center gap-1.5 bg-(--brand-primary) px-3 text-[12.5px] font-semibold text-white transition hover:bg-(--brand-primary-hover) max-sm:flex-1 sm:h-8"
+                <div className="space-y-2">
+                  <div className={`${cardClass} flex flex-wrap items-center gap-3 p-4 sm:p-5`}>
+                    <span className="grid size-9 shrink-0 place-items-center rounded-md bg-(--brand-accent-soft) text-(--brand-accent)">
+                      <Upload className="size-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-semibold tracking-[0.08em] text-(--brand-accent) uppercase">
+                        Final submission
+                      </p>
+                      <p className="mt-0.5 text-[13px] text-(--color-text-secondary)">
+                        {submittedAt
+                          ? `${isLead ? "You" : leadName} submitted your team's project.`
+                          : isSubmissionExpired
+                            ? "Submissions are closed as the deadline has ended."
+                            : isLead
+                              ? "Submit your project from your problem statement page."
+                              : `${leadName} submits the project for your team.`}
+                      </p>
+                    </div>
+                    {isLead && !submittedAt && !isSubmissionExpired ? (
+                      <Link
+                        to="/hackathon/problems/$problemId"
+                        params={{ problemId: confirmedStatement.id }}
+                        className="inline-flex h-9 items-center justify-center gap-1.5 bg-(--brand-primary) px-3 text-[12.5px] font-semibold text-white transition hover:bg-(--brand-primary-hover) max-sm:flex-1 sm:h-8"
+                      >
+                        Go to submit
+                        <ArrowRight className="size-3.5" />
+                      </Link>
+                    ) : null}
+                    <span
+                      className={`inline-flex items-center gap-1.5 border px-2 py-1 text-[11px] font-semibold ${submittedAt ? "border-emerald-200 bg-emerald-50 text-emerald-700" : isSubmissionExpired ? "border-red-200 bg-red-50 text-red-700" : "border-(--color-border) bg-(--color-background-alt) text-(--color-text-secondary)"}`}
                     >
-                      Go to submit
-                      <ArrowRight className="size-3.5" />
-                    </Link>
-                  ) : null}
-                  <span
-                    className={`inline-flex items-center gap-1.5 border px-2 py-1 text-[11px] font-semibold ${submittedAt ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-(--color-border) bg-(--color-background-alt) text-(--color-text-secondary)"}`}
-                  >
-                    {submittedAt ? (
-                      <CheckCircle2 className="size-3.5" />
-                    ) : (
-                      <Clock3 className="size-3.5" />
-                    )}
-                    {submittedAt ? "Submitted" : "Not submitted"}
-                  </span>
+                      {submittedAt ? (
+                        <CheckCircle2 className="size-3.5" />
+                      ) : (
+                        <Clock3 className="size-3.5" />
+                      )}
+                      {submittedAt ? "Submitted" : isSubmissionExpired ? "Closed" : "Not submitted"}
+                    </span>
+                  </div>
+                  {!submittedAt && isSubmissionExpired && (
+                    <p className="border border-red-200 bg-red-50 p-3 text-[11.5px] leading-relaxed font-medium text-red-700">
+                      We are unable to submit because the project submission deadline ({deadlineDateFormatted}) has ended. New submissions are no longer accepted.
+                    </p>
+                  )}
                 </div>
               )}
 

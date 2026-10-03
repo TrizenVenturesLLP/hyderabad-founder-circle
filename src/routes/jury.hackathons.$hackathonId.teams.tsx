@@ -270,7 +270,14 @@ function JuryTeamsPage() {
               </td>
               <td className="px-4 py-3">
                 {team.submission.submittedAt ? (
-                  <JuryBadge tone="green">Received</JuryBadge>
+                  <div className="flex flex-col gap-0.5">
+                    <JuryBadge tone="green">Received</JuryBadge>
+                    {team.submission.roomNumber && (
+                      <span className="text-[11px] font-semibold text-slate-700">
+                        {team.submission.roomNumber}
+                      </span>
+                    )}
+                  </div>
                 ) : (
                   <JuryBadge tone="gray">Awaiting</JuryBadge>
                 )}

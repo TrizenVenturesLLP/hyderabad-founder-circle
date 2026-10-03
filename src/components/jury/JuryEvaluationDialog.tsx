@@ -256,7 +256,16 @@ export function JuryEvaluationDialog({
                 {team.problemStatementId || "No problem selected"}
               </span>
               <span className="mx-1 hidden h-4 w-px bg-(--color-border) sm:block" aria-hidden />
-              {team.submission.hasFile ? (
+              {team.submission.pptUrl?.startsWith("http") ? (
+                <a
+                  href={team.submission.pptUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={quickLinkClass}
+                >
+                  <ExternalLink className="size-3.5" /> View PPT / PDF
+                </a>
+              ) : team.submission.hasFile ? (
                 <button
                   type="button"
                   onClick={() => setViewerOpen(true)}
@@ -283,6 +292,16 @@ export function JuryEvaluationDialog({
                   className={quickLinkClass}
                 >
                   <ExternalLink className="size-3.5" /> Demo
+                </a>
+              ) : null}
+              {team.submission.otherLinks ? (
+                <a
+                  href={team.submission.otherLinks}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={quickLinkClass}
+                >
+                  <ExternalLink className="size-3.5" /> Other Link
                 </a>
               ) : null}
             </div>

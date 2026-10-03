@@ -153,6 +153,15 @@ function JuryTeamDetailPage() {
                     <span className="text-(--color-text-muted)">No statement selected</span>
                   )}
                 </DetailRow>
+                <DetailRow label="Room Number">
+                  {team.submission.roomNumber ? (
+                    <span className="font-semibold text-foreground">
+                      {team.submission.roomNumber}
+                    </span>
+                  ) : (
+                    <span className="text-(--color-text-muted)">Not specified</span>
+                  )}
+                </DetailRow>
                 <DetailRow label="Project description">
                   <p className="leading-relaxed whitespace-pre-wrap text-(--color-text-secondary)">
                     {team.submission.description || "No project description submitted."}
@@ -187,13 +196,36 @@ function JuryTeamDetailPage() {
                   )}
                 </DetailRow>
                 <DetailRow label="PPT / PDF">
-                  {team.submission.hasFile ? (
+                  {team.submission.pptUrl?.startsWith("http") ? (
+                    <a
+                      href={team.submission.pptUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={linkClass}
+                    >
+                      Open presentation <ExternalLink className="size-3.5" />
+                    </a>
+                  ) : team.submission.hasFile ? (
                     <JuryButton onClick={() => setViewerOpen(true)}>
                       <Eye className="size-3.5" />
                       View file
                     </JuryButton>
                   ) : (
-                    <span className="text-(--color-text-muted)">Not uploaded</span>
+                    <span className="text-(--color-text-muted)">Not provided</span>
+                  )}
+                </DetailRow>
+                <DetailRow label="Other links">
+                  {team.submission.otherLinks ? (
+                    <a
+                      href={team.submission.otherLinks}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={linkClass}
+                    >
+                      Open link <ExternalLink className="size-3.5" />
+                    </a>
+                  ) : (
+                    <span className="text-(--color-text-muted)">Not provided</span>
                   )}
                 </DetailRow>
                 <DetailRow label="Submitted">

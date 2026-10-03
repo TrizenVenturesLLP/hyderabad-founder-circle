@@ -461,7 +461,7 @@ export type AdminHackathonEvaluation = {
   comments: string;
   criteriaScores: { criterionId: string; score: number }[];
   submittedAt: string | null;
-  juryMemberId: { name: string; email: string };
+  juryMemberId: { _id?: string; name: string; email: string };
   teamId: {
     _id: string;
     team_name: string;
@@ -490,6 +490,28 @@ export function reopenAdminHackathonEvaluation(hackathonId: string, evaluationId
   return adminFetch<{ evaluation: AdminHackathonEvaluation }>(
     `${adminHackathonPath(hackathonId)}/evaluations/${encodeURIComponent(evaluationId)}/reopen`,
     { method: "POST", body: JSON.stringify({}) },
+  );
+}
+
+export function updateAdminHackathonEvaluation(
+  hackathonId: string,
+  evaluationId: string,
+  payload: {
+    teamId?: string;
+    juryMemberId?: string;
+    round?: number;
+    criteriaScores: { criterionId: string; score: number }[];
+    comments?: string;
+    status?: "submitted" | "draft";
+  },
+) {
+  return adminFetch<{ evaluation: AdminHackathonEvaluation }>(
+    `${adminHackathonPath(hackathonId)}/evaluations/${encodeURIComponent(evaluationId)}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
   );
 }
 
