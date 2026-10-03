@@ -434,12 +434,12 @@ export function JuryEvaluationDialog({
                     disabled={readOnly}
                     onClick={() => setComments("Approved")}
                     className={`inline-flex items-center gap-1.5 rounded-xl border px-4 py-2 text-xs font-bold transition-colors ${
-                      comments === "Approved" || comments.toLowerCase().includes("approve")
+                      comments === "Approved" || comments.toLowerCase().includes("approve") || comments.toLowerCase().includes("accept")
                         ? "border-emerald-600 bg-emerald-600 text-white shadow-xs"
                         : "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                     } disabled:opacity-60`}
                   >
-                    <CheckCircle2 className="size-4" /> Approve
+                    <CheckCircle2 className="size-4" /> Accept
                   </button>
                   <button
                     type="button"

@@ -678,16 +678,31 @@ function AdminHackathonEvaluationsPage() {
                             {item.juryMemberId.email}
                           </p>
                         </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <span className="text-base font-bold text-foreground tabular-nums">
-                            {item.status === "pending" ? "—" : item.totalScore}
-                            <span className="text-xs font-normal text-muted-foreground"> / 100</span>
-                          </span>
-                          <span
-                            className={`px-1.5 py-0.5 text-[10.5px] font-semibold capitalize ${evaluationStatusTone[item.status]}`}
-                          >
-                            {item.status}
-                          </span>
+                        <div className="flex shrink-0 flex-col items-end gap-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-base font-bold text-foreground tabular-nums">
+                              {item.status === "pending" ? "—" : item.totalScore}
+                              <span className="text-xs font-normal text-muted-foreground"> / 100</span>
+                            </span>
+                            <span
+                              className={`px-1.5 py-0.5 text-[10.5px] font-semibold capitalize ${evaluationStatusTone[item.status]}`}
+                            >
+                              {item.status}
+                            </span>
+                          </div>
+                          {item.comments ? (
+                            <span
+                              className={`px-2 py-0.5 text-[11px] font-bold rounded ${
+                                item.comments.toLowerCase().includes("approve") || item.comments.toLowerCase().includes("accept")
+                                  ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                  : item.comments.toLowerCase().includes("reject")
+                                    ? "bg-red-100 text-red-800 border border-red-300"
+                                    : "bg-slate-100 text-slate-800 border border-slate-300"
+                              }`}
+                            >
+                              {item.comments}
+                            </span>
+                          ) : null}
                         </div>
                       </div>
                       {item.criteriaScores.length ? (
@@ -702,22 +717,6 @@ function AdminHackathonEvaluationsPage() {
                               {criterionMax(score.criterionId)}
                             </span>
                           ))}
-                        </div>
-                      ) : null}
-                      {item.comments ? (
-                        <div className="mt-2.5 flex items-center gap-2">
-                          <span className="text-[11px] font-semibold text-muted-foreground">Decision:</span>
-                          <span
-                            className={`px-2.5 py-0.5 text-xs font-bold ${
-                              item.comments.toLowerCase().includes("approve")
-                                ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                                : item.comments.toLowerCase().includes("reject")
-                                  ? "bg-red-100 text-red-800 border border-red-300"
-                                  : "bg-slate-100 text-slate-800 border border-slate-300"
-                            }`}
-                          >
-                            {item.comments}
-                          </span>
                         </div>
                       ) : null}
                       <div className="mt-2.5 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
