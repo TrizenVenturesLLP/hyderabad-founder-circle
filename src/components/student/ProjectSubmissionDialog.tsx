@@ -116,6 +116,7 @@ export function ProjectSubmissionDialog({
   }
 
   const deadlineDateFormatted = new Date(SUBMISSION_DEADLINE_ISO).toLocaleString("en-US", {
+    timeZone: "Asia/Kolkata",
     month: "short",
     day: "numeric",
     year: "numeric",
