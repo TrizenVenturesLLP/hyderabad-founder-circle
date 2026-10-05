@@ -390,14 +390,31 @@ function AdminHackathonLeaderboardPage() {
 
       {isFinalRound ? (
         <AdminPanel className="p-4">
-          <p className="text-sm font-semibold">Round {round} · Final round</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            There is no cutoff in the final round. Teams are ranked by their Round {round} score
-            {data.items.length
-              ? ` · ${fullyScoredTeams} of ${data.items.length} teams scored so far`
-              : ""}
-            .
-          </p>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Round {round} results · Final round</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Cutoff <strong className="text-foreground">{result?.cutoff ?? 75}</strong>
+                {" · "}
+                <span className="font-semibold text-emerald-700">
+                  {countQualified} qualified
+                </span>
+                {" · "}
+                <span className="font-semibold text-red-700">
+                  {countDisqualified} disqualified
+                </span>
+                {" · "}
+                <span className="font-semibold text-amber-800">{countPending} pending</span>
+                {data.items.length
+                  ? ` · ${fullyScoredTeams} of ${data.items.length} teams scored so far`
+                  : ""}
+                .
+              </p>
+            </div>
+            <span className="shrink-0 text-xs font-semibold text-muted-foreground">
+              Final round
+            </span>
+          </div>
         </AdminPanel>
       ) : (
         <AdminPanel className="p-4">
