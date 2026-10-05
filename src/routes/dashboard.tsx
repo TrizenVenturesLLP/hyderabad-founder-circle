@@ -420,14 +420,14 @@ function DashboardPage() {
                 {roundResult.status === "qualified" ? (
                   <>
                     <p className="text-sm font-semibold text-emerald-900">
-                      Qualified in Round {roundResult.round} — going to Round{" "}
-                      {roundResult.nextRound}
-                      {roundResult.nextRound === FINAL_EVALUATION_ROUND ? " (Final round)" : ""}
+                      {roundResult.nextRound
+                        ? `Qualified in Round ${roundResult.round} — going to Round ${roundResult.nextRound}${roundResult.nextRound === FINAL_EVALUATION_ROUND ? " (Final round)" : ""}`
+                        : `Qualified in Round ${roundResult.round} — final round complete`}
                     </p>
                     <p className="mt-0.5 text-[13px] text-emerald-800">
-                      Congratulations! Your team cleared Round {roundResult.round} and will be
-                      evaluated again by the Jury in Round {roundResult.nextRound}
-                      {roundResult.nextRound === FINAL_EVALUATION_ROUND ? ", the final round" : ""}.
+                      {roundResult.nextRound
+                        ? `Congratulations! Your team cleared Round ${roundResult.round} and will be evaluated again by the Jury in Round ${roundResult.nextRound}${roundResult.nextRound === FINAL_EVALUATION_ROUND ? ", the final round" : ""}.`
+                        : `Congratulations! Your team cleared Round ${roundResult.round} and is now ranked in the final round.`}
                     </p>
                   </>
                 ) : roundResult.status === "pending" ? (

@@ -2,8 +2,8 @@ export type ProblemDifficulty = "Beginner" | "Intermediate" | "Advanced";
 
 /** Includes the Team Lead. */
 export const MAX_TEAM_MEMBERS = 6;
-/** Round 1 and 2 have qualifying cutoffs; Round 3 decides the final ranking. */
-export const FINAL_EVALUATION_ROUND = 3;
+/** Round 2 is the final evaluation round. */
+export const FINAL_EVALUATION_ROUND = 2;
 /** Project submission deadline ISO string. */
 export const SUBMISSION_DEADLINE_ISO = "2026-10-04T00:40:00+05:30";
 
