@@ -75,11 +75,8 @@ export type JuryTeam = {
     description: string;
     githubRepo: string;
     videoUrl: string;
-    roomNumber?: string;
-    otherLinks?: string;
     submittedAt: string | null;
     hasFile: boolean;
-    pptUrl?: string;
   };
   /** Latest evaluation round the team has been selected for. */
   round?: number;
@@ -217,7 +214,6 @@ export type JuryProblemStatement = {
   claimedByName?: string;
   /** Proposed by a team; only that team works on it. */
   teamProposal?: boolean;
-  proposedByTeam?: { team_name: string; lead_name?: string } | null;
   /** Teams that confirmed this statement. */
   teamCount?: number;
   /** Team names; empty for statements claimed by another Jury member. */

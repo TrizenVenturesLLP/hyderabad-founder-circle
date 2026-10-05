@@ -123,7 +123,7 @@ export type HackathonProblemProposal = {
   createdAt: string;
 };
 
-export type HackathonProposalSlots = { limit: number | null; approved: number };
+export type HackathonProposalSlots = { limit: number; approved: number };
 
 type HackathonProposalState = {
   problemProposal?: HackathonProblemProposal | null;
@@ -216,8 +216,6 @@ export type HackathonRegisteredUser = {
     description: string | null;
     ppt_url: string | null;
     video_url: string | null;
-    room_number?: string | null;
-    other_links?: string | null;
     submitted_at: string | null;
   };
   evaluation?: HackathonEvaluation | null;
@@ -304,10 +302,8 @@ export type HackathonSubmissionPayload = {
   phone: string;
   github_repo: string;
   description: string;
-  ppt_url: string;
+  ppt: File;
   video_url: string;
-  room_number: string;
-  other_links?: string;
 };
 
 export async function submitHackathonProject(payload: HackathonSubmissionPayload) {
@@ -320,12 +316,8 @@ export async function submitHackathonProject(payload: HackathonSubmissionPayload
     formData.append("phone", payload.phone);
     formData.append("github_repo", payload.github_repo);
     formData.append("description", payload.description);
-    formData.append("ppt_url", payload.ppt_url);
+    formData.append("ppt", payload.ppt);
     formData.append("video_url", payload.video_url);
-    formData.append("room_number", payload.room_number);
-    if (payload.other_links) {
-      formData.append("other_links", payload.other_links);
-    }
 
     response = await fetch(`${API_BASE}/api/hackathon/submit`, {
       method: "POST",

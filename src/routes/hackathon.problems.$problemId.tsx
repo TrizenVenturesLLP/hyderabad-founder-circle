@@ -1,5 +1,5 @@
 import { createFileRoute, notFound, redirect, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
   CalendarDays,
@@ -28,7 +28,7 @@ import {
   getHackathonProblemStatements,
   getHackathonUserDetails,
 } from "@/lib/hackathon-api";
-import { getStatementDomainIds, SUBMISSION_DEADLINE_ISO, type ProblemStatement } from "@/lib/hackathon";
+import { getStatementDomainIds, type ProblemStatement } from "@/lib/hackathon";
 import { StudentShell } from "@/components/student/StudentShell";
 import { ProjectSubmissionDialog } from "@/components/student/ProjectSubmissionDialog";
 
@@ -139,35 +139,6 @@ function ProblemStatementDetailsPage() {
   const [isConfirming, setIsConfirming] = useState(false);
   const [submittedAt, setSubmittedAt] = useState<string | null>(loaderData.submittedAt);
   const [isSubmitOpen, setIsSubmitOpen] = useState(false);
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const deadlineMs = new Date(SUBMISSION_DEADLINE_ISO).getTime();
-  const diffMs = deadlineMs - now;
-  const isExpired = diffMs <= 0;
-
-  function formatCountdown(ms: number) {
-    if (ms <= 0) return "00h 00m 00s";
-    const totalSecs = Math.floor(ms / 1000);
-    const hours = Math.floor(totalSecs / 3600);
-    const mins = Math.floor((totalSecs % 3600) / 60);
-    const secs = totalSecs % 60;
-    return `${String(hours).padStart(2, "0")}h ${String(mins).padStart(2, "0")}m ${String(secs).padStart(2, "0")}s`;
-  }
-
-  const deadlineDateFormatted = new Date(SUBMISSION_DEADLINE_ISO).toLocaleString("en-US", {
-    timeZone: "Asia/Kolkata",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
 
   const confirmed = teamStatementId === String(statement.id).toUpperCase();
   const lockedToOther = !!teamStatementId && !confirmed;
@@ -186,13 +157,12 @@ function ProblemStatementDetailsPage() {
       toast.error("You must be logged in to confirm a problem statement.");
       return;
     }
-    if (!isLead) return;
-
-    const confirmMsg = teamStatementId
-      ? `Switch your team's problem statement from ${teamStatementId} to ${statement.id}?`
-      : `Confirm ${statement.id} for your team?`;
-
-    if (!window.confirm(confirmMsg)) {
+    if (!isLead || teamStatementId) return;
+    if (
+      !window.confirm(
+        `Confirm ${statement.id} for your team?\n\nA team can confirm only one problem statement, and it can't be changed afterwards.`,
+      )
+    ) {
       return;
     }
 
@@ -205,7 +175,7 @@ function ProblemStatementDetailsPage() {
       });
       saveSelectedProblemStatementId(statement.id);
       setTeamStatementId(String(statement.id).toUpperCase());
-      toast.success(`${statement.id} is now confirmed as your problem statement`);
+      toast.success(`${statement.id} confirmed as your problem statement`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to confirm statement");
     } finally {
@@ -263,11 +233,6 @@ function ProblemStatementDetailsPage() {
               <span className="bg-(--color-background-alt) px-2 py-0.5 text-[11px] font-semibold text-(--color-text-secondary)">
                 {statement.difficulty}
               </span>
-              {(statement.teamProposal || statement.proposedByTeam) && (
-                <span className="bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 text-[11px] font-semibold text-purple-700">
-                  Own Problem
-                </span>
-              )}
               {statement.category ? (
                 <span className="inline-flex items-center gap-1 bg-(--color-background-alt) px-2 py-0.5 text-[11px] font-medium text-(--color-text-secondary)">
                   <Layers className="size-3" />
@@ -361,16 +326,16 @@ function ProblemStatementDetailsPage() {
                   {confirmed
                     ? "Confirmed for your team"
                     : lockedToOther
-                      ? "Different problem selected"
+                      ? `Your team chose ${teamStatementId}`
                       : "Not confirmed yet"}
                 </p>
-                <p className="mt-0.5 text-[11.5px] leading-5 opacity-90 break-all">
+                <p className="mt-0.5 text-[11.5px] leading-5 opacity-90">
                   {confirmed
-                    ? `Confirmed by ${isLead ? "you" : leadName}. You can switch to another statement anytime.`
+                    ? `Confirmed by ${isLead ? "you" : leadName}. It can't be changed.`
                     : lockedToOther
-                      ? `Currently selected: ${teamStatementId}. ${isLead ? "Click below to replace your selection with this statement." : `Only ${leadName} can switch statements.`}`
+                      ? "A team can confirm only one problem statement."
                       : isLead
-                        ? "You can confirm this problem statement for your team."
+                        ? "You can confirm only one statement, and it can't be changed afterwards."
                         : `Only ${leadName} can confirm a statement.`}
                 </p>
               </div>
@@ -404,52 +369,29 @@ function ProblemStatementDetailsPage() {
                 </div>
               ) : null}
               {confirmed && isLead && !submittedAt ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2 border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                    <span className="flex items-center gap-1.5 font-semibold">
-                      <Clock3 className="size-3.5 text-amber-600 animate-pulse" />
-                      Deadline: {deadlineDateFormatted}
-                    </span>
-                    <span className="font-mono font-bold text-amber-900 tabular-nums">
-                      {formatCountdown(diffMs)}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => !isExpired && setIsSubmitOpen(true)}
-                    disabled={isExpired}
-                    className="inline-flex h-10 w-full items-center sm:h-9 justify-center gap-1.5 bg-(--brand-primary) px-4 text-[13px] font-semibold text-white transition hover:bg-(--brand-primary-hover) disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
-                  >
-                    <Upload className="size-4" />
-                    {isExpired ? "Submissions closed" : "Submit project"}
-                  </button>
-
-                  {isExpired ? (
-                    <p className="border border-red-200 bg-red-50 p-2.5 text-[11.5px] leading-relaxed font-medium text-red-700">
-                      We are unable to submit because the project submission deadline ({deadlineDateFormatted}) has ended. New submissions are no longer accepted.
-                    </p>
-                  ) : null}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsSubmitOpen(true)}
+                  className="inline-flex h-10 w-full items-center sm:h-9 justify-center gap-1.5 bg-(--brand-primary) px-4 text-[13px] font-semibold text-white transition hover:bg-(--brand-primary-hover)"
+                >
+                  <Upload className="size-4" />
+                  Submit project
+                </button>
               ) : null}
-              {isLead && !confirmed && statement.available === false ? (
+              {isLead && !confirmed && !lockedToOther && statement.available === false ? (
                 <p className="border border-amber-200 bg-amber-50 px-3 py-2 text-[12.5px] text-amber-800">
                   This statement was proposed by another team and is reserved for them. Please
                   choose another one.
                 </p>
-              ) : isLead && !confirmed ? (
+              ) : isLead && !confirmed && !lockedToOther ? (
                 <button
                   type="button"
                   onClick={() => void handleConfirmStatement()}
                   disabled={isConfirming}
-                  className="inline-flex min-h-10 py-2.5 w-full items-center justify-center gap-1.5 bg-(--brand-accent) px-4 text-[13px] font-semibold text-white transition-opacity hover:opacity-95 disabled:cursor-wait disabled:opacity-60"
+                  className="inline-flex h-10 w-full items-center sm:h-9 justify-center gap-1.5 bg-(--brand-accent) px-4 text-[13px] font-semibold text-white transition-opacity hover:opacity-95 disabled:cursor-wait disabled:opacity-60"
                 >
-                  <Check className="size-4 shrink-0" />
-                  {isConfirming
-                    ? "Updating..."
-                    : lockedToOther
-                      ? "Replace current selection with this Statement"
-                      : "Confirm this statement"}
+                  <Check className="size-4" />
+                  {isConfirming ? "Confirming..." : "Confirm this statement"}
                 </button>
               ) : null}
               <button

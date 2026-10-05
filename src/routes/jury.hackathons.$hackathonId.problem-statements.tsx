@@ -117,27 +117,17 @@ function JuryProblemStatementsPage() {
       )
         return false;
       if (!query) return true;
-      const ownProblemMatch =
-        (statement.proposedByTeam || statement.teamProposal) &&
-        ("own problem".includes(query) || "custom".includes(query) || "team".includes(query));
-      return (
-        [
-          statement.id,
-          statement.title,
-          statement.description,
-          statement.difficulty,
-          statement.category,
-          statement.industry,
-          statement.platform,
-          statement.scope,
-          statement.organization,
-          ...(statement.deliverables || []),
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase()
-          .includes(query) || ownProblemMatch
-      );
+      return [
+        statement.id,
+        statement.title,
+        statement.description,
+        statement.category,
+        statement.industry,
+        statement.platform,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
     });
   }, [claimFilter, domainFilter, search, statements, statusFilter]);
 
@@ -413,9 +403,9 @@ function JuryProblemStatementsPage() {
                     </p>
 
                     <div className="mt-auto flex flex-wrap gap-1.5 pt-3">
-                      {statement.teamProposal || statement.proposedByTeam ? (
-                        <span className="bg-purple-100 border border-purple-200 px-2 py-0.5 text-[10.5px] font-semibold text-purple-800 rounded">
-                          Own Problem
+                      {statement.teamProposal ? (
+                        <span className="bg-sky-50 px-2 py-0.5 text-[10.5px] font-semibold text-sky-800">
+                          Team idea
                         </span>
                       ) : null}
                       <span

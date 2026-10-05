@@ -161,10 +161,16 @@ function AdminHackathonLeaderboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "qualified" | "disqualified" | "pending">("all");
   const [round, setRound] = useState(1);
   const [cutoffInput, setCutoffInput] = useState("");
   const [editingCutoff, setEditingCutoff] = useState(false);
   const [working, setWorking] = useState(false);
+
+  const handleSetRound = (value: number) => {
+    setRound(value);
+    setStatusFilter("all");
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -185,16 +191,39 @@ function AdminHackathonLeaderboardPage() {
     void load();
   }, [load]);
 
+  const countAll = data.items.length;
+  const countQualified = useMemo(
+    () => data.items.filter((entry) => entry.qualification === "qualified").length,
+    [data.items],
+  );
+  const countDisqualified = useMemo(
+    () => data.items.filter((entry) => entry.qualification === "disqualified").length,
+    [data.items],
+  );
+  const countPending = useMemo(
+    () => data.items.filter((entry) => entry.qualification === "pending").length,
+    [data.items],
+  );
+
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return data.items;
-    return data.items.filter((entry) =>
-      [entry.teamName, entry.leadName, entry.problemStatementId, entry.problemStatementTitle]
+    return data.items.filter((entry) => {
+      if (statusFilter === "qualified" && entry.qualification !== "qualified") {
+        return false;
+      }
+      if (statusFilter === "disqualified" && entry.qualification !== "disqualified") {
+        return false;
+      }
+      if (statusFilter === "pending" && entry.qualification !== "pending") {
+        return false;
+      }
+      if (!query) return true;
+      return [entry.teamName, entry.leadName, entry.problemStatementId, entry.problemStatementTitle]
         .join(" ")
         .toLowerCase()
-        .includes(query),
-    );
-  }, [data.items, search]);
+        .includes(query);
+    });
+  }, [data.items, search, statusFilter]);
 
   const topTeams = data.items.filter((entry) => entry.rank !== null && entry.rank <= 3);
   const evaluatedTeams = data.items.filter((entry) => entry.submittedEvaluations > 0).length;
@@ -311,8 +340,8 @@ function AdminHackathonLeaderboardPage() {
             </button>
             <button
               type="button"
-              disabled={!data.items.length}
-              onClick={() => downloadCsv(hackathonId, round, maxRound, data.items)}
+              disabled={!filtered.length}
+              onClick={() => downloadCsv(hackathonId, round, maxRound, filtered)}
               className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-(--brand-primary) px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               <Download className="size-3.5" />
@@ -334,7 +363,7 @@ function AdminHackathonLeaderboardPage() {
               type="button"
               role="tab"
               aria-selected={round === value}
-              onClick={() => setRound(value)}
+              onClick={() => handleSetRound(value)}
               className={cn(
                 "flex-1 shrink-0 rounded px-4 py-2 text-xs font-semibold whitespace-nowrap transition-colors sm:flex-none sm:py-1.5",
                 round === value
@@ -552,18 +581,82 @@ function AdminHackathonLeaderboardPage() {
       ) : null}
 
       <AdminPanel className="overflow-hidden">
-        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <label className="relative block w-full sm:max-w-xs">
-            <span className="sr-only">Search teams</span>
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search team, lead, or statement"
-              className="h-9 w-full rounded-md border border-border bg-white pr-3 pl-9 text-sm outline-none focus:border-(--brand-accent)"
-            />
-          </label>
-          <span className="text-xs text-muted-foreground">
+        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-1 flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3 min-w-0">
+            <label className="relative block w-full sm:max-w-xs shrink-0">
+              <span className="sr-only">Search teams</span>
+              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search team, lead, or statement"
+                className="h-9 w-full rounded-md border border-border bg-white pr-3 pl-9 text-sm outline-none focus:border-(--brand-accent)"
+              />
+            </label>
+
+            <div
+              role="tablist"
+              aria-label="Filter teams by qualification"
+              className="flex max-w-full overflow-x-auto rounded-md border border-border bg-muted/40 p-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {[
+                { id: "all" as const, label: "All", count: countAll },
+                {
+                  id: "qualified" as const,
+                  label: "Qualified",
+                  count: countQualified,
+                  badgeTone: "bg-emerald-100 text-emerald-800",
+                },
+                {
+                  id: "disqualified" as const,
+                  label: "Disqualified",
+                  count: countDisqualified,
+                  badgeTone: "bg-red-100 text-red-800",
+                },
+                ...(countPending > 0
+                  ? [
+                      {
+                        id: "pending" as const,
+                        label: "Pending",
+                        count: countPending,
+                        badgeTone: "bg-amber-100 text-amber-900",
+                      },
+                    ]
+                  : []),
+              ].map((opt) => {
+                const active = statusFilter === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setStatusFilter(opt.id)}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-semibold whitespace-nowrap transition-colors",
+                      active
+                        ? "bg-white text-foreground shadow-xs"
+                        : "text-muted-foreground hover:bg-white/60 hover:text-foreground",
+                    )}
+                  >
+                    <span>{opt.label}</span>
+                    <span
+                      className={cn(
+                        "rounded-full px-1.5 py-0.2 text-[10.5px] tabular-nums font-semibold",
+                        active
+                          ? opt.badgeTone || "bg-muted font-bold text-foreground"
+                          : "bg-muted/70 text-muted-foreground",
+                      )}
+                    >
+                      {opt.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
             {filtered.length} of {data.items.length} teams
           </span>
         </div>
@@ -574,7 +667,7 @@ function AdminHackathonLeaderboardPage() {
             </li>
           ) : !filtered.length ? (
             <li className="px-4 py-10 text-center text-sm text-muted-foreground">
-              {data.items.length ? "No teams match your search." : "No active teams yet."}
+              {data.items.length ? "No teams match your search or filter." : "No active teams yet."}
             </li>
           ) : (
             filtered.map((entry) => (
@@ -685,7 +778,9 @@ function AdminHackathonLeaderboardPage() {
                     colSpan={6 + otherRounds.length}
                     className="px-4 py-10 text-center text-muted-foreground"
                   >
-                    {data.items.length ? "No teams match your search." : "No active teams yet."}
+                    {data.items.length
+                      ? "No teams match your search or filter."
+                      : "No active teams yet."}
                   </td>
                 </tr>
               ) : (

@@ -2,8 +2,8 @@ export type ProblemDifficulty = "Beginner" | "Intermediate" | "Advanced";
 
 /** Includes the Team Lead. */
 export const MAX_TEAM_MEMBERS = 6;
-/** Round 1 has a qualifying cutoff; this last round decides the final ranking. */
-export const FINAL_EVALUATION_ROUND = 2;
+/** Round 1 and 2 have qualifying cutoffs; Round 3 decides the final ranking. */
+export const FINAL_EVALUATION_ROUND = 3;
 /** Project submission deadline ISO string. */
 export const SUBMISSION_DEADLINE_ISO = "2026-10-04T00:40:00+05:30";
 
@@ -35,7 +35,6 @@ export interface ProblemStatement {
   available?: boolean;
   /** Proposed by a team; reserved for that team only. */
   teamProposal?: boolean;
-  proposedByTeam?: { team_name: string; lead_name?: string } | null;
 }
 
 export function getStatementDomainIds(statement: Pick<ProblemStatement, "domainId" | "domainIds">) {

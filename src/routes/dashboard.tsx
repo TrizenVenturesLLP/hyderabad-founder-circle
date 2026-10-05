@@ -39,7 +39,6 @@ import {
 } from "@/lib/hackathon-api";
 import {
   FINAL_EVALUATION_ROUND,
-  SUBMISSION_DEADLINE_ISO,
   getStatementDomainIds,
   type HackathonDetails,
   type HackathonStudentProfile,
@@ -301,18 +300,6 @@ function DashboardPage() {
   const memberCount = backendUser?.members?.length || 1;
   const submittedAt = backendUser?.submission?.submitted_at;
 
-  const submissionDeadlineMs = new Date(SUBMISSION_DEADLINE_ISO).getTime();
-  const isSubmissionExpired = Date.now() > submissionDeadlineMs;
-  const deadlineDateFormatted = new Date(SUBMISSION_DEADLINE_ISO).toLocaleString("en-US", {
-    timeZone: "Asia/Kolkata",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-
   function handleLogout() {
     logoutHackathonStudent();
     void navigate({ to: "/hackathon", replace: true });
@@ -458,7 +445,8 @@ function DashboardPage() {
                       Disqualified in Round {roundResult.round}
                     </p>
                     <p className="mt-0.5 text-[13px] text-red-800">
-                      Thank you for participating in Round {roundResult.round} of the AI HACK X MRDU 2026 Hackathon. Your team has not been selected to proceed to the next round. We appreciate your participation and effort.
+                      Your team's overall score didn't reach the Round {roundResult.round} cutoff.
+                      Thank you for participating.
                     </p>
                   </>
                 )}
@@ -490,51 +478,42 @@ function DashboardPage() {
           <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_17rem]">
             <div className="min-w-0 space-y-5">
               {confirmedStatement && backendUser && (
-                <div className="space-y-2">
-                  <div className={`${cardClass} flex flex-wrap items-center gap-3 p-4 sm:p-5`}>
-                    <span className="grid size-9 shrink-0 place-items-center rounded-md bg-(--brand-accent-soft) text-(--brand-accent)">
-                      <Upload className="size-4" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[11px] font-semibold tracking-[0.08em] text-(--brand-accent) uppercase">
-                        Final submission
-                      </p>
-                      <p className="mt-0.5 text-[13px] text-(--color-text-secondary)">
-                        {submittedAt
-                          ? `${isLead ? "You" : leadName} submitted your team's project.`
-                          : isSubmissionExpired
-                            ? "Submissions are closed as the deadline has ended."
-                            : isLead
-                              ? "Submit your project from your problem statement page."
-                              : `${leadName} submits the project for your team.`}
-                      </p>
-                    </div>
-                    {isLead && !submittedAt && !isSubmissionExpired ? (
-                      <Link
-                        to="/hackathon/problems/$problemId"
-                        params={{ problemId: confirmedStatement.id }}
-                        className="inline-flex h-9 items-center justify-center gap-1.5 bg-(--brand-primary) px-3 text-[12.5px] font-semibold text-white transition hover:bg-(--brand-primary-hover) max-sm:flex-1 sm:h-8"
-                      >
-                        Go to submit
-                        <ArrowRight className="size-3.5" />
-                      </Link>
-                    ) : null}
-                    <span
-                      className={`inline-flex items-center gap-1.5 border px-2 py-1 text-[11px] font-semibold ${submittedAt ? "border-emerald-200 bg-emerald-50 text-emerald-700" : isSubmissionExpired ? "border-red-200 bg-red-50 text-red-700" : "border-(--color-border) bg-(--color-background-alt) text-(--color-text-secondary)"}`}
-                    >
-                      {submittedAt ? (
-                        <CheckCircle2 className="size-3.5" />
-                      ) : (
-                        <Clock3 className="size-3.5" />
-                      )}
-                      {submittedAt ? "Submitted" : isSubmissionExpired ? "Closed" : "Not submitted"}
-                    </span>
-                  </div>
-                  {!submittedAt && isSubmissionExpired && (
-                    <p className="border border-red-200 bg-red-50 p-3 text-[11.5px] leading-relaxed font-medium text-red-700">
-                      We are unable to submit because the project submission deadline ({deadlineDateFormatted}) has ended. New submissions are no longer accepted.
+                <div className={`${cardClass} flex flex-wrap items-center gap-3 p-4 sm:p-5`}>
+                  <span className="grid size-9 shrink-0 place-items-center rounded-md bg-(--brand-accent-soft) text-(--brand-accent)">
+                    <Upload className="size-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-semibold tracking-[0.08em] text-(--brand-accent) uppercase">
+                      Final submission
                     </p>
-                  )}
+                    <p className="mt-0.5 text-[13px] text-(--color-text-secondary)">
+                      {submittedAt
+                        ? `${isLead ? "You" : leadName} submitted your team's project.`
+                        : isLead
+                          ? "Submit your project from your problem statement page."
+                          : `${leadName} submits the project for your team.`}
+                    </p>
+                  </div>
+                  {isLead && !submittedAt ? (
+                    <Link
+                      to="/hackathon/problems/$problemId"
+                      params={{ problemId: confirmedStatement.id }}
+                      className="inline-flex h-9 items-center justify-center gap-1.5 bg-(--brand-primary) px-3 text-[12.5px] font-semibold text-white transition hover:bg-(--brand-primary-hover) max-sm:flex-1 sm:h-8"
+                    >
+                      Go to submit
+                      <ArrowRight className="size-3.5" />
+                    </Link>
+                  ) : null}
+                  <span
+                    className={`inline-flex items-center gap-1.5 border px-2 py-1 text-[11px] font-semibold ${submittedAt ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-(--color-border) bg-(--color-background-alt) text-(--color-text-secondary)"}`}
+                  >
+                    {submittedAt ? (
+                      <CheckCircle2 className="size-3.5" />
+                    ) : (
+                      <Clock3 className="size-3.5" />
+                    )}
+                    {submittedAt ? "Submitted" : "Not submitted"}
+                  </span>
                 </div>
               )}
 
@@ -554,10 +533,8 @@ function DashboardPage() {
                       They appear here when the countdown reaches zero.
                     </p>
                   </div>
-                ) : null}
-
-                {confirmedStatementId ? (
-                  <div className="mb-5 border border-(--brand-accent)/40 bg-(--brand-accent-soft) p-4">
+                ) : confirmedStatementId ? (
+                  <div className="border border-(--brand-accent)/40 bg-(--brand-accent-soft) p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.08em] text-(--brand-accent) uppercase">
                         <CheckCircle2 className="size-3.5" /> Your team&apos;s problem statement
@@ -568,7 +545,7 @@ function DashboardPage() {
                         </span>
                       ) : null}
                     </div>
-                    <p className="mt-2 font-mono text-[11.5px] font-bold text-(--brand-accent) break-all">
+                    <p className="mt-2 font-mono text-[11.5px] font-bold text-(--brand-accent)">
                       {confirmedStatementId}
                     </p>
                     {confirmedStatement ? (
@@ -584,47 +561,26 @@ function DashboardPage() {
                         <p className="mt-1.5 line-clamp-3 text-[12.5px] leading-5 text-(--color-text-secondary)">
                           {confirmedStatement.description}
                         </p>
-                        <div className="mt-3.5 flex flex-wrap items-center gap-3">
-                          <Link
-                            to="/hackathon/problems/$problemId"
-                            params={{ problemId: confirmedStatement.id }}
-                            className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-(--brand-accent) hover:underline"
-                          >
-                            View full details <ArrowRight className="size-3.5" />
-                          </Link>
-                          {isLead ? (
-                            <a
-                              href="#problem-statements-list"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                document
-                                  .getElementById("problem-statements-list")
-                                  ?.scrollIntoView({ behavior: "smooth" });
-                              }}
-                              className="inline-flex items-center gap-1.5 rounded bg-(--brand-accent) px-3 py-1.5 text-[12px] font-semibold text-white transition hover:opacity-90"
-                            >
-                              Replace / Change Problem Statement
-                            </a>
-                          ) : null}
-                        </div>
+                        <Link
+                          to="/hackathon/problems/$problemId"
+                          params={{ problemId: confirmedStatement.id }}
+                          className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-(--brand-accent) hover:underline"
+                        >
+                          View full details <ArrowRight className="size-3.5" />
+                        </Link>
                       </>
                     ) : null}
-                    <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 border-t border-(--brand-accent)/20 pt-3 text-[11.5px] text-(--color-text-secondary)">
-                      <span>Confirmed by {isLead ? "you" : leadName}.</span>
-                      {isLead ? (
-                        <span className="font-semibold text-(--brand-accent)">
-                          Select any problem statement below to replace your current choice.
-                        </span>
-                      ) : null}
-                    </div>
+                    <p className="mt-3 flex items-center gap-1.5 border-t border-(--brand-accent)/20 pt-3 text-[11.5px] text-(--color-text-secondary)">
+                      <LockKeyhole className="size-3.5 shrink-0" />
+                      Confirmed by {isLead ? "you" : leadName}. A team can confirm only one problem
+                      statement, so this can&apos;t be changed.
+                    </p>
                   </div>
-                ) : null}
-
-                {!backendUser ? (
+                ) : !backendUser ? (
                   <p className="py-10 text-center text-[12.5px] text-(--color-text-secondary)">
                     Loading your team…
                   </p>
-                ) : !isLead && !confirmedStatementId ? (
+                ) : !isLead ? (
                   <div className="flex min-h-48 flex-col items-center justify-center text-center">
                     <span className="grid size-11 place-items-center rounded-full bg-(--brand-accent-soft) text-(--brand-accent)">
                       <Clock3 className="size-5" />
@@ -643,7 +599,7 @@ function DashboardPage() {
                   </div>
                 ) : (
                   <>
-                    <div id="problem-statements-list" className="scroll-mt-6 flex flex-wrap items-start justify-between gap-3">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="text-[11px] font-semibold tracking-[0.08em] text-(--brand-accent) uppercase">
                           Problem statements
@@ -656,9 +612,10 @@ function DashboardPage() {
                         {availableStatementCount} available
                       </span>
                     </div>
-                    <p className="mt-2 flex items-start gap-1.5 border border-blue-200 bg-blue-50 px-3 py-2 text-[12px] leading-5 text-blue-800">
-                      <CheckCircle2 className="mt-0.5 size-3.5 shrink-0" />
-                      Your team works on 1 problem statement at a time. You can select or switch your problem statement anytime before submission.
+                    <p className="mt-2 flex items-start gap-1.5 border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] leading-5 text-amber-800">
+                      <LockKeyhole className="mt-0.5 size-3.5 shrink-0" />
+                      Your team can confirm only one problem statement, and it can&apos;t be changed
+                      afterwards. Review it carefully before confirming.
                     </p>
                     {proposalCard}
 

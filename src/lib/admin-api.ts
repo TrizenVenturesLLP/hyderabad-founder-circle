@@ -461,7 +461,7 @@ export type AdminHackathonEvaluation = {
   comments: string;
   criteriaScores: { criterionId: string; score: number }[];
   submittedAt: string | null;
-  juryMemberId: { _id?: string; name: string; email: string };
+  juryMemberId: { name: string; email: string };
   teamId: {
     _id: string;
     team_name: string;
