@@ -16,6 +16,7 @@ const STORAGE_KEY_DETAILS = "trizen_hackathon_details";
 const STORAGE_KEY_RELEASE_TIMER = "trizen_hackathon_release_timer";
 const STORAGE_KEY_SELECTED_STATEMENT = "trizen_hackathon_selected_statement";
 const STORAGE_KEY_STUDENT_PROFILE = "trizen_hackathon_student_profile";
+const STORAGE_KEY_STUDENT_TOKEN = "trizen_hackathon_student_token";
 const CHANGE_EVENT_NAME = "trizen_hackathon_data_change";
 
 function isBrowser(): boolean {
@@ -135,6 +136,16 @@ export function saveHackathonStudentProfile(profile: HackathonStudentProfile): v
   } catch (err) {
     console.error("Failed to save hackathon student profile", err);
   }
+}
+
+export function getHackathonStudentToken(): string | null {
+  if (!isBrowser()) return null;
+  return localStorage.getItem(STORAGE_KEY_STUDENT_TOKEN);
+}
+
+export function saveHackathonStudentToken(token: string): void {
+  if (!isBrowser()) return;
+  localStorage.setItem(STORAGE_KEY_STUDENT_TOKEN, token);
 }
 
 export function getAllProblemStatements(): ProblemStatement[] {
@@ -298,6 +309,6 @@ export function subscribeToHackathonData(callback: () => void): () => void {
 export function logoutHackathonStudent(): void {
   if (!isBrowser()) return;
 
-  localStorage.removeItem(STORAGE_KEY_STUDENT_PROFILE);
+  localStorage.removeItem(STORAGE_KEY_STUDENT_TOKEN);
   localStorage.removeItem(STORAGE_KEY_SELECTED_STATEMENT);
 }

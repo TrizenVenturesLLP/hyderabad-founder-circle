@@ -1,5 +1,6 @@
 import { adminAuthHeaders } from "./admin-auth";
 import type { ProblemStatement } from "./hackathon";
+import { getHackathonStudentToken } from "./hackathon-storage";
 
 const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 
@@ -97,7 +98,7 @@ export function loginHackathonStudent(payload: { email: string; password: string
   return hackathonFetch<{
     ok?: boolean;
     message?: string;
-    token?: string;
+    token: string;
     profile?: {
       name: string;
       email: string;
@@ -106,6 +107,58 @@ export function loginHackathonStudent(payload: { email: string; password: string
     };
     team?: HackathonRegisteredUser;
   }>("/api/hackathon/login", payload);
+}
+
+async function participantCertificateFetch<T>(path: string): Promise<T> {
+  const token = getHackathonStudentToken();
+  if (!token) throw new Error("Please sign in again to access your certificate.");
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    throw new Error("Certificate service is unavailable. Please try again shortly.");
+  }
+
+  const responseText = await response.text();
+  let data: { message?: unknown; error?: unknown } = {};
+  try {
+    data = JSON.parse(responseText) as { message?: unknown; error?: unknown };
+  } catch {
+    // Preserve non-JSON server errors in the message below.
+  }
+  if (!response.ok) {
+    const message =
+      typeof data.message === "string"
+        ? data.message
+        : typeof data.error === "string"
+          ? data.error
+          : responseText.trim() || `Request failed with status ${response.status}.`;
+    throw new Error(message);
+  }
+  return data as T;
+}
+
+export type ParticipantCertificate = {
+  participantName: string;
+  teamName: string;
+  certificateType: "participation";
+  status: "pending" | "generated" | "failed";
+  generatedAt: string | null;
+};
+
+export function getParticipantHackathonCertificate(hackathonId: string) {
+  return participantCertificateFetch<{ certificate: ParticipantCertificate }>(
+    `/api/hackathons/${encodeURIComponent(hackathonId)}/certificate`,
+  );
+}
+
+export function getParticipantCertificateUrl(hackathonId: string, download = false) {
+  return participantCertificateFetch<{ url: string; expiresIn: number }>(
+    `/api/hackathons/${encodeURIComponent(hackathonId)}/certificate/download${download ? "?download=1" : ""}`,
+  );
 }
 
 export type HackathonRoundResult = {

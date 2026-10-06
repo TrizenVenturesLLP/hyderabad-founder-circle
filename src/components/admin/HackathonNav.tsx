@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { ClipboardCheck, FileText, Gavel, Trophy, Users } from "lucide-react";
+import { Award, ClipboardCheck, FileText, Gavel, Trophy, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { tabIndicatorClass, useTabIndicator } from "@/components/admin/useTabIndicator";
 
-export type HackathonSection = "statements" | "teams" | "jury" | "evaluations" | "leaderboard";
+export type HackathonSection =
+  "statements" | "teams" | "jury" | "evaluations" | "leaderboard" | "certificates";
 
 const tabClass = (active: boolean) =>
   cn(
@@ -88,6 +89,17 @@ export function HackathonNav({
       >
         <Trophy className="size-4" strokeWidth={1.75} />
         Leaderboard
+      </Link>
+      <Link
+        to="/admin/hackathons/$hackathonId/certificates"
+        params={{ hackathonId }}
+        role="tab"
+        data-tab-key="certificates"
+        aria-selected={active === "certificates"}
+        className={tabClass(active === "certificates")}
+      >
+        <Award className="size-4" strokeWidth={1.75} />
+        Certificates
       </Link>
       <span aria-hidden className={tabIndicatorClass} style={indicatorStyle} />
     </div>

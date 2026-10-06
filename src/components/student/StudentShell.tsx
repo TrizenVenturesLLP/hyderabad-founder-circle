@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, FileText, LayoutDashboard, LogOut, Menu, Users, X } from "lucide-react";
+import { ArrowLeft, Award, FileText, LayoutDashboard, LogOut, Menu, Users, X } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { cn } from "@/lib/utils";
 
@@ -211,6 +211,17 @@ export function StudentShell({
             <Users className={iconClass(pathname === "/dashboard/team")} strokeWidth={1.75} />
             My Team
           </Link>
+          <Link
+            to="/dashboard/certificate"
+            aria-current={pathname === "/dashboard/certificate" ? "page" : undefined}
+            className={linkClass(pathname === "/dashboard/certificate")}
+          >
+            <Award
+              className={iconClass(pathname === "/dashboard/certificate")}
+              strokeWidth={1.75}
+            />
+            Certificate
+          </Link>
 
           <div className="mt-auto pt-2">
             <Link to="/hackathon" className={linkClass(false)}>
@@ -253,7 +264,7 @@ export function StudentShell({
         aria-label="Student sections"
         className={cn(
           "fixed inset-x-0 bottom-0 z-30 grid border-t border-(--color-border) bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden",
-          confirmedStatementId ? "grid-cols-3" : "grid-cols-2",
+          confirmedStatementId ? "grid-cols-4" : "grid-cols-3",
         )}
       >
         <Link
@@ -285,6 +296,15 @@ export function StudentShell({
           <BottomIndicator active={pathname === "/dashboard/team"} />
           <Users className="size-5" strokeWidth={1.75} />
           My Team
+        </Link>
+        <Link
+          to="/dashboard/certificate"
+          aria-current={pathname === "/dashboard/certificate" ? "page" : undefined}
+          className={bottomLinkClass(pathname === "/dashboard/certificate")}
+        >
+          <BottomIndicator active={pathname === "/dashboard/certificate"} />
+          <Award className="size-5" strokeWidth={1.75} />
+          Certificate
         </Link>
       </nav>
     </div>

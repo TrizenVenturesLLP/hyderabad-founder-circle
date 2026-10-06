@@ -410,6 +410,47 @@ export function fetchAdminHackathonLeaderboard(hackathonId: string, round = 1) {
   );
 }
 
+export type AdminHackathonCertificateItem = {
+  participantId: string;
+  participantName: string;
+  email: string;
+  teamId: string;
+  teamName: string;
+  status: "pending" | "generated" | "failed";
+  generatedAt: string | null;
+  certificate: { participantId: string } | null;
+};
+
+export type AdminHackathonCertificates = {
+  totalEligible: number;
+  generated: number;
+  pending: number;
+  failed: number;
+  generationRunning: boolean;
+  items: AdminHackathonCertificateItem[];
+};
+
+export function fetchAdminHackathonCertificates(hackathonId: string) {
+  return adminFetch<AdminHackathonCertificates>(`${adminHackathonPath(hackathonId)}/certificates`);
+}
+
+export function generateAdminHackathonCertificates(hackathonId: string, retryFailed = false) {
+  return adminFetch<{ ok: boolean; queued: number; generationRunning: boolean }>(
+    `${adminHackathonPath(hackathonId)}/certificates/generate`,
+    { method: "POST", body: JSON.stringify({ retryFailed }) },
+  );
+}
+
+export function getAdminHackathonCertificateUrl(
+  hackathonId: string,
+  participantId: string,
+  download = false,
+) {
+  return adminFetch<{ url: string; expiresIn: number }>(
+    `${adminHackathonPath(hackathonId)}/certificates/${encodeURIComponent(participantId)}/download${download ? "?download=1" : ""}`,
+  );
+}
+
 export function applyAdminHackathonRoundCutoff(hackathonId: string, round: number, cutoff: number) {
   return adminFetch<{ result: AdminHackathonRoundResult }>(
     `${adminHackathonPath(hackathonId)}/rounds/${round}/cutoff`,

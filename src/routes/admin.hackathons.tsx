@@ -23,7 +23,7 @@ import {
   Gavel,
   ArrowRight,
 } from "lucide-react";
-import { useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { AdminPageHeader, AdminPanel } from "@/components/admin/AdminPageChrome";
 import { subscribeToHackathonData, getHackathonDetails } from "@/lib/hackathon-storage";
@@ -56,6 +56,9 @@ import {
   releaseAdminHackathonProblemStatement,
   reviewAdminHackathonProblemStatement,
   setAdminHackathonJuryClaimLimit,
+  fetchAdminHackathonCertificates,
+  getAdminHackathonCertificateUrl,
+  type AdminHackathonCertificateItem,
   type AdminSessionUser,
 } from "@/lib/admin-api";
 import {
@@ -305,6 +308,10 @@ function AdminHackathonsPage() {
   const selectedHackathon = findAdminHackathon(search.hackathon);
   const showRegisteredStudents = Boolean(selectedHackathon) && search.view === "teams";
   const [registeredUsers, setRegisteredUsers] = useState<RegisteredUserWithStatus[]>([]);
+  const [certificatesByEmail, setCertificatesByEmail] = useState<
+    Map<string, AdminHackathonCertificateItem>
+  >(new Map());
+  const [certificateLoadError, setCertificateLoadError] = useState("");
   const [registeredUsersLoading, setRegisteredUsersLoading] = useState(false);
   const [registeredUsersError, setRegisteredUsersError] = useState<string | null>(null);
   const [registeredSearch, setRegisteredSearch] = useState("");
@@ -494,7 +501,7 @@ function AdminHackathonsPage() {
     }
   }
 
-  async function handleOpenRegisteredStudents() {
+  const handleOpenRegisteredStudents = useCallback(async () => {
     setRegisteredUsersLoading(true);
     setRegisteredUsersError(null);
 
@@ -505,6 +512,23 @@ function AdminHackathonsPage() {
       setEvaluationDrafts(
         Object.fromEntries(users.map((team) => [team._id, toEvaluationDraft(team)])),
       );
+      setCertificateLoadError("");
+      try {
+        const certificates = await fetchAdminHackathonCertificates(activeHackathonId);
+        setCertificatesByEmail(
+          new Map(
+            certificates.items.map((certificate) => [certificate.email.toLowerCase(), certificate]),
+          ),
+        );
+      } catch (certificateError) {
+        setCertificatesByEmail(new Map());
+        const message =
+          certificateError instanceof Error
+            ? certificateError.message
+            : "Could not load participant certificates.";
+        setCertificateLoadError(message);
+        console.error("[admin registered teams certificates]", message);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not load registered teams.";
       setRegisteredUsersError(message);
@@ -512,11 +536,35 @@ function AdminHackathonsPage() {
     } finally {
       setRegisteredUsersLoading(false);
     }
-  }
+  }, [activeHackathonId]);
 
   useEffect(() => {
     if (showRegisteredStudents) void handleOpenRegisteredStudents();
-  }, [showRegisteredStudents]);
+  }, [showRegisteredStudents, handleOpenRegisteredStudents]);
+
+  async function openTeamMemberCertificate(email: string) {
+    const certificate = certificatesByEmail.get(email.trim().toLowerCase());
+    if (!certificate || certificate.status !== "generated") return;
+
+    const preview = window.open("about:blank", "_blank");
+    if (!preview) {
+      toast.error("Allow pop-ups to open this certificate.");
+      return;
+    }
+    preview.opener = null;
+    try {
+      const { url } = await getAdminHackathonCertificateUrl(
+        activeHackathonId,
+        certificate.participantId,
+      );
+      preview.location.href = url;
+    } catch (error) {
+      preview.close();
+      toast.error(
+        error instanceof Error ? error.message : "Could not open this participant certificate.",
+      );
+    }
+  }
 
   async function handleSaveEvaluation(team: RegisteredUserWithStatus) {
     const draft = evaluationDrafts[team._id] ?? toEvaluationDraft(team);
@@ -1345,19 +1393,71 @@ function AdminHackathonsPage() {
                     <div className="mt-4 rounded-lg border border-border bg-white">
                       <div className="border-b border-border px-4 py-3">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                          Team Members
+                          Team Members · Certificates
                         </p>
                       </div>
 
+                      {certificateLoadError ? (
+                        <p className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
+                          Certificate status is unavailable: {certificateLoadError}
+                        </p>
+                      ) : null}
                       <div className="divide-y divide-border">
                         {team.members.map((member, index) => (
                           <div
                             key={`${team._id}-${member.email}-${index}`}
-                            className="grid gap-1 px-4 py-3 text-xs sm:grid-cols-3 sm:gap-4"
+                            className="grid gap-2 px-4 py-3 text-xs sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,0.8fr)_auto] sm:items-center sm:gap-4"
                           >
-                            <p className="font-semibold text-foreground">{member.full_name}</p>
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-foreground">
+                                {member.full_name}
+                              </p>
+                              {(() => {
+                                const certificate = certificatesByEmail.get(
+                                  member.email.trim().toLowerCase(),
+                                );
+                                if (!certificate) {
+                                  return (
+                                    <span className="mt-1 block text-[10.5px] text-muted-foreground">
+                                      {certificateLoadError
+                                        ? "Certificate status unavailable"
+                                        : "Certificate not available"}
+                                    </span>
+                                  );
+                                }
+                                if (certificate.status !== "generated") {
+                                  return (
+                                    <span
+                                      className={`mt-1 block text-[10.5px] ${
+                                        certificate.status === "failed"
+                                          ? "text-red-700"
+                                          : "text-amber-700"
+                                      }`}
+                                    >
+                                      Certificate {certificate.status}
+                                    </span>
+                                  );
+                                }
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => void openTeamMemberCertificate(member.email)}
+                                    className="mt-1 inline-flex items-center gap-1 text-[10.5px] font-semibold text-primary hover:underline"
+                                  >
+                                    <Eye className="size-3" />
+                                    View certificate
+                                  </button>
+                                );
+                              })()}
+                            </div>
                             <p className="break-all text-muted-foreground">{member.email}</p>
                             <p className="text-muted-foreground">{member.phone}</p>
+                            <span className="hidden text-[10.5px] font-semibold text-emerald-700 sm:block">
+                              {certificatesByEmail.get(member.email.trim().toLowerCase())
+                                ?.status === "generated"
+                                ? "Ready"
+                                : ""}
+                            </span>
                           </div>
                         ))}
                       </div>

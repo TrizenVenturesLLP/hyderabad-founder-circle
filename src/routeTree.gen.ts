@@ -39,6 +39,7 @@ import { Route as HackathonRegisterRouteImport } from './routes/hackathon.regist
 import { Route as HackathonLoginRouteImport } from './routes/hackathon.login'
 import { Route as EventsSlugRouteImport } from './routes/events.$slug'
 import { Route as DashboardTeamRouteImport } from './routes/dashboard.team'
+import { Route as DashboardCertificateRouteImport } from './routes/dashboard.certificate'
 import { Route as CommunitiesSlugRouteImport } from './routes/communities.$slug'
 import { Route as AdminRegistrationsRouteImport } from './routes/admin.registrations'
 import { Route as AdminHackathonsRouteImport } from './routes/admin.hackathons'
@@ -55,6 +56,7 @@ import { Route as JuryHackathonsHackathonIdLeaderboardRouteImport } from './rout
 import { Route as AdminHackathonsHackathonIdLeaderboardRouteImport } from './routes/admin.hackathons.$hackathonId.leaderboard'
 import { Route as AdminHackathonsHackathonIdJuryRouteImport } from './routes/admin.hackathons.$hackathonId.jury'
 import { Route as AdminHackathonsHackathonIdEvaluationsRouteImport } from './routes/admin.hackathons.$hackathonId.evaluations'
+import { Route as AdminHackathonsHackathonIdCertificatesRouteImport } from './routes/admin.hackathons.$hackathonId.certificates'
 import { Route as JuryHackathonsHackathonIdTeamsTeamIdRouteImport } from './routes/jury.hackathons.$hackathonId.teams.$teamId'
 
 const TermsRoute = TermsRouteImport.update({
@@ -207,6 +209,11 @@ const DashboardTeamRoute = DashboardTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardCertificateRoute = DashboardCertificateRouteImport.update({
+  id: '/certificate',
+  path: '/certificate',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const CommunitiesSlugRoute = CommunitiesSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -296,6 +303,12 @@ const AdminHackathonsHackathonIdEvaluationsRoute =
     path: '/$hackathonId/evaluations',
     getParentRoute: () => AdminHackathonsRoute,
   } as any)
+const AdminHackathonsHackathonIdCertificatesRoute =
+  AdminHackathonsHackathonIdCertificatesRouteImport.update({
+    id: '/$hackathonId/certificates',
+    path: '/$hackathonId/certificates',
+    getParentRoute: () => AdminHackathonsRoute,
+  } as any)
 const JuryHackathonsHackathonIdTeamsTeamIdRoute =
   JuryHackathonsHackathonIdTeamsTeamIdRouteImport.update({
     id: '/$teamId',
@@ -329,6 +342,7 @@ export interface FileRoutesByFullPath {
   '/admin/hackathons': typeof AdminHackathonsRouteWithChildren
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/communities/$slug': typeof CommunitiesSlugRoute
+  '/dashboard/certificate': typeof DashboardCertificateRoute
   '/dashboard/team': typeof DashboardTeamRoute
   '/events/$slug': typeof EventsSlugRoute
   '/hackathon/login': typeof HackathonLoginRoute
@@ -343,6 +357,7 @@ export interface FileRoutesByFullPath {
   '/jury/': typeof JuryIndexRoute
   '/hackathon/problems/$problemId': typeof HackathonProblemsProblemIdRoute
   '/jury/hackathons/$hackathonId': typeof JuryHackathonsHackathonIdRouteWithChildren
+  '/admin/hackathons/$hackathonId/certificates': typeof AdminHackathonsHackathonIdCertificatesRoute
   '/admin/hackathons/$hackathonId/evaluations': typeof AdminHackathonsHackathonIdEvaluationsRoute
   '/admin/hackathons/$hackathonId/jury': typeof AdminHackathonsHackathonIdJuryRoute
   '/admin/hackathons/$hackathonId/leaderboard': typeof AdminHackathonsHackathonIdLeaderboardRoute
@@ -374,6 +389,7 @@ export interface FileRoutesByTo {
   '/admin/hackathons': typeof AdminHackathonsRouteWithChildren
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/communities/$slug': typeof CommunitiesSlugRoute
+  '/dashboard/certificate': typeof DashboardCertificateRoute
   '/dashboard/team': typeof DashboardTeamRoute
   '/events/$slug': typeof EventsSlugRoute
   '/hackathon/login': typeof HackathonLoginRoute
@@ -388,6 +404,7 @@ export interface FileRoutesByTo {
   '/jury': typeof JuryIndexRoute
   '/hackathon/problems/$problemId': typeof HackathonProblemsProblemIdRoute
   '/jury/hackathons/$hackathonId': typeof JuryHackathonsHackathonIdRouteWithChildren
+  '/admin/hackathons/$hackathonId/certificates': typeof AdminHackathonsHackathonIdCertificatesRoute
   '/admin/hackathons/$hackathonId/evaluations': typeof AdminHackathonsHackathonIdEvaluationsRoute
   '/admin/hackathons/$hackathonId/jury': typeof AdminHackathonsHackathonIdJuryRoute
   '/admin/hackathons/$hackathonId/leaderboard': typeof AdminHackathonsHackathonIdLeaderboardRoute
@@ -424,6 +441,7 @@ export interface FileRoutesById {
   '/admin/hackathons': typeof AdminHackathonsRouteWithChildren
   '/admin/registrations': typeof AdminRegistrationsRoute
   '/communities/$slug': typeof CommunitiesSlugRoute
+  '/dashboard/certificate': typeof DashboardCertificateRoute
   '/dashboard/team': typeof DashboardTeamRoute
   '/events/$slug': typeof EventsSlugRoute
   '/hackathon/login': typeof HackathonLoginRoute
@@ -438,6 +456,7 @@ export interface FileRoutesById {
   '/jury/': typeof JuryIndexRoute
   '/hackathon/problems/$problemId': typeof HackathonProblemsProblemIdRoute
   '/jury/hackathons/$hackathonId': typeof JuryHackathonsHackathonIdRouteWithChildren
+  '/admin/hackathons/$hackathonId/certificates': typeof AdminHackathonsHackathonIdCertificatesRoute
   '/admin/hackathons/$hackathonId/evaluations': typeof AdminHackathonsHackathonIdEvaluationsRoute
   '/admin/hackathons/$hackathonId/jury': typeof AdminHackathonsHackathonIdJuryRoute
   '/admin/hackathons/$hackathonId/leaderboard': typeof AdminHackathonsHackathonIdLeaderboardRoute
@@ -475,6 +494,7 @@ export interface FileRouteTypes {
     | '/admin/hackathons'
     | '/admin/registrations'
     | '/communities/$slug'
+    | '/dashboard/certificate'
     | '/dashboard/team'
     | '/events/$slug'
     | '/hackathon/login'
@@ -489,6 +509,7 @@ export interface FileRouteTypes {
     | '/jury/'
     | '/hackathon/problems/$problemId'
     | '/jury/hackathons/$hackathonId'
+    | '/admin/hackathons/$hackathonId/certificates'
     | '/admin/hackathons/$hackathonId/evaluations'
     | '/admin/hackathons/$hackathonId/jury'
     | '/admin/hackathons/$hackathonId/leaderboard'
@@ -520,6 +541,7 @@ export interface FileRouteTypes {
     | '/admin/hackathons'
     | '/admin/registrations'
     | '/communities/$slug'
+    | '/dashboard/certificate'
     | '/dashboard/team'
     | '/events/$slug'
     | '/hackathon/login'
@@ -534,6 +556,7 @@ export interface FileRouteTypes {
     | '/jury'
     | '/hackathon/problems/$problemId'
     | '/jury/hackathons/$hackathonId'
+    | '/admin/hackathons/$hackathonId/certificates'
     | '/admin/hackathons/$hackathonId/evaluations'
     | '/admin/hackathons/$hackathonId/jury'
     | '/admin/hackathons/$hackathonId/leaderboard'
@@ -569,6 +592,7 @@ export interface FileRouteTypes {
     | '/admin/hackathons'
     | '/admin/registrations'
     | '/communities/$slug'
+    | '/dashboard/certificate'
     | '/dashboard/team'
     | '/events/$slug'
     | '/hackathon/login'
@@ -583,6 +607,7 @@ export interface FileRouteTypes {
     | '/jury/'
     | '/hackathon/problems/$problemId'
     | '/jury/hackathons/$hackathonId'
+    | '/admin/hackathons/$hackathonId/certificates'
     | '/admin/hackathons/$hackathonId/evaluations'
     | '/admin/hackathons/$hackathonId/jury'
     | '/admin/hackathons/$hackathonId/leaderboard'
@@ -826,6 +851,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardTeamRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/certificate': {
+      id: '/dashboard/certificate'
+      path: '/certificate'
+      fullPath: '/dashboard/certificate'
+      preLoaderRoute: typeof DashboardCertificateRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/communities/$slug': {
       id: '/communities/$slug'
       path: '/$slug'
@@ -938,6 +970,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminHackathonsHackathonIdEvaluationsRouteImport
       parentRoute: typeof AdminHackathonsRoute
     }
+    '/admin/hackathons/$hackathonId/certificates': {
+      id: '/admin/hackathons/$hackathonId/certificates'
+      path: '/$hackathonId/certificates'
+      fullPath: '/admin/hackathons/$hackathonId/certificates'
+      preLoaderRoute: typeof AdminHackathonsHackathonIdCertificatesRouteImport
+      parentRoute: typeof AdminHackathonsRoute
+    }
     '/jury/hackathons/$hackathonId/teams/$teamId': {
       id: '/jury/hackathons/$hackathonId/teams/$teamId'
       path: '/$teamId'
@@ -949,12 +988,15 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminHackathonsRouteChildren {
+  AdminHackathonsHackathonIdCertificatesRoute: typeof AdminHackathonsHackathonIdCertificatesRoute
   AdminHackathonsHackathonIdEvaluationsRoute: typeof AdminHackathonsHackathonIdEvaluationsRoute
   AdminHackathonsHackathonIdJuryRoute: typeof AdminHackathonsHackathonIdJuryRoute
   AdminHackathonsHackathonIdLeaderboardRoute: typeof AdminHackathonsHackathonIdLeaderboardRoute
 }
 
 const AdminHackathonsRouteChildren: AdminHackathonsRouteChildren = {
+  AdminHackathonsHackathonIdCertificatesRoute:
+    AdminHackathonsHackathonIdCertificatesRoute,
   AdminHackathonsHackathonIdEvaluationsRoute:
     AdminHackathonsHackathonIdEvaluationsRoute,
   AdminHackathonsHackathonIdJuryRoute: AdminHackathonsHackathonIdJuryRoute,
@@ -1003,10 +1045,12 @@ const CommunitiesRouteWithChildren = CommunitiesRoute._addFileChildren(
 )
 
 interface DashboardRouteChildren {
+  DashboardCertificateRoute: typeof DashboardCertificateRoute
   DashboardTeamRoute: typeof DashboardTeamRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardCertificateRoute: DashboardCertificateRoute,
   DashboardTeamRoute: DashboardTeamRoute,
 }
 

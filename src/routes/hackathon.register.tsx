@@ -33,6 +33,7 @@ import {
   getHackathonDetails,
   getHackathonStudentProfile,
   saveHackathonStudentProfile,
+  saveHackathonStudentToken,
 } from "@/lib/hackathon-storage";
 
 export const Route = createFileRoute("/hackathon/register")({
@@ -331,6 +332,7 @@ function HackathonRegistrationPage() {
         email: response.profile?.email || login.email.trim().toLowerCase(),
         mobile: response.profile?.phone || "",
       });
+      saveHackathonStudentToken(response.token);
 
       void navigate({ to: "/dashboard", replace: true });
     } catch (loginError) {
