@@ -451,6 +451,40 @@ export function getAdminHackathonCertificateUrl(
   );
 }
 
+export type AdminHackathonRound2CertificateItem = {
+  participantId: string;
+  participantName: string;
+  email: string;
+  teamId: string;
+  teamName: string;
+  status: "pending" | "generating" | "generated" | "failed";
+  generatedAt: string | null;
+};
+
+export type AdminHackathonRound2Certificates = {
+  totalDisqualified: number;
+  generated: number;
+  pending: number;
+  failed: number;
+  items: AdminHackathonRound2CertificateItem[];
+};
+
+export function fetchAdminHackathonRound2Certificates(hackathonId: string) {
+  return adminFetch<AdminHackathonRound2Certificates>(
+    `${adminHackathonPath(hackathonId)}/round-2-certificates`,
+  );
+}
+
+export function getAdminHackathonRound2CertificateUrl(
+  hackathonId: string,
+  participantId: string,
+  download = false,
+) {
+  return adminFetch<{ url: string; expiresIn: number }>(
+    `${adminHackathonPath(hackathonId)}/round-2-certificates/${encodeURIComponent(participantId)}/download${download ? "?download=1" : ""}`,
+  );
+}
+
 export function applyAdminHackathonRoundCutoff(hackathonId: string, round: number, cutoff: number) {
   return adminFetch<{ result: AdminHackathonRoundResult }>(
     `${adminHackathonPath(hackathonId)}/rounds/${round}/cutoff`,

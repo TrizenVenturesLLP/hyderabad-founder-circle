@@ -57,8 +57,11 @@ import {
   reviewAdminHackathonProblemStatement,
   setAdminHackathonJuryClaimLimit,
   fetchAdminHackathonCertificates,
+  fetchAdminHackathonRound2Certificates,
   getAdminHackathonCertificateUrl,
+  getAdminHackathonRound2CertificateUrl,
   type AdminHackathonCertificateItem,
+  type AdminHackathonRound2CertificateItem,
   type AdminSessionUser,
 } from "@/lib/admin-api";
 import {
@@ -311,6 +314,10 @@ function AdminHackathonsPage() {
   const [certificatesByEmail, setCertificatesByEmail] = useState<
     Map<string, AdminHackathonCertificateItem>
   >(new Map());
+  const [round2CertificatesByEmail, setRound2CertificatesByEmail] = useState<
+    Map<string, AdminHackathonRound2CertificateItem>
+  >(new Map());
+  const [round2CertificateLoadingEmail, setRound2CertificateLoadingEmail] = useState("");
   const [certificateLoadError, setCertificateLoadError] = useState("");
   const [registeredUsersLoading, setRegisteredUsersLoading] = useState(false);
   const [registeredUsersError, setRegisteredUsersError] = useState<string | null>(null);
@@ -514,14 +521,26 @@ function AdminHackathonsPage() {
       );
       setCertificateLoadError("");
       try {
-        const certificates = await fetchAdminHackathonCertificates(activeHackathonId);
+        const [certificates, round2Certificates] = await Promise.all([
+          fetchAdminHackathonCertificates(activeHackathonId),
+          fetchAdminHackathonRound2Certificates(activeHackathonId),
+        ]);
         setCertificatesByEmail(
           new Map(
             certificates.items.map((certificate) => [certificate.email.toLowerCase(), certificate]),
           ),
         );
+        setRound2CertificatesByEmail(
+          new Map(
+            round2Certificates.items.map((certificate) => [
+              certificate.email.toLowerCase(),
+              certificate,
+            ]),
+          ),
+        );
       } catch (certificateError) {
         setCertificatesByEmail(new Map());
+        setRound2CertificatesByEmail(new Map());
         const message =
           certificateError instanceof Error
             ? certificateError.message
@@ -551,6 +570,7 @@ function AdminHackathonsPage() {
       toast.error("Allow pop-ups to open this certificate.");
       return;
     }
+
     preview.opener = null;
     try {
       const { url } = await getAdminHackathonCertificateUrl(
@@ -563,6 +583,35 @@ function AdminHackathonsPage() {
       toast.error(
         error instanceof Error ? error.message : "Could not open this participant certificate.",
       );
+    }
+  }
+
+  async function openTeamMemberRound2Certificate(email: string) {
+    const certificate = round2CertificatesByEmail.get(email.trim().toLowerCase());
+    if (!certificate || certificate.status !== "generated") return;
+
+    const preview = window.open("about:blank", "_blank");
+    if (!preview) {
+      toast.error("Allow pop-ups to open this second-round certificate.");
+      return;
+    }
+    preview.opener = null;
+    setRound2CertificateLoadingEmail(email);
+    try {
+      const { url } = await getAdminHackathonRound2CertificateUrl(
+        activeHackathonId,
+        certificate.participantId,
+      );
+      preview.location.href = url;
+    } catch (error) {
+      preview.close();
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Could not open this participant's second-round certificate.",
+      );
+    } finally {
+      setRound2CertificateLoadingEmail("");
     }
   }
 
@@ -1412,43 +1461,81 @@ function AdminHackathonsPage() {
                               <p className="truncate font-semibold text-foreground">
                                 {member.full_name}
                               </p>
-                              {(() => {
-                                const certificate = certificatesByEmail.get(
-                                  member.email.trim().toLowerCase(),
-                                );
-                                if (!certificate) {
-                                  return (
-                                    <span className="mt-1 block text-[10.5px] text-muted-foreground">
-                                      {certificateLoadError
-                                        ? "Certificate status unavailable"
-                                        : "Certificate not available"}
-                                    </span>
+                              <div className="mt-1 flex flex-col items-start gap-1">
+                                {(() => {
+                                  const certificate = certificatesByEmail.get(
+                                    member.email.trim().toLowerCase(),
                                   );
-                                }
-                                if (certificate.status !== "generated") {
+                                  if (!certificate) {
+                                    return (
+                                      <span className="text-[10.5px] text-muted-foreground">
+                                        {certificateLoadError
+                                          ? "Certificate status unavailable"
+                                          : "Certificate not available"}
+                                      </span>
+                                    );
+                                  }
+                                  if (certificate.status !== "generated") {
+                                    return (
+                                      <span
+                                        className={`text-[10.5px] ${
+                                          certificate.status === "failed"
+                                            ? "text-red-700"
+                                            : "text-amber-700"
+                                        }`}
+                                      >
+                                        Certificate {certificate.status}
+                                      </span>
+                                    );
+                                  }
                                   return (
-                                    <span
-                                      className={`mt-1 block text-[10.5px] ${
-                                        certificate.status === "failed"
-                                          ? "text-red-700"
-                                          : "text-amber-700"
-                                      }`}
+                                    <button
+                                      type="button"
+                                      onClick={() => void openTeamMemberCertificate(member.email)}
+                                      className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-primary hover:underline"
                                     >
-                                      Certificate {certificate.status}
-                                    </span>
+                                      <Eye className="size-3" />
+                                      View certificate
+                                    </button>
                                   );
-                                }
-                                return (
-                                  <button
-                                    type="button"
-                                    onClick={() => void openTeamMemberCertificate(member.email)}
-                                    className="mt-1 inline-flex items-center gap-1 text-[10.5px] font-semibold text-primary hover:underline"
-                                  >
-                                    <Eye className="size-3" />
-                                    View certificate
-                                  </button>
-                                );
-                              })()}
+                                })()}
+                                {(() => {
+                                  const round2Certificate = round2CertificatesByEmail.get(
+                                    member.email.trim().toLowerCase(),
+                                  );
+                                  if (!round2Certificate) return null;
+                                  if (round2Certificate.status !== "generated") {
+                                    return (
+                                      <span
+                                        className={`text-[10px] ${
+                                          round2Certificate.status === "failed"
+                                            ? "text-red-700"
+                                            : "text-amber-700"
+                                        }`}
+                                      >
+                                        2nd round certificate {round2Certificate.status}
+                                      </span>
+                                    );
+                                  }
+                                  return (
+                                    <button
+                                      type="button"
+                                      disabled={
+                                        round2CertificateLoadingEmail === member.email
+                                      }
+                                      onClick={() =>
+                                        void openTeamMemberRound2Certificate(member.email)
+                                      }
+                                      className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-primary hover:underline disabled:cursor-wait disabled:opacity-60"
+                                    >
+                                      <Eye className="size-3" />
+                                      {round2CertificateLoadingEmail === member.email
+                                        ? "Opening 2nd round certificate…"
+                                        : "View 2nd round certificate"}
+                                    </button>
+                                  );
+                                })()}
+                              </div>
                             </div>
                             <p className="break-all text-muted-foreground">{member.email}</p>
                             <p className="text-muted-foreground">{member.phone}</p>
@@ -1746,6 +1833,7 @@ function AdminHackathonsPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
       </div>
     );
   }
