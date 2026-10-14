@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Award, Download, ExternalLink, LoaderCircle, Star } from "lucide-react";
+import { Award, Download, ExternalLink, LoaderCircle, Star, Trophy } from "lucide-react";
 import {
   getParticipantCertificateUrl,
   getParticipantHackathonCertificate,
   getParticipantRound2Certificate,
   getParticipantRound2CertificateUrl,
+  getParticipantWinnerCertificate,
+  getParticipantWinnerCertificateUrl,
   type ParticipantCertificate,
   type ParticipantRound2Certificate,
+  type ParticipantWinnerCertificate,
 } from "@/lib/hackathon-api";
 
 export const Route = createFileRoute("/dashboard/certificate")({
@@ -25,9 +28,14 @@ function getCertificatePreviewUrl(url: string) {
 function ParticipantCertificatePage() {
   const [certificate, setCertificate] = useState<ParticipantCertificate | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
-  const [round2Certificate, setRound2Certificate] =
-    useState<ParticipantRound2Certificate | null>(null);
+  const [round2Certificate, setRound2Certificate] = useState<ParticipantRound2Certificate | null>(
+    null,
+  );
   const [round2PreviewUrl, setRound2PreviewUrl] = useState("");
+  const [winnerCertificate, setWinnerCertificate] = useState<ParticipantWinnerCertificate | null>(
+    null,
+  );
+  const [winnerPreviewUrl, setWinnerPreviewUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
@@ -36,7 +44,7 @@ function ParticipantCertificatePage() {
     setLoading(true);
     setError("");
     try {
-      const [participationResult, round2Result] = await Promise.all([
+      const [participationResult, round2Result, winnerResult] = await Promise.all([
         getParticipantHackathonCertificate(HACKATHON_ID).then(
           (response) => ({ response }),
           (cause: unknown) => ({ cause }),
@@ -45,13 +53,20 @@ function ParticipantCertificatePage() {
           (response) => ({ response }),
           (cause: unknown) => ({ cause }),
         ),
+        getParticipantWinnerCertificate(HACKATHON_ID).then(
+          (response) => ({ response }),
+          (cause: unknown) => ({ cause }),
+        ),
       ]);
       const participationCertificate =
         "response" in participationResult ? participationResult.response.certificate : null;
       const secondRoundCertificate =
         "response" in round2Result ? round2Result.response.certificate : null;
+      const teamWinnerCertificate =
+        "response" in winnerResult ? winnerResult.response.certificate : null;
       setCertificate(participationCertificate);
       setRound2Certificate(secondRoundCertificate);
+      setWinnerCertificate(teamWinnerCertificate);
 
       const previewRequests: Promise<void>[] = [];
       if (participationCertificate?.status === "generated") {
@@ -84,16 +99,36 @@ function ParticipantCertificatePage() {
       } else {
         setRound2PreviewUrl("");
       }
+      if (teamWinnerCertificate) {
+        previewRequests.push(
+          getParticipantWinnerCertificateUrl(HACKATHON_ID).then(
+            (link) => setWinnerPreviewUrl(link.url),
+            (cause: unknown) => {
+              setError(
+                cause instanceof Error
+                  ? cause.message
+                  : "Could not load your winner certificate preview.",
+              );
+            },
+          ),
+        );
+      } else {
+        setWinnerPreviewUrl("");
+      }
       await Promise.all(previewRequests);
-      if (!participationCertificate && !secondRoundCertificate) {
+      if (!participationCertificate && !secondRoundCertificate && !teamWinnerCertificate) {
         const failure =
           "cause" in participationResult
             ? participationResult.cause
             : "cause" in round2Result
               ? round2Result.cause
-              : null;
+              : "cause" in winnerResult
+                ? winnerResult.cause
+                : null;
         if (failure) {
-          setError(failure instanceof Error ? failure.message : "Could not load your certificates.");
+          setError(
+            failure instanceof Error ? failure.message : "Could not load your certificates.",
+          );
         }
       }
     } catch (cause) {
@@ -147,8 +182,30 @@ function ParticipantCertificatePage() {
     }
   }
 
+  async function openWinnerCertificate(download: boolean) {
+    setWorking(true);
+    setError("");
+    try {
+      const link = await getParticipantWinnerCertificateUrl(HACKATHON_ID, download);
+      if (!download) setWinnerPreviewUrl(link.url);
+      const anchor = document.createElement("a");
+      anchor.href = download ? link.url : getCertificatePreviewUrl(link.url);
+      anchor.target = "_blank";
+      anchor.rel = "noopener noreferrer";
+      anchor.click();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not open your winner certificate.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
   const ready = certificate?.status === "generated";
   const round2Ready = Boolean(round2Certificate && round2PreviewUrl);
+  const winnerReady = Boolean(winnerCertificate && winnerPreviewUrl);
+  const winnerPlacement = winnerCertificate?.rank
+    ? `${winnerCertificate.rank}${winnerCertificate.rank === 1 ? "st" : winnerCertificate.rank === 2 ? "nd" : "rd"} Place`
+    : "Winner";
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -193,56 +250,56 @@ function ParticipantCertificatePage() {
             <LoaderCircle className="size-5 animate-spin" aria-label="Loading certificate" />
           </div>
         ) : !loading ? (
-          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <div className="mt-6 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
             {certificate ? (
-            <article className="flex min-w-0 flex-col rounded-lg border border-(--color-border) bg-white p-3 sm:p-4">
-              <div className="flex items-start gap-3">
-                <span className="grid size-10 shrink-0 place-items-center rounded-md bg-(--brand-accent-soft) text-(--brand-accent)">
-                  <Award className="size-5" />
-                </span>
-                <div>
-                  <h2 className="text-sm font-bold">Participation Certificate</h2>
-                  <p className="mt-1 text-xs text-(--color-text-secondary)">
-                    For participating in AI HACK × MRDU 2K26.
-                  </p>
+              <article className="flex min-w-0 flex-col rounded-lg border border-(--color-border) bg-white p-3 sm:p-4">
+                <div className="flex items-start gap-3">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-md bg-(--brand-accent-soft) text-(--brand-accent)">
+                    <Award className="size-5" />
+                  </span>
+                  <div>
+                    <h2 className="text-sm font-bold">Participation Certificate</h2>
+                    <p className="mt-1 text-xs text-(--color-text-secondary)">
+                      For participating in AI HACK × MRDU 2K26.
+                    </p>
+                  </div>
                 </div>
-              </div>
-              {ready && previewUrl ? (
-                <iframe
-                  title="Participation certificate preview"
-                  src={getCertificatePreviewUrl(previewUrl)}
-                  className="mt-3 h-[min(62vh,620px)] w-full rounded-md border border-(--color-border) bg-white"
-                />
-              ) : (
-                <div className="mt-3 grid min-h-48 flex-1 place-items-center rounded-md border border-dashed border-(--color-border) bg-(--color-background-alt) p-5 text-center">
-                  <p className="text-[13px] text-(--color-text-secondary)">
-                    Your participation certificate is being generated.
-                  </p>
-                </div>
-              )}
-              {ready ? (
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    disabled={working}
-                    onClick={() => void openCertificate(false)}
-                    className="inline-flex h-10 items-center justify-center gap-2 bg-(--brand-primary) px-3 text-[13px] font-semibold text-white transition hover:bg-(--brand-primary-hover) disabled:opacity-60"
-                  >
-                    <ExternalLink className="size-4" />
-                    View Certificate
-                  </button>
-                  <button
-                    type="button"
-                    disabled={working}
-                    onClick={() => void openCertificate(true)}
-                    className="inline-flex h-10 items-center justify-center gap-2 border border-(--color-border) bg-white px-3 text-[13px] font-semibold transition hover:bg-(--color-background-alt) disabled:opacity-60"
-                  >
-                    <Download className="size-4" />
-                    Download PDF
-                  </button>
-                </div>
-              ) : null}
-            </article>
+                {ready && previewUrl ? (
+                  <iframe
+                    title="Participation certificate preview"
+                    src={getCertificatePreviewUrl(previewUrl)}
+                    className="mt-3 h-[min(62vh,620px)] w-full rounded-md border border-(--color-border) bg-white"
+                  />
+                ) : (
+                  <div className="mt-3 grid min-h-48 flex-1 place-items-center rounded-md border border-dashed border-(--color-border) bg-(--color-background-alt) p-5 text-center">
+                    <p className="text-[13px] text-(--color-text-secondary)">
+                      Your participation certificate is being generated.
+                    </p>
+                  </div>
+                )}
+                {ready ? (
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      disabled={working}
+                      onClick={() => void openCertificate(false)}
+                      className="inline-flex h-10 items-center justify-center gap-2 bg-(--brand-primary) px-3 text-[13px] font-semibold text-white transition hover:bg-(--brand-primary-hover) disabled:opacity-60"
+                    >
+                      <ExternalLink className="size-4" />
+                      View Certificate
+                    </button>
+                    <button
+                      type="button"
+                      disabled={working}
+                      onClick={() => void openCertificate(true)}
+                      className="inline-flex h-10 items-center justify-center gap-2 border border-(--color-border) bg-white px-3 text-[13px] font-semibold transition hover:bg-(--color-background-alt) disabled:opacity-60"
+                    >
+                      <Download className="size-4" />
+                      Download PDF
+                    </button>
+                  </div>
+                ) : null}
+              </article>
             ) : null}
 
             {round2Certificate ? (
@@ -286,6 +343,57 @@ function ParticipantCertificatePage() {
                       type="button"
                       disabled={working}
                       onClick={() => void openRound2Certificate(true)}
+                      className="inline-flex h-10 items-center justify-center gap-2 border border-(--color-border) bg-white px-3 text-[13px] font-semibold transition hover:bg-(--color-background-alt) disabled:opacity-60"
+                    >
+                      <Download className="size-4" />
+                      Download PDF
+                    </button>
+                  </div>
+                ) : null}
+              </article>
+            ) : null}
+
+            {winnerCertificate ? (
+              <article className="flex min-w-0 flex-col rounded-lg border border-(--color-border) bg-white p-3 sm:p-4">
+                <div className="flex items-start gap-3">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-md bg-amber-100 text-amber-600">
+                    <Trophy className="size-5" />
+                  </span>
+                  <div>
+                    <h2 className="text-sm font-bold">{winnerPlacement} Certificate</h2>
+                    <p className="mt-1 text-xs text-(--color-text-secondary)">
+                      {winnerCertificate.teamName} · {winnerCertificate.domainName}
+                    </p>
+                  </div>
+                </div>
+                {winnerReady ? (
+                  <iframe
+                    title="Winner certificate preview"
+                    src={getCertificatePreviewUrl(winnerPreviewUrl)}
+                    className="mt-3 h-[min(62vh,620px)] w-full rounded-md border border-(--color-border) bg-white"
+                  />
+                ) : (
+                  <div className="mt-3 grid min-h-48 flex-1 place-items-center rounded-md border border-dashed border-(--color-border) bg-(--color-background-alt) p-5 text-center">
+                    <p className="text-[13px] text-(--color-text-secondary)">
+                      Your winner certificate is being prepared.
+                    </p>
+                  </div>
+                )}
+                {winnerReady ? (
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      disabled={working}
+                      onClick={() => void openWinnerCertificate(false)}
+                      className="inline-flex h-10 items-center justify-center gap-2 bg-(--brand-primary) px-3 text-[13px] font-semibold text-white transition hover:bg-(--brand-primary-hover) disabled:opacity-60"
+                    >
+                      <ExternalLink className="size-4" />
+                      View Certificate
+                    </button>
+                    <button
+                      type="button"
+                      disabled={working}
+                      onClick={() => void openWinnerCertificate(true)}
                       className="inline-flex h-10 items-center justify-center gap-2 border border-(--color-border) bg-white px-3 text-[13px] font-semibold transition hover:bg-(--color-background-alt) disabled:opacity-60"
                     >
                       <Download className="size-4" />

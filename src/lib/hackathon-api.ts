@@ -180,6 +180,25 @@ export function getParticipantRound2CertificateUrl(hackathonId: string, download
   );
 }
 
+export type ParticipantWinnerCertificate = {
+  teamName: string;
+  domainName: string;
+  rank: 1 | 2 | 3 | null;
+  generatedAt: string | null;
+};
+
+export function getParticipantWinnerCertificate(hackathonId: string) {
+  return participantCertificateFetch<{ certificate: ParticipantWinnerCertificate | null }>(
+    `/api/hackathons/${encodeURIComponent(hackathonId)}/winner-certificate`,
+  );
+}
+
+export function getParticipantWinnerCertificateUrl(hackathonId: string, download = false) {
+  return participantCertificateFetch<{ url: string; expiresIn: number }>(
+    `/api/hackathons/${encodeURIComponent(hackathonId)}/winner-certificate/download${download ? "?download=1" : ""}`,
+  );
+}
+
 export type HackathonRoundResult = {
   round: number;
   status: "pending" | "qualified" | "disqualified";

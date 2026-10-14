@@ -58,10 +58,13 @@ import {
   setAdminHackathonJuryClaimLimit,
   fetchAdminHackathonCertificates,
   fetchAdminHackathonRound2Certificates,
+  fetchAdminHackathonWinnerCertificates,
   getAdminHackathonCertificateUrl,
   getAdminHackathonRound2CertificateUrl,
+  getAdminHackathonWinnerCertificateUrl,
   type AdminHackathonCertificateItem,
   type AdminHackathonRound2CertificateItem,
+  type AdminHackathonWinnerCertificateItem,
   type AdminSessionUser,
 } from "@/lib/admin-api";
 import {
@@ -318,6 +321,10 @@ function AdminHackathonsPage() {
     Map<string, AdminHackathonRound2CertificateItem>
   >(new Map());
   const [round2CertificateLoadingEmail, setRound2CertificateLoadingEmail] = useState("");
+  const [winnerCertificatesByEmail, setWinnerCertificatesByEmail] = useState<
+    Map<string, AdminHackathonWinnerCertificateItem>
+  >(new Map());
+  const [winnerCertificateLoadingTeamId, setWinnerCertificateLoadingTeamId] = useState("");
   const [certificateLoadError, setCertificateLoadError] = useState("");
   const [registeredUsersLoading, setRegisteredUsersLoading] = useState(false);
   const [registeredUsersError, setRegisteredUsersError] = useState<string | null>(null);
@@ -521,9 +528,10 @@ function AdminHackathonsPage() {
       );
       setCertificateLoadError("");
       try {
-        const [certificates, round2Certificates] = await Promise.all([
+        const [certificates, round2Certificates, winnerCertificates] = await Promise.all([
           fetchAdminHackathonCertificates(activeHackathonId),
           fetchAdminHackathonRound2Certificates(activeHackathonId),
+          fetchAdminHackathonWinnerCertificates(activeHackathonId),
         ]);
         setCertificatesByEmail(
           new Map(
@@ -538,9 +546,17 @@ function AdminHackathonsPage() {
             ]),
           ),
         );
+        setWinnerCertificatesByEmail(
+          new Map(
+            winnerCertificates.items.flatMap((certificate) =>
+              certificate.emails.map((email) => [email.toLowerCase(), certificate] as const),
+            ),
+          ),
+        );
       } catch (certificateError) {
         setCertificatesByEmail(new Map());
         setRound2CertificatesByEmail(new Map());
+        setWinnerCertificatesByEmail(new Map());
         const message =
           certificateError instanceof Error
             ? certificateError.message
@@ -612,6 +628,33 @@ function AdminHackathonsPage() {
       );
     } finally {
       setRound2CertificateLoadingEmail("");
+    }
+  }
+
+  async function openTeamMemberWinnerCertificate(email: string) {
+    const certificate = winnerCertificatesByEmail.get(email.trim().toLowerCase());
+    if (!certificate || certificate.status !== "generated") return;
+
+    const preview = window.open("about:blank", "_blank");
+    if (!preview) {
+      toast.error("Allow pop-ups to open this winner certificate.");
+      return;
+    }
+    preview.opener = null;
+    setWinnerCertificateLoadingTeamId(certificate.teamId);
+    try {
+      const { url } = await getAdminHackathonWinnerCertificateUrl(
+        activeHackathonId,
+        certificate.teamId,
+      );
+      preview.location.href = url;
+    } catch (error) {
+      preview.close();
+      toast.error(
+        error instanceof Error ? error.message : "Could not open this winner certificate.",
+      );
+    } finally {
+      setWinnerCertificateLoadingTeamId("");
     }
   }
 
@@ -1520,9 +1563,7 @@ function AdminHackathonsPage() {
                                   return (
                                     <button
                                       type="button"
-                                      disabled={
-                                        round2CertificateLoadingEmail === member.email
-                                      }
+                                      disabled={round2CertificateLoadingEmail === member.email}
                                       onClick={() =>
                                         void openTeamMemberRound2Certificate(member.email)
                                       }
@@ -1532,6 +1573,29 @@ function AdminHackathonsPage() {
                                       {round2CertificateLoadingEmail === member.email
                                         ? "Opening 2nd round certificate…"
                                         : "View 2nd round certificate"}
+                                    </button>
+                                  );
+                                })()}
+                                {(() => {
+                                  const winnerCertificate = winnerCertificatesByEmail.get(
+                                    member.email.trim().toLowerCase(),
+                                  );
+                                  if (winnerCertificate?.status !== "generated") return null;
+                                  return (
+                                    <button
+                                      type="button"
+                                      disabled={
+                                        winnerCertificateLoadingTeamId === winnerCertificate.teamId
+                                      }
+                                      onClick={() =>
+                                        void openTeamMemberWinnerCertificate(member.email)
+                                      }
+                                      className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-primary hover:underline disabled:cursor-wait disabled:opacity-60"
+                                    >
+                                      <Eye className="size-3" />
+                                      {winnerCertificateLoadingTeamId === winnerCertificate.teamId
+                                        ? "Opening winner certificate…"
+                                        : "View winner certificate"}
                                     </button>
                                   );
                                 })()}
@@ -1833,7 +1897,6 @@ function AdminHackathonsPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
       </div>
     );
   }
